@@ -95,7 +95,9 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 3. **Melee Attack Speed can roll negative (confirmed).** Your sheet leaves it blank, but
    warframe.market has Lacera rivens listed with −6.2%, −6.1% and −4.1% Attack Speed (unranked).
    Those values sit outside today's ranges, so they were probably rolled under the old dispositions,
-   but they prove a melee Attack Speed curse exists.
+   but they prove a melee Attack Speed curse existed. Caveat: that evidence may predate splicing
+   (Update 44.1), which could have changed the curse pool. Keep it unless a large sample of
+   post-44.1 melee cycles shows it never appears.
 4. **The combo row is split in two.** "Additional Combo Count Chance" (positive only, b 0.00653) and
    "Chance to Gain Combo Count" (negative only, b −0.01165, shown as −100v) are separate stats.
    warframe.market confirms this. The sheet's merged row is just a layout choice.
@@ -108,14 +110,15 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
    negative coefficient, so a buff shows as a negative %.
 
 ### Phase 2 — Math engine (`src/engine.js`, pure functions, no DOM)
-- [ ] `rollValue(stat, class, shape, rank, sign, u)` → raw `v` (fround, step by step)
-- [ ] `range(...)` → `{min, max}` for u = 0 and u = 1
-- [ ] `format(stat, v)` → display string per unit (handles the `−100v` and `×(1+v)` cases)
-- [ ] `solveU(stat, class, shape, rank, sign, displayTarget)` → the u that hits a displayed value
-- [ ] `evaluateGoal(goal)` for comparators `≥`, `≤`, `≈`, returning per shape:
-      feasible?, value range, required u-interval, probability, best achievable / closest value
-- [ ] **Golden tests:** every cell of both screenshots (`++-`, `+++-`), plus the three examples above.
-      Hand-generate `++` / `+++` expectations from the formula, or from more sheets if you have them.
+- [x] `rawValue` / `displayValue` (fround, step by step), `range`, `format` (game-style, 1 decimal),
+      `solveU`, `canRoll`, `probability`, `fingerprintToU`
+- [x] `evaluateGoal(goal)` for `gte` / `lte` / `near`: per shape, possible?, feasible?, range,
+      u-interval, probability, closest value; best shape marked. The sign is inferred from which
+      side of zero the target is on (so recoil buffs, which display negative, work).
+- [x] **Golden tests:** 25 range rows from both sheets (both ends, buffs and curses, every unit),
+      9 in-game screenshot values (exact text match), the three goal examples
+- Spliced stats use max-of-two odds (P = b² − a²). This is the working assumption from the wiki's
+  "inherits the higher value" rule, and it isn't verified in game.
 
 ### Phase 3 — Range viewer (spreadsheet replacement)
 - [ ] Controls: weapon class, shape (`++`, `++-`, `+++`, `+++-`), rank (0–8, default 8)
