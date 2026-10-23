@@ -137,7 +137,10 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] Bow note on Fire Rate goals. Kitguns → Pistol, zaw strikes → Melee, Vinquibus (melee) added by hand
 - [x] `DaxDuviriAsymmetricalLongBowPlayerWeapon` is the **Cinta** (already listed as a rifle/bow)
 - [ ] Sentinel/robotic weapons not included yet
-- `tools/data/internal_names.csv` (`path,name`): internal path → name for every riven weapon in
+- CSV `family` column = which riven a weapon takes (Braton Prime → Braton, Dex Furis → Afuris).
+  It came from your hand-made family lists; weapons not in them (archguns, zaws, Sirocco) default to
+  their own name, with a few archgun variants mapped by hand.
+- `tools/data/internal_names.csv` (`path,name,family`): internal path → name for every riven weapon in
   the WFCD list (601 rows). Gaps were filled from WFCD `uniqueName`, and the Vinquibus paths came
   from your player data. Kitgun `compat` points at the chamber part, and primary and secondary
   share one path. All six chambers are mapped. The future player-JSON import uses this to name `compat`.

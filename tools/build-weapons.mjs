@@ -30,7 +30,9 @@ for (const file of FILES) {
   for (const w of items) {
     const cls = rivenClass(w);
     if (!cls) continue;
-    const name = w.type === 'Zaw Component' ? `${w.name} (Zaw)` : w.name;
+    // WFCD writes "Mk1-Braton", "Ax-52", "Efv-5 Jupiter"; the game writes MK1 / AX / EFV.
+    const base = w.name.replace(/^(Mk1|Ax|Efv)-/, (/** @type {string} */ s) => s.toUpperCase());
+    const name = w.type === 'Zaw Component' ? `${base} (Zaw)` : base;
     rows.push([name, cls, w.type === 'Bow' ? 1 : 0]);
   }
 }
