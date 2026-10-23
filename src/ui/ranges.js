@@ -82,9 +82,16 @@ function tableView() {
   const isFaction = (/** @type {Stat} */ s) => s.unit === 'mult';
   // A combined element is spliced from two base elements.
   const BASE_ELEMENTS = ['heat', 'cold', 'electricity', 'toxin'];
+  const PHYSICAL = ['impact', 'puncture', 'slash'];
   const isElement = (/** @type {Stat} */ s) => !!s.from?.[0].every(id => BASE_ELEMENTS.includes(id));
   const sections = [
-    section('Stats', ORDINARY.filter(s => !isFaction(s))),
+    section('Damage', ORDINARY.filter(s => s.id === 'damage')),
+    section('Base elements', ORDINARY.filter(s => BASE_ELEMENTS.includes(s.id))),
+    section('Physical damage', ORDINARY.filter(s => PHYSICAL.includes(s.id))),
+    section('Other stats', ORDINARY.filter(s =>
+      !isFaction(s) && s.id !== 'damage' && !BASE_ELEMENTS.includes(s.id) && !PHYSICAL.includes(s.id))
+      // Alphabetical by the name shown, so melee's "Attack Speed" sorts under A.
+      .sort((a, b) => statName(a, state.cls).localeCompare(statName(b, state.cls)))),
     section('Faction damage', ORDINARY.filter(isFaction)),
     section('Spliced (always positive)', SPLICED.filter(s => !isFaction(s) && !isElement(s))),
     section('Spliced elements', SPLICED.filter(isElement)),
