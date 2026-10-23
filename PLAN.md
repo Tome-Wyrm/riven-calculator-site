@@ -133,7 +133,10 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] Unit shown next to the target box; the sign is inferred by the engine
 
 ### Phase 5 — Weapon lookup (Felarx → Shotgun)
-- [ ] A one-off script in `tools/` (run by hand) pulls the weapon list from WFCD
+- [x] Weapon search box on both views (native datalist; picking a weapon sets the class)
+- [x] Bow note on Fire Rate goals. Kitguns → Pistol, zaw strikes → Melee, Vinquibus (melee) added by hand
+- [ ] Unresolved: which weapon is `DaxDuviriAsymmetricalLongBowPlayerWeapon`? Sentinel/robotic weapons not included yet
+- [x] A one-off script in `tools/` (run by hand) pulls the weapon list from WFCD
       `warframe-items` or the Public Export and writes a compact `src/data/weapons.js`
       (`{name: class}`). That snapshot is committed, so there is **no runtime fetch**.
       Re-run it when new weapons release.

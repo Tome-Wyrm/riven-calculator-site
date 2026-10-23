@@ -145,7 +145,10 @@ table.ranges {
 .ranges td.na { color: var(--muted); text-align: center; }
 .ranges .sub { display: block; font-size: 0.8rem; opacity: 0.8; }
 
+.field.weapon input { width: 12em; }
+
 /* Goal calculator */
+.field.weapon input,
 .field.target input {
   font: inherit;
   width: 7em;

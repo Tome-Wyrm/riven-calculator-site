@@ -3,7 +3,10 @@
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { evaluateGoal, format } from '../engine.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions } from './dom.js';
+import { WEAPONS } from '../data/weapons.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker } from './dom.js';
+
+const IS_BOW = new Set(WEAPONS.filter(w => w[2]).map(w => w[0]));
 
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('../engine.js').Goal} Goal */
@@ -13,6 +16,7 @@ const OP_LABEL = { gte: 'At least', lte: 'At most', near: 'Closest to' };
 const UNIT_SUFFIX = { pct: '%', pctNeg: '%', mult: '×', sec: 's', m: 'm', flat: '' };
 
 const state = {
+  weapon: 'Felarx',
   cls: /** @type {WeaponClass} */ ('shotgun'),
   statId: 'ammoEfficiency',
   op: /** @type {Goal['op']} */ ('gte'),
@@ -75,7 +79,8 @@ function controls() {
   const ranks = Array.from({ length: MAX_RANK + 1 }, (_, r) => /** @type {[string, string]} */ ([String(r), String(r)]));
 
   return el('div', { class: 'controls' }, [
-    segmented('Weapon class', CLASSES, state.cls, v => set({ cls: /** @type {WeaponClass} */ (v) }),
+    weaponPicker(WEAPONS, state.weapon, (weapon, cls) => set({ weapon, cls })),
+    segmented('Weapon class', CLASSES, state.cls, v => set({ cls: /** @type {WeaponClass} */ (v), weapon: '' }),
       v => CLASS_LABEL[/** @type {WeaponClass} */ (v)]),
     select('Stat', stats, state.statId, v => set({ statId: v })),
     segmented('Comparison', ['gte', 'lte', 'near'], state.op, v => set({ op: /** @type {Goal['op']} */ (v) }),
@@ -103,6 +108,9 @@ function results() {
   if (stat.spliced) {
     notes.push(el('p', { class: 'note' }, [
       'Spliced stats keep the better roll of their two parent traits, so the chances assume max-of-two rolls.']));
+  }
+  if (stat.id === 'fireRate' && IS_BOW.has(state.weapon)) {
+    notes.push(el('p', { class: 'note' }, ['Bows: fire rate rolls count double (charge rate).']));
   }
   if (res.sign === '-') {
     notes.push(el('p', { class: 'note' }, ['That target reads as a negative (curse) roll.']));

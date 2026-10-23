@@ -5,7 +5,8 @@
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER, canRoll, range, format } from '../engine.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions } from './dom.js';
+import { WEAPONS } from '../data/weapons.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker } from './dom.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
@@ -14,6 +15,7 @@ import { CLASS_LABEL, el, statName, segmented, select, statOptions } from './dom
 
 const state = {
   view: /** @type {'table' | 'compare'} */ ('table'),
+  weapon: '',
   cls: /** @type {WeaponClass} */ ('rifle'),
   shape: /** @type {Shape} */ ('++-'),
   rank: MAX_RANK,
@@ -42,7 +44,8 @@ function controls() {
   const items = [
     segmented('View', ['table', 'compare'], state.view, v => set({ view: /** @type {any} */ (v) }),
       v => (v === 'table' ? 'All stats' : 'Compare shapes')),
-    segmented('Weapon class', CLASSES, state.cls, v => set({ cls: /** @type {WeaponClass} */ (v) }),
+    weaponPicker(WEAPONS, state.weapon, (weapon, cls) => set({ weapon, cls })),
+    segmented('Weapon class', CLASSES, state.cls, v => set({ cls: /** @type {WeaponClass} */ (v), weapon: '' }),
       v => CLASS_LABEL[/** @type {WeaponClass} */ (v)]),
   ];
   if (state.view === 'table') {

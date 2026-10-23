@@ -35,6 +35,27 @@ export function select(labelText, options, value, onChange) {
   return el('label', { class: 'field' }, [el('span', {}, [labelText]), s]);
 }
 
+let pickerId = 0;
+
+/**
+ * Weapon search box (native datalist). Picking a known weapon calls onPick with its riven class.
+ * @param {[string, WeaponClass, number][]} weapons @param {string} value
+ * @param {(name: string, cls: WeaponClass) => void} onPick
+ */
+export function weaponPicker(weapons, value, onPick) {
+  const id = `weapons-${++pickerId}`;
+  const input = /** @type {HTMLInputElement} */ (el('input', {
+    type: 'search', list: id, value, placeholder: 'e.g. Felarx', autocomplete: 'off', 'aria-label': 'Weapon',
+  }));
+  const byName = new Map(weapons.map(w => [w[0].toLowerCase(), w]));
+  input.addEventListener('change', () => {
+    const w = byName.get(input.value.trim().toLowerCase());
+    if (w) onPick(w[0], w[1]);
+  });
+  const list = el('datalist', { id }, weapons.map(w => el('option', { value: w[0] })));
+  return el('label', { class: 'field weapon' }, [el('span', {}, ['Weapon']), input, list]);
+}
+
 /**
  * Stat picker options for a class: ordinary then spliced, spliced ones tagged.
  * @param {Stat[]} stats @param {WeaponClass} cls @returns {[string, string][]}
