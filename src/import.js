@@ -11,7 +11,11 @@ import { fingerprintToU } from './engine.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
 
-/** Fingerprint tag → stat id. From WFHelper's config/shared/rivenStatDisplayNames.ts. */
+/**
+ * Fingerprint tag → stat id. From WFHelper's config/shared/rivenStatDisplayNames.ts.
+ * TODO: spliced stats are missing; their tags are unknown until we see a spliced riven's
+ * fingerprint (see PLAN.md, Phase 8).
+ */
 export const TAG_TO_STAT = {
   WeaponCritChanceMod: 'critChance',
   WeaponCritDamageMod: 'critDamage',
