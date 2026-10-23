@@ -1,88 +1,99 @@
 // ==UserScript==
 // @name         WFM riven IPS checker
 // @namespace    riven-calculator-site
-// @version      1.0
-// @description  Steps through warframe.market riven searches and records whether any listing has a given Impact/Puncture/Slash stat.
+// @version      2.0
+// @description  Opens each weapon's warframe.market riven search and records which Impact/Puncture/Slash stats appear on its listings.
 // @match        https://warframe.market/auctions/search*
 // @grant        none
 // ==/UserScript==
 
-// For each (weapon, stat) it searches the stat as a positive first; if nothing turns up it
-// searches it as the negative. Results are kept in localStorage, so page loads don't lose them.
-// "Next" opens the next unchecked search; "Auto" keeps going on its own (slowly, to stay polite).
+// One unfiltered search per weapon: every listing on the page is scanned for Impact, Puncture and
+// Slash, as positives and negatives. A stat that appears proves the weapon can roll it. A stat
+// that never appears across many listings suggests it can't; with few listings it proves nothing.
+// Results are kept in localStorage. "Next" opens the next weapon; "Auto" keeps going on its own.
 
 (() => {
   'use strict';
 
-  // Grouped by stat, so the attribute stays the same while you work through a block.
-  const ZAWS = ['Balla', 'Cyath', 'Dehtat', 'Dokrahm', 'Kronsh', 'Mewan', 'Ooltha', 'Plague Keewar',
-    'Plague Kripath', 'Rabvee', 'Sepfahn'];
-  const KITGUNS = ['Catchmoon', 'Gaze', 'Rattleguts', 'Tombfinger', 'Sporelacer', 'Vermisplicer'];
-  const CHECKS = {
-    impact_damage: ['Aegrit', 'Akarius', 'Penta', 'Dark Split-Sword', 'Kuva Bramma', 'Ogris', 'Zarr',
-      'Morgha', 'Tenet Envoy', 'Tenet Spirex', 'Zymos', ...ZAWS, ...KITGUNS, 'Corufell', 'Vinquibus (melee)'],
-    puncture_damage: ['Acceltra', 'Tysis', 'Helstrum', 'Grattler', 'Tonkor', 'Riot-848', 'Zymos',
-      ...ZAWS, ...KITGUNS, 'Corufell'],
-    slash_damage: ['Aegrit', 'Astilla', 'Tysis', 'Dark Split-Sword', 'Seer', 'Tonkor', 'Nataruk',
-      ...ZAWS, ...KITGUNS, 'Corufell', 'Vinquibus (melee)'],
-  };
-  const LABEL = { impact_damage: 'Impact', puncture_damage: 'Puncture', slash_damage: 'Slash' };
-  const KEY = 'ipsCheck.v1';
+  // The uncertain weapons (names as warframe.market lists them, or the start of them: a name also
+  // matches entries like "Dark Split-Sword (Dual Swords)").
+  const CANDIDATES = ['Acceltra', 'Aegrit', 'Akarius', 'Astilla', 'Penta', 'Tysis', 'Dark Split-Sword',
+    'Helstrum', 'Kuva Bramma', 'Grattler', 'Ogris', 'Seer', 'Tonkor', 'Zarr', 'Morgha', 'Nataruk',
+    'Riot-848', 'Tenet Envoy', 'Tenet Spirex', 'Zymos',
+    'Balla', 'Cyath', 'Dehtat', 'Dokrahm', 'Kronsh', 'Mewan', 'Ooltha', 'Plague Keewar', 'Plague Kripath',
+    'Rabvee', 'Sepfahn',
+    'Catchmoon', 'Gaze', 'Rattleguts', 'Tombfinger', 'Sporelacer', 'Vermisplicer',
+    'Corufell', 'Vinquibus'];
+  const TYPES = ['Impact', 'Puncture', 'Slash'];
+  const KEY = 'ipsCheck.v2';
   const AUTO_DELAY_MS = 4000;
+  const MAX_WAIT_MS = 60000;      // results can take a while to load
+  const STABLE_MS = 3000;         // and may arrive in pieces: wait until the count stops changing
 
-  /** @type {{results: Record<string, {pos?: number, neg?: number}>, slugs?: Record<string, string>, auto?: boolean, current?: string}} */
+  /**
+   * @typedef {{listings: number, seen: Record<string, string>}} Result   seen: type -> '+', '-' or '+-'
+   * @type {{weapons?: {slug: string, name: string}[], results: Record<string, Result>, auto?: boolean,
+   *         current?: string, all?: boolean}}
+   */
   const db = JSON.parse(localStorage.getItem(KEY) || '{"results":{}}');
   const save = () => localStorage.setItem(KEY, JSON.stringify(db));
 
-  const queue = Object.entries(CHECKS).flatMap(([stat, weapons]) => weapons.map(w => ({ w, stat })));
-  const id = (/** @type {{w: string, stat: string}} */ q) => `${q.w}|${q.stat}`;
-
-  async function slugs() {
-    if (db.slugs) return db.slugs;
+  async function wfmWeapons() {
+    if (db.weapons) return db.weapons;
     const j = await (await fetch('https://api.warframe.market/v2/riven/weapons')).json();
-    db.slugs = Object.fromEntries(j.data.map((/** @type {any} */ w) => [w.i18n.en.name.toLowerCase(), w.slug]));
+    db.weapons = j.data.map((/** @type {any} */ w) => ({ slug: w.slug, name: w.i18n.en.name }))
+      .sort((/** @type {any} */ a, /** @type {any} */ b) => a.name.localeCompare(b.name));
     save();
-    return db.slugs;
+    return db.weapons;
   }
 
-  /** The next search to run: positive first, then negative if the positive found nothing. */
-  function nextStep() {
-    for (const q of queue) {
-      const r = db.results[id(q)] || {};
-      if (r.pos === undefined) return { ...q, sign: 'pos' };
-      if (r.pos === 0 && r.neg === undefined) return { ...q, sign: 'neg' };
-    }
-    return null;
+  /** Candidates first (each expanded to every matching entry), then everything if "All" is on. */
+  async function queue() {
+    const all = await wfmWeapons();
+    const matches = (/** @type {string} */ n) => all.filter(w =>
+      w.name.toLowerCase() === n.toLowerCase() || w.name.toLowerCase().startsWith(n.toLowerCase() + ' ('));
+    const picked = CANDIDATES.flatMap(matches);
+    const rest = db.all ? all.filter(w => !picked.includes(w)) : [];
+    return { list: [...picked, ...rest], missing: CANDIDATES.filter(n => matches(n).length === 0) };
   }
 
   async function go() {
-    const step = nextStep();
-    if (!step) { db.auto = false; save(); render(); return; }
-    const slug = (await slugs())[step.w.toLowerCase()];
-    if (!slug) {                                   // weapon unknown to warframe.market
-      db.results[id(step)] = { pos: -1, neg: -1 };
-      save();
-      return go();
-    }
-    db.current = `${id(step)}|${step.sign}`;
+    const { list } = await queue();
+    const next = list.find(w => !db.results[w.slug]);
+    if (!next) { db.auto = false; save(); render(); return; }
+    db.current = next.slug;
     save();
-    const p = new URLSearchParams({ type: 'riven', weapon_url_name: slug, sort_by: 'price_desc' });
-    p.set(step.sign === 'pos' ? 'positive_stats' : 'negative_stats', step.stat);
+    const p = new URLSearchParams({ type: 'riven', sort_by: 'price_desc', weapon_url_name: next.slug });
     location.href = `/auctions/search?${p}`;
   }
 
-  /** After a search page loads, wait for results or "No contracts found", then record the count. */
+  /** Scans the loaded listings for physical stats, e.g. "+11.4% Impact" or "-77.8% Impact". */
+  function scan() {
+    const text = document.body.innerText;
+    const listings = (text.match(/Selling price|Starting Price/g) || []).length;
+    /** @type {Record<string, string>} */
+    const seen = {};
+    for (const m of text.matchAll(/([+-])\d+(?:\.\d+)?%\s+(Impact|Puncture|Slash)\b/g)) {
+      const cur = seen[m[2]] || '';
+      if (!cur.includes(m[1])) seen[m[2]] = m[1] === '+' ? '+' + cur : cur + '-';
+    }
+    return { text, listings, seen };
+  }
+
   function recordCurrent() {
     if (!db.current) return;
-    const [w, stat, sign] = db.current.split('|');
+    const slug = db.current;
     const started = Date.now();
+    let lastCount = -1, lastChange = Date.now();
     const timer = setInterval(() => {
-      const text = document.body.innerText;
-      const settled = /No contracts found|Selling price|Starting Price/.test(text);
-      if (!settled) {
-        if (Date.now() - started < 20000) return;
-        // Never saw results or "No contracts found" (a Cloudflare check, an error page, a slow load):
-        // record nothing and stop, so it can't be mistaken for "none found".
+      const { text, listings, seen } = scan();
+      const empty = /No contracts found/.test(text);
+      if (listings !== lastCount) { lastCount = listings; lastChange = Date.now(); }
+      const stable = listings > 0 && Date.now() - lastChange >= STABLE_MS;
+      if (!empty && !stable) {
+        if (Date.now() - started < MAX_WAIT_MS) return;
+        // Never saw listings or "No contracts found" (a Cloudflare check, an error page): record
+        // nothing and stop, so it can't be mistaken for "no listings".
         clearInterval(timer);
         db.auto = false;
         save();
@@ -90,9 +101,7 @@
         return;
       }
       clearInterval(timer);
-      const count = /No contracts found/.test(text) ? 0 : (text.match(/Selling price|Starting Price/g) || []).length;
-      const r = (db.results[`${w}|${stat}`] ||= {});
-      r[/** @type {'pos' | 'neg'} */ (sign)] = count;
+      db.results[slug] = { listings: empty ? 0 : listings, seen: empty ? {} : seen };
       db.current = undefined;
       save();
       render();
@@ -100,36 +109,31 @@
     }, 500);
   }
 
-  function summary() {
-    const lines = [];
-    for (const [stat, weapons] of Object.entries(CHECKS)) {
-      lines.push(`== ${LABEL[/** @type {keyof typeof LABEL} */ (stat)]} ==`);
-      for (const w of weapons) {
-        const r = db.results[`${w}|${stat}`];
-        let v = 'not checked';
-        if (r?.pos === -1) v = 'NOT ON WFM (check name)';
-        else if (r?.pos > 0) v = `YES (${r.pos} with +)`;
-        else if (r?.neg > 0) v = `YES (${r.neg} with -)`;
-        else if (r?.pos === 0 && r?.neg === 0) v = 'none found';
-        else if (r?.pos === 0) v = 'none with +, - not checked yet';
-        lines.push(`${w}: ${v}`);
-      }
+  async function summary() {
+    const { list, missing } = await queue();
+    const lines = ['weapon | listings | ' + TYPES.join(' | ')];
+    for (const w of list) {
+      const r = db.results[w.slug];
+      if (!r) { lines.push(`${w.name} | not checked`); continue; }
+      lines.push(`${w.name} | ${r.listings} | ` + TYPES.map(t => r.seen[t] || '.').join(' | '));
     }
+    if (missing.length) lines.push('', 'Not on warframe.market under these names: ' + missing.join(', '));
     return lines.join('\n');
   }
 
+  /** @type {HTMLDivElement | undefined} */
   let box;
-  function render() {
+  async function render() {
     if (!box) {
       box = document.createElement('div');
-      box.style.cssText = 'position:fixed;top:70px;right:8px;width:340px;z-index:99999;background:#111;'
+      box.style.cssText = 'position:fixed;top:70px;right:8px;width:380px;z-index:99999;background:#111;'
         + 'color:#ddd;border:1px solid #444;border-radius:6px;padding:8px;font:12px monospace';
       document.body.append(box);
     }
-    const done = queue.filter(q => !nextStepFor(q)).length;
-    box.innerHTML = '';
+    const { list } = await queue();
+    const done = list.filter(w => db.results[w.slug]).length;
     const head = document.createElement('div');
-    head.textContent = `IPS check: ${done}/${queue.length} done`;
+    head.textContent = `IPS check: ${done}/${list.length} weapons (+ positive, - negative, . not seen)`;
     const btn = (/** @type {string} */ t, /** @type {() => void} */ f) => {
       const b = document.createElement('button');
       b.textContent = t;
@@ -138,21 +142,18 @@
       return b;
     };
     const ta = document.createElement('textarea');
-    ta.value = summary();
+    ta.value = await summary();
     ta.readOnly = true;
-    ta.style.cssText = 'width:100%;height:360px;background:#000;color:#ddd;font:11px monospace';
-    box.append(head,
+    ta.style.cssText = 'width:100%;height:380px;background:#000;color:#ddd;font:11px monospace';
+    box.replaceChildren(head,
       btn('Next', () => go()),
       btn(db.auto ? 'Stop auto' : 'Auto', () => { db.auto = !db.auto; save(); render(); if (db.auto) go(); }),
+      btn(db.all ? 'Candidates only' : 'All weapons', () => { db.all = !db.all; save(); render(); }),
       btn('Copy', () => navigator.clipboard.writeText(ta.value)),
-      btn('Reset', () => { if (confirm('Clear all IPS results?')) { db.results = {}; db.auto = false; save(); render(); } }),
+      btn('Reset', () => {
+        if (confirm('Clear all IPS results?')) { db.results = {}; db.auto = false; db.current = undefined; save(); render(); }
+      }),
       ta);
-  }
-
-  /** @param {{w: string, stat: string}} q */
-  function nextStepFor(q) {
-    const r = db.results[id(q)] || {};
-    return r.pos === undefined || (r.pos === 0 && r.neg === undefined);
   }
 
   render();
