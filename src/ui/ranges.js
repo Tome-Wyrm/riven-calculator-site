@@ -6,7 +6,7 @@
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER, canRoll, range, format, quirks, weaponCanRoll } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow } from './dom.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow, recipeText } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
@@ -71,7 +71,9 @@ function section(title, stats) {
   const { cls, shape } = state;
   const rows = stats
     .filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsOf(state.weapon)) !== 'n')
-    .map(s => el('tr', {}, [el('th', { scope: 'row' }, [statName(s, cls)]), rangeCell(s, cls, shape, '+'), rangeCell(s, cls, shape, '-')]));
+    .map(s => el('tr', {}, [el('th', { scope: 'row' }, s.spliced
+      ? [statName(s, cls), el('span', { class: 'sub' }, [recipeText(s, cls, STAT_BY_ID)])]
+      : [statName(s, cls)]), rangeCell(s, cls, shape, '+'), rangeCell(s, cls, shape, '-')]));
   if (rows.length === 0) return null;
   return el('tbody', {}, [el('tr', { class: 'group' }, [el('th', { colspan: '3', scope: 'colgroup' }, [title])]), ...rows]);
 }
@@ -89,10 +91,11 @@ function tableView() {
 
 function compareView() {
   const stat = STAT_BY_ID[state.statId];
+  const recipe = stat.spliced ? [el('p', { class: 'note' }, [`Spliced from ${recipeText(stat, state.cls, STAT_BY_ID)}.`])] : [];
   const rows = SHAPE_ORDER.map(shape =>
     el('tr', {}, [el('th', { scope: 'row' }, [shape]), rangeCell(stat, state.cls, shape, '+'), rangeCell(stat, state.cls, shape, '-')]));
   const head = el('thead', {}, [el('tr', {}, [el('th', { scope: 'col' }, ['Shape']), el('th', { scope: 'col' }, ['Positive']), el('th', { scope: 'col' }, ['Negative'])])]);
-  return el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges' }, [head, el('tbody', {}, rows)])]);
+  return el('div', {}, [...recipe, el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges' }, [head, el('tbody', {}, rows)])])]);
 }
 
 /** @type {HTMLElement} */

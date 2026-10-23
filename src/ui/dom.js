@@ -74,6 +74,18 @@ export function weaponPicker(weapons, value, onPick) {
   return el('label', { class: 'field weapon' }, [el('span', {}, ['Weapon']), input, list]);
 }
 
+/**
+ * A spliced stat's recipes for a class, e.g. "Magazine Capacity + Reload Speed  or  Weapon Recoil + Ammo Maximum".
+ * Recipes whose parents the class can't roll are left out.
+ * @param {Stat} stat @param {WeaponClass} cls @param {Record<string, Stat>} byId
+ */
+export function recipeText(stat, cls, byId) {
+  return (stat.from ?? [])
+    .filter(pair => pair.every(id => byId[id].b[cls] !== undefined))
+    .map(pair => pair.map(id => statName(byId[id], cls)).join(' + '))
+    .join('  or  ');
+}
+
 const WEAPON_BY_NAME = new Map(WEAPONS.map(w => [w[0], w]));
 
 /** The picked weapon's IPS code, or undefined when no weapon is picked. @param {string} name */

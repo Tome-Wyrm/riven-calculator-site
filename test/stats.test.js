@@ -31,6 +31,24 @@ test('spliced stats are positive only and their recipes name ordinary stats', ()
   }
 });
 
+test('splice recipes match the wiki Riven Splicer table (22 rows)', () => {
+  const WIKI = {
+    ammoEfficiency: [['magazine', 'reloadSpeed'], ['recoil', 'ammoMax']],
+    blast: [['heat', 'cold']], corrosive: [['toxin', 'electricity']],
+    orokin: [['grineer', 'corpus']], scaldra: [['infested', 'grineer']], techrot: [['corpus', 'infested']],
+    gas: [['toxin', 'heat']], heavyWindup: [['heavyEfficiency', 'comboDuration']],
+    magnetic: [['electricity', 'cold']], meleeDamageOnHeavy: [['heavyEfficiency', 'additionalCombo']],
+    parryAngle: [['fireRate', 'range']], radiation: [['heat', 'electricity']],
+    reloadWhileHolstered: [['ammoMax', 'reloadSpeed'], ['ammoMax', 'magazine']],
+    slamDamage: [['damage', 'fireRate']], statusDamage: [['damage', 'statusChance']], viral: [['toxin', 'cold']],
+    weakpointCrit: [['critChance', 'zoom'], ['critChance', 'multishot']],
+    weakpointDamage: [['damage', 'zoom'], ['damage', 'multishot']],
+  };
+  const norm = pairs => pairs.map(p => [...p].sort().join('+')).sort();
+  for (const s of SPLICED) assert.deepEqual(norm(s.from), norm(WIKI[s.id]), s.id);
+  assert.equal(Object.values(WIKI).flat().length, 22);
+});
+
 // Independent transcription check: recompute the spreadsheet's lowest positive ++- roll (u = 0)
 // for every stat and class. The math engine (Phase 2) gets its own full golden suite.
 function sheetMin(stat, cls) {

@@ -4,7 +4,7 @@
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { evaluateGoal, format, quirks, weaponCanRoll } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow } from './dom.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow, recipeText } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
 
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
@@ -106,7 +106,7 @@ function results() {
   const notes = [el('p', { class: 'summary' }, [summary(res, stat)])];
   if (stat.spliced) {
     notes.push(el('p', { class: 'note' }, [
-      'Spliced stats keep the better roll of their two parent traits, so the chances assume max-of-two rolls.']));
+      `Spliced from ${recipeText(stat, state.cls, STAT_BY_ID)}. It keeps the better roll of its two parents, so the chances assume max-of-two rolls.`]));
   }
   if (weaponCanRoll(stat, ipsOf(state.weapon)) === '?') {
     notes.push(el('p', { class: 'note' }, [
