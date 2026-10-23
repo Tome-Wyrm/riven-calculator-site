@@ -11,9 +11,13 @@ const FILES = ['Primary', 'Secondary', 'Melee', 'Arch-Gun'];
 // list them as whole weapons, so they're named here by their chambers.
 const KITGUNS = ['Catchmoon', 'Gaze', 'Rattleguts', 'Sporelacer', 'Tombfinger', 'Vermisplicer'];
 
+// WFCD lists these as weapons, but they can't take rivens.
+const NO_RIVEN = new Set(['Sirocco']);                     // the Drifter's amp
+
 /** @param {any} w @returns {string | null} riven class, or null if the item can't take a riven */
 function rivenClass(w) {
   if (w.masterable === false) return null;               // zaw parts other than strikes, etc.
+  if (NO_RIVEN.has(w.name)) return null;
   switch (w.category) {
     case 'Arch-Gun': return 'archgun';
     case 'Melee': return 'melee';                        // includes zaw strikes
@@ -41,8 +45,8 @@ for (const k of KITGUNS) rows.push([`${k} (Kitgun)`, 'pistol', 0]);
 // Weapons whose second form takes its own riven, which WFCD lists only once.
 rows.push(['Vinquibus (melee)', 'melee', 0]);
 
-// Archguns WFCD doesn't file under Arch-Gun.
-rows.push(['Arquebex', 'archgun', 0]);
+// Weapons WFCD is missing.
+rows.push(['Corufell Prime', 'melee', 0]);
 
 // Robotic (companion) weapons take Robotic rivens, but roll with their associated class's values.
 // Prime/Prisma variants inherit from the base weapon.

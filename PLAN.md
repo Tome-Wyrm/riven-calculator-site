@@ -136,9 +136,12 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] Weapon search box on both views (native datalist; picking a weapon sets the class)
 - [x] Bow note on Fire Rate goals. Kitguns → Pistol, zaw strikes → Melee, Vinquibus (melee) added by hand
 - [x] `DaxDuviriAsymmetricalLongBowPlayerWeapon` is the **Cinta** (already listed as a rifle/bow)
-- [x] Robotic weapons (25 including Prime/Prisma variants) with their associated class; Arquebex added as an archgun
+- [x] Robotic weapons (25 including Prime/Prisma variants) with their associated class
+- [x] Corrections: Corufell Prime added (melee, missing from WFCD); Sirocco (an amp) and Arquebex
+      (an exalted weapon) excluded, since neither takes rivens
+- Single and dual pistols use the same riven class (Pistol) but are separate families (Furis vs Afuris)
 - CSV `family` column = which riven a weapon takes (Braton Prime → Braton, Dex Furis → Afuris).
-  It came from your hand-made family lists; weapons not in them (archguns, zaws, Sirocco) default to
+  It came from your hand-made family lists; weapons not in them (archguns, zaws) default to
   their own name, with a few archgun variants mapped by hand.
 - `tools/data/internal_names.csv` (`path,name,family`): internal path → name for every riven weapon in
   the WFCD list (601 rows). Gaps were filled from WFCD `uniqueName`, and the Vinquibus paths came
