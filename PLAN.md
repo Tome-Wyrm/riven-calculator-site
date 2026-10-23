@@ -158,9 +158,10 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
       by case, so maybe just show a warning.
 
 ### Phase 6 — Polish
-- [ ] Shareable state in the URL hash (`#class=shotgun&shape=++-&stat=ammoEff&op=gte&t=70`)
-- [ ] Responsive layout (phone-friendly); light/dark following `prefers-color-scheme`
-- [ ] Footer: data source + "last updated" for the weapon snapshot
+- [x] Shareable state in the URL hash, one prefix per view (`#r.cls=melee&g.weapon=Felarx&g.op=gte&g.t=70`),
+      validated on load, plus a "Copy link" button on each panel
+- [x] Responsive layout (checked at 375px, no sideways scroll); light/dark following `prefers-color-scheme`
+- [x] Footer: data source + "last updated" for the weapon snapshot
 
 ### Stretch (not planned yet)
 - Riven grader: enter an existing riven's values → back-solve u for each stat ("roll quality")

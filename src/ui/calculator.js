@@ -4,7 +4,8 @@
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { evaluateGoal, format } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker } from './dom.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton } from './dom.js';
+import { loadState, saveState, pick, oneOf, num } from './state.js';
 
 const IS_BOW = new Set(WEAPONS.filter(w => w[2]).map(w => w[0]));
 
@@ -128,16 +129,41 @@ let resultsBox;
 
 function renderResults() {
   resultsBox.replaceChildren(results());
+  saveState('g', { weapon: state.weapon, cls: state.cls, stat: state.statId, op: state.op, t: state.target, rank: state.rank });
 }
 
 function render() {
   resultsBox = el('div', { 'aria-live': 'polite' });
-  root.replaceChildren(controls(), resultsBox);
+  root.replaceChildren(controls(), resultsBox, copyLinkButton());
   renderResults();
+}
+
+/** Applies state from the URL hash; a known weapon overrides the class. */
+function restore() {
+  const saved = pick(loadState('g'), {
+    weapon: v => WEAPONS.find(w => w[0] === v)?.[0],
+    cls: oneOf(CLASSES),
+    stat: v => (STAT_BY_ID[v] ? v : undefined),
+    op: oneOf(/** @type {const} */ (['gte', 'lte', 'near'])),
+    t: num(),
+    rank: num(0, MAX_RANK),
+  });
+  if (saved.weapon !== undefined) {
+    state.weapon = saved.weapon;
+    state.cls = /** @type {WeaponClass} */ (WEAPONS.find(w => w[0] === saved.weapon)?.[1]);
+  } else if (saved.cls) {
+    state.weapon = '';
+    state.cls = saved.cls;
+  }
+  if (saved.stat) state.statId = saved.stat;
+  if (saved.op) state.op = saved.op;
+  if (saved.t !== undefined) state.target = saved.t;
+  if (saved.rank !== undefined) state.rank = Math.round(saved.rank);
 }
 
 /** @param {HTMLElement} container */
 export function mountCalculator(container) {
   root = container;
+  restore();
   render();
 }

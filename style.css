@@ -165,6 +165,28 @@ table.ranges {
 .goals td.miss { background: var(--neg-bg); color: var(--neg-text); }
 .goals tr.best th { color: var(--accent); }
 
+.copy-link {
+  font: inherit;
+  font-size: 0.85rem;
+  margin-top: 12px;
+  padding: 5px 12px;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.copy-link:hover { background: var(--bg); }
+
+@media (max-width: 600px) {
+  .site-header h1 { font-size: 1.6rem; }
+  .panel { padding: 12px; }
+  .controls { gap: 8px; }
+  .field.weapon, .field.weapon input { width: 100%; }
+  .field { max-width: 100%; }
+  .field select { flex: 1; min-width: 0; }
+}
+
 .site-footer {
   margin: 32px auto 24px;
   color: var(--muted);

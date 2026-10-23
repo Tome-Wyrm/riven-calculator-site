@@ -6,7 +6,8 @@
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER, canRoll, range, format } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker } from './dom.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton } from './dom.js';
+import { loadState, saveState, pick, oneOf, num } from './state.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
@@ -93,11 +94,38 @@ let root;
 
 function render() {
   const body = state.view === 'table' ? tableView() : compareView();
-  root.replaceChildren(controls(), body);
+  root.replaceChildren(controls(), body, copyLinkButton());
+  saveState('r', {
+    view: state.view, weapon: state.weapon, cls: state.cls, rank: state.rank,
+    ...(state.view === 'table' ? { shape: state.shape } : { stat: state.statId }),
+  });
+}
+
+/** Applies state from the URL hash; a known weapon overrides the class. */
+function restore() {
+  const saved = pick(loadState('r'), {
+    view: oneOf(/** @type {const} */ (['table', 'compare'])),
+    weapon: v => WEAPONS.find(w => w[0] === v)?.[0],
+    cls: oneOf(CLASSES),
+    shape: oneOf(SHAPE_ORDER),
+    stat: v => (STAT_BY_ID[v] ? v : undefined),
+    rank: num(0, MAX_RANK),
+  });
+  if (saved.view) state.view = saved.view;
+  if (saved.weapon !== undefined) {
+    state.weapon = saved.weapon;
+    state.cls = /** @type {WeaponClass} */ (WEAPONS.find(w => w[0] === saved.weapon)?.[1]);
+  } else if (saved.cls) {
+    state.cls = saved.cls;
+  }
+  if (saved.shape) state.shape = saved.shape;
+  if (saved.stat) state.statId = saved.stat;
+  if (saved.rank !== undefined) state.rank = Math.round(saved.rank);
 }
 
 /** @param {HTMLElement} container */
 export function mountRanges(container) {
   root = container;
+  restore();
   render();
 }

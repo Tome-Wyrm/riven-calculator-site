@@ -35,6 +35,21 @@ export function select(labelText, options, value, onChange) {
   return el('label', { class: 'field' }, [el('span', {}, [labelText]), s]);
 }
 
+/** Copies the current URL (which carries every view's state) to the clipboard. */
+export function copyLinkButton() {
+  const b = /** @type {HTMLButtonElement} */ (el('button', { type: 'button', class: 'copy-link' }, ['Copy link']));
+  b.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      b.textContent = 'Copied!';
+    } catch {
+      b.textContent = 'Copy failed: use the address bar';
+    }
+    setTimeout(() => { b.textContent = 'Copy link'; }, 1500);
+  });
+  return b;
+}
+
 let pickerId = 0;
 
 /**
