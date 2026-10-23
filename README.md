@@ -30,3 +30,4 @@ node --test
 | `src/` | Browser modules (`main.js` entry; data, engine and UI added per phase) |
 | `test/` | `node --test` suites |
 | `tools/` | One-off scripts, e.g. regenerating the weapon list |
+| `tools/data/` | Raw inputs for tools (`internal_names.csv`: internal path → display name) |

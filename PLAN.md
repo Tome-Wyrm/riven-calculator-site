@@ -135,7 +135,10 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 ### Phase 5 — Weapon lookup (Felarx → Shotgun)
 - [x] Weapon search box on both views (native datalist; picking a weapon sets the class)
 - [x] Bow note on Fire Rate goals. Kitguns → Pistol, zaw strikes → Melee, Vinquibus (melee) added by hand
-- [ ] Unresolved: which weapon is `DaxDuviriAsymmetricalLongBowPlayerWeapon`? Sentinel/robotic weapons not included yet
+- [x] `DaxDuviriAsymmetricalLongBowPlayerWeapon` is the **Cinta** (already listed as a rifle/bow)
+- [ ] Sentinel/robotic weapons not included yet
+- `tools/data/internal_names.csv`: internal path → display name (4,000+ rows, ~880 weapons).
+  It's raw input for tools; the future player-JSON import can use it to name each riven's `compat` weapon.
 - [x] A one-off script in `tools/` (run by hand) pulls the weapon list from WFCD
       `warframe-items` or the Public Export and writes a compact `src/data/weapons.js`
       (`{name: class}`). That snapshot is committed, so there is **no runtime fetch**.
