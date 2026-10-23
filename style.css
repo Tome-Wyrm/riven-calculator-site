@@ -209,6 +209,25 @@ table.ranges {
 }
 .icon-button:hover { color: var(--text); background: var(--bg); }
 .goals td.grade { font-weight: 700; color: var(--accent); }
+
+/* Inventory import */
+.import { margin-top: 24px; padding-top: var(--gap); border-top: 1px solid var(--border); }
+.import h3 { margin: 0 0 6px; font-size: 1rem; }
+.import .paste {
+  width: 100%;
+  font: 0.85rem ui-monospace, monospace;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  margin-bottom: 12px;
+}
+.imports td, .imports th { vertical-align: top; white-space: normal; }
+.imports .grade, .stat-list .grade { color: var(--accent); font-weight: 700; }
+.stat-list { list-style: none; margin: 0 0 4px; padding: 0; }
+.pos-text { color: var(--text); }
+.neg-text { color: var(--neg-text); }
 .note.warn { color: var(--neg-text); background: var(--neg-bg); padding: 6px 10px; border-radius: var(--radius); }
 
 @media (max-width: 600px) {

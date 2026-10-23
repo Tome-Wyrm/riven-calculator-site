@@ -5,6 +5,7 @@ import { WEAPONS_UPDATED } from './data/weapons.js';
 import { mountRanges } from './ui/ranges.js';
 import { mountCalculator } from './ui/calculator.js';
 import { mountGrader } from './ui/grader.js';
+import { mountImporter } from './ui/importer.js';
 
 const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
@@ -14,6 +15,7 @@ const linked = new Set([...new URLSearchParams(location.hash.slice(1)).keys()].m
 mountRanges(byId('ranges-body'));
 mountCalculator(byId('calculator-body'));
 mountGrader(byId('grader-body'));
+mountImporter(byId('import-body'));
 byId('weapons-updated').textContent = WEAPONS_UPDATED;
 
 // Collapsible sections: remember which are closed (a per-viewer convenience, so failures are fine).

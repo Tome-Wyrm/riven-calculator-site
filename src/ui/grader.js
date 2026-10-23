@@ -178,6 +178,16 @@ function restore() {
   if (saved.rows) state.rows = saved.rows;
 }
 
+/**
+ * Fills the grader with a riven (used by the inventory importer).
+ * @param {{weapon: string, cls: WeaponClass, rank: number, rows: {statId: string, value: string}[]}} riven
+ */
+export function loadIntoGrader(riven) {
+  Object.assign(state, riven);
+  render();
+  root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 /** @param {HTMLElement} container */
 export function mountGrader(container) {
   root = container;
