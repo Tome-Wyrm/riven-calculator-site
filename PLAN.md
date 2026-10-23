@@ -169,8 +169,8 @@ Predicted before seeing the screenshots, all matched:
 
 Later batch, also all exact: Vinquibus melee `++`, Obex `++-` and Vinquibus rifle `+++-`. That
 confirms the melee Impact/Puncture coefficient of **0.0133** (−77.8% and +129.7%, where 0.013333
-would show −78.0% and +130.0%). The gun Puncture value (0.01333 vs 0.013333) is still
-unconfirmed, because the gap only shows on high rolls. These are all Phase 2 golden tests. Fingerprint tags seen so far: `WeaponDamageAmountMod` (damage),
+would show −78.0% and +130.0%). A Dax bow `+++-` riven at +138.4% Puncture confirms the gun value
+**0.01333** (0.013333 would show +138.5%). The wiki's Impact/Puncture/Slash split is correct. These are all Phase 2 golden tests. Fingerprint tags seen so far: `WeaponDamageAmountMod` (damage),
 `WeaponElectricityDamageMod`, `WeaponAmmoMaxMod`, `WeaponCritDamageMod`, `WeaponStunChanceMod`
 (status chance), `WeaponMeleeFinisherDamageMod`.
 

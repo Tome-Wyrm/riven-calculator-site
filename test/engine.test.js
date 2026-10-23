@@ -82,6 +82,8 @@ const INGAME_SHAPES = [
   ['puncture',        'rifle', '+++-', '+',  343166119, '+130.1%'],
   ['cold',            'rifle', '+++-', '+',  397983968, '+98.6%'],
   ['recoil',          'rifle', '+++-', '-',  420713326, '+79.2%'],
+  // Dax bow, +++-: decides gun Puncture = 0.01333 (0.013333 would show +138.5%)
+  ['puncture',        'rifle', '+++-', '+',  674991521, '+138.4%'],
 ];
 
 test('more in-game rivens across shapes match the display text', () => {
