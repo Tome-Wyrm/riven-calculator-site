@@ -66,7 +66,7 @@ tools/                one-off scripts, e.g. regenerate weapons.js
 
 ### Phase 0 — Project setup
 - [x] `git init`
-- [ ] Skeleton: `index.html`, `style.css`, `src/`, `test/`, `.gitignore`, short `README.md`
+- [x] Skeleton: `index.html`, `style.css`, `src/`, `test/`, `.gitignore`, short `README.md`
 - [ ] Create the GitHub repo, push, and enable Pages (`main` / root). Do this early so every
       later phase is visible live.
 
