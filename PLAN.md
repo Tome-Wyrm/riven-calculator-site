@@ -140,8 +140,7 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - `tools/data/internal_names.csv` (`path,name`): internal path → name for every riven weapon in
   the WFCD list (601 rows). Gaps were filled from WFCD `uniqueName`, and the Vinquibus paths came
   from your player data. Kitgun `compat` points at the chamber part, and primary and secondary
-  share one path: Sporelacer and Vermisplicer are mapped. Catchmoon, Gaze, Rattleguts and
-  Tombfinger (the Solaris chambers) are still missing. The future player-JSON import uses this to name `compat`.
+  share one path. All six chambers are mapped. The future player-JSON import uses this to name `compat`.
 - [x] A one-off script in `tools/` (run by hand) pulls the weapon list from WFCD
       `warframe-items` or the Public Export and writes a compact `src/data/weapons.js`
       (`{name: class}`). That snapshot is committed, so there is **no runtime fetch**.
