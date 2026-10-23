@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STAT_BY_ID as S } from '../src/data/stats.js';
 import {
-  range, displayValue, format, solveU, canRoll, evaluateGoal, fingerprintToU, probability, quirks, weaponCanRoll, gradeRoll, shapeFor,
+  range, displayValue, format, solveU, canRoll, evaluateGoal, fingerprintToU, probability, quirks, weaponCanRoll, gradeRoll, shapeFor, rollScore, letterGrade,
 } from '../src/engine.js';
 
 const near = (got, want, tol, msg) =>
@@ -129,6 +129,16 @@ test('gradeRoll flags values no roll can show, and shapeFor maps counts to shape
   assert.equal(shapeFor(2, 1), '++-');
   assert.equal(shapeFor(3, 0), '+++');
   assert.equal(shapeFor(1, 1), null);
+});
+
+test('letter grades follow the community ±10% thresholds', () => {
+  const cases = [[10, 'S'], [9.5, 'S'], [9.4, 'A+'], [7.5, 'A+'], [5.5, 'A'], [3.5, 'A-'], [1.5, 'B+'],
+    [0, 'B'], [-1.5, 'B'], [-1.6, 'B-'], [-5.5, 'C+'], [-7.5, 'C'], [-9.5, 'C-'], [-9.6, 'F'], [-10, 'F']];
+  for (const [score, grade] of cases) assert.equal(letterGrade(score), grade, String(score));
+  // From the verified rivens: Soma Damage, Lacera Crit Damage, Lacera Finisher curse (scored as mildness)
+  assert.equal(letterGrade(rollScore(fingerprintToU(1023126307))), 'A+');   // +9.1%
+  assert.equal(letterGrade(rollScore(fingerprintToU(363944839))), 'B-');    // -3.2%
+  assert.equal(letterGrade(rollScore(fingerprintToU(86463855), true)), 'A+'); // +8.4%, a mild curse
 });
 
 test('solveU inverts displayValue', () => {

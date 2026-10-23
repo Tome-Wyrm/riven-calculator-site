@@ -208,6 +208,7 @@ table.ranges {
   cursor: pointer;
 }
 .icon-button:hover { color: var(--text); background: var(--bg); }
+.goals td.grade { font-weight: 700; color: var(--accent); }
 .note.warn { color: var(--neg-text); background: var(--neg-bg); padding: 6px 10px; border-radius: var(--radius); }
 
 @media (max-width: 600px) {

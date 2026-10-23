@@ -267,3 +267,21 @@ export function gradeRoll(stat, cls, shape, sign, shown, rank = MAX_RANK) {
   const hi = Math.max(0, Math.min(1, b));
   return { lo, hi, mid: (lo + hi) / 2, possible };
 }
+
+/**
+ * Community letter grades on the ±10% scale (score = how far the roll is from average:
+ * u = 0 → −10%, u = 1 → +10%). Thresholds from RivenParser.js, as used by WFHelper.
+ * Each entry is the lowest score that earns the grade; anything below −9.5 is F.
+ */
+export const GRADES = /** @type {const} */ ([
+  [9.5, 'S'], [7.5, 'A+'], [5.5, 'A'], [3.5, 'A-'], [1.5, 'B+'],
+  [-1.5, 'B'], [-3.5, 'B-'], [-5.5, 'C+'], [-7.5, 'C'], [-9.5, 'C-'],
+]);
+
+/** u → score on the ±10% scale. For a curse pass mild = true to score 1 − u (a smaller penalty scores higher). */
+export const rollScore = (/** @type {number} */ u, mild = false) => ((mild ? 1 - u : u) - 0.5) * 20;
+
+/** @param {number} score on the ±10% scale */
+export function letterGrade(score) {
+  return GRADES.find(([min]) => score >= min - 1e-9)?.[1] ?? 'F';
+}

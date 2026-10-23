@@ -1,8 +1,9 @@
 // @ts-check
-// Riven grader: enter a riven's stats as the game shows them → roll quality of each stat.
+// Riven grader: enter a riven's stats as the game shows them → each stat's roll on the community
+// ±10% scale, with a letter grade.
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { canRoll, format, gradeRoll, inferSign, range, shapeFor } from '../engine.js';
+import { canRoll, format, gradeRoll, inferSign, letterGrade, range, rollScore, shapeFor } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
@@ -24,22 +25,18 @@ const state = {
   ],
 };
 
-/** @param {number} q quality 0..1, higher is better */
-function gradeLabel(q) {
-  if (q >= 0.9) return 'Excellent';
-  if (q >= 0.7) return 'Good';
-  if (q >= 0.4) return 'Average';
-  return 'Low';
+const signed = (/** @type {number} */ x) => `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(1)}`;
+
+/** Score interval → "+9.1%" or "+8.9 to +9.2%" when the game's rounding leaves real doubt. */
+function scoreText(/** @type {number} */ lo, /** @type {number} */ hi) {
+  return hi - lo < 0.1 ? `${signed((lo + hi) / 2)}%` : `${signed(lo)} to ${signed(hi)}%`;
 }
 
-/** @param {number} q mildness 0..1, higher is a smaller penalty */
-function curseLabel(q) {
-  if (q >= 0.7) return 'Mild';
-  if (q >= 0.4) return 'Average';
-  return 'Harsh';
+/** The letter for a score interval; both letters when it straddles a boundary. */
+function gradeText(/** @type {number} */ lo, /** @type {number} */ hi) {
+  const [a, b] = [letterGrade(lo), letterGrade(hi)];
+  return a === b ? a : `${a} / ${b}`;
 }
-
-const pct =(/** @type {number} */ x) => `${(x * 100).toFixed(1)}%`;
 
 function controls() {
   const set = (/** @type {Partial<typeof state>} */ patch) => { Object.assign(state, patch); render(); };
@@ -103,7 +100,7 @@ function results() {
   }
 
   /** @type {number[]} */
-  const qualities = [];
+  const scores = [];
   const rows = parsed.map(({ stat, shown, sign }) => {
     const name = el('th', { scope: 'row' }, [statName(stat, cls)]);
     const shownCell = el('td', {}, [format(stat, /** @type {number} */ (shown))]);
@@ -116,22 +113,23 @@ function results() {
     if (!g.possible) {
       return el('tr', {}, [name, shownCell, rangeCell, el('td', { class: 'miss', colspan: '2' }, ['Outside the range: check the value or the rank'])]);
     }
-    // For a negative, a higher roll is a bigger penalty, so quality runs the other way.
-    const [qLo, qHi] = sign === '+' ? [g.lo, g.hi] : [1 - g.hi, 1 - g.lo];
-    const q = (qLo + qHi) / 2;
-    if (sign === '+') qualities.push(q);
-    const qText = qHi - qLo < 0.005 ? pct(q) : `${pct(qLo)}–${pct(qHi)}`;
+    // For the negative, a higher roll is a bigger penalty, so it's scored by mildness (as WFHelper does).
+    const mild = sign === '-';
+    const [sLo, sHi] = [rollScore(g.lo, mild), rollScore(g.hi, mild)].sort((x, y) => x - y);
+    if (!mild) scores.push((sLo + sHi) / 2);
     return el('tr', {}, [name, shownCell, rangeCell,
-      el('td', { class: sign === '+' ? 'pos' : 'neg' }, [qText]),
-      el('td', {}, [sign === '+' ? gradeLabel(q) : curseLabel(q)])]);
+      el('td', { class: mild ? 'neg' : 'pos' }, [scoreText(sLo, sHi)]),
+      el('td', { class: 'grade' }, [gradeText(sLo, sHi)])]);
   });
 
-  const head = el('thead', {}, [el('tr', {}, ['Stat', 'Shown', `Range (${shape}, rank ${rank})`, 'Roll quality', 'Grade']
+  const head = el('thead', {}, [el('tr', {}, ['Stat', 'Shown', `Range (${shape}, rank ${rank})`, 'Roll', 'Grade']
     .map(h => el('th', { scope: 'col' }, [h])))]);
-  const avg = qualities.length ? qualities.reduce((a, b) => a + b, 0) / qualities.length : null;
+  const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   return el('div', {}, [
-    el('p', { class: 'summary' }, [`Shape ${shape}` + (avg === null ? '' : ` · average positive roll ${pct(avg)} (${gradeLabel(avg)})`)]),
-    el('p', { class: 'note' }, ['Roll quality: 0% is the worst possible roll, 100% the best. For the negative, 100% means the mildest penalty.']),
+    el('p', { class: 'summary' }, [`Shape ${shape}` + (avg === null ? '' : ` · average positive roll ${signed(avg)}% (${letterGrade(avg)})`)]),
+    el('p', { class: 'note' }, [
+      'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The negative is scored by how mild it is. ',
+      'Grades: S ≥ +9.5, A+ ≥ +7.5, A ≥ +5.5, A- ≥ +3.5, B+ ≥ +1.5, B ≥ −1.5, B- ≥ −3.5, C+ ≥ −5.5, C ≥ −7.5, C- ≥ −9.5, else F.']),
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
   ]);
 }

@@ -179,8 +179,11 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 Back-solve the roll quality u for each stat on a riven you already own.
 - [x] **Manual entry:** weapon, then up to 4 stat rows (stat + displayed value). The sign of each value
       sets positive/negative (recoil handled), and the shape follows from the counts. Rank picker, default 8.
-- [x] Output per stat: range for that shape/rank, roll quality (u for positives, 1 − u "mildness" for the
-      negative) shown as an interval when the rounding makes it wider than 0.5%, and a grade label.
+- [x] Output per stat: range for that shape/rank, the roll on the community ±10% scale (the negative
+      scored by mildness, 1 − u), shown as an interval when rounding leaves doubt, and a letter grade.
+      Grade thresholds come from RivenParser.js via WFHelper (`services/rivenGrading.ts`): S ≥ 9.5,
+      A+ ≥ 7.5, A ≥ 5.5, A- ≥ 3.5, B+ ≥ 1.5, B ≥ −1.5, B- ≥ −3.5, C+ ≥ −5.5, C ≥ −7.5, C- ≥ −9.5, else F
+      (no D grade). Note RivenLens grades negatives the other way (higher = stronger penalty).
       `gradeRoll` / `shapeFor` in the engine; tests check all 18 in-game values' true u lands in the interval.
 - [x] Flags: impossible values (typo or wrong rank), invalid stat counts, duplicate stats, a sign the shape can't have
 - [x] Shareable state in the URL hash (prefix `v.`)
