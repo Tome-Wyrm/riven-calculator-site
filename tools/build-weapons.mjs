@@ -41,6 +41,25 @@ for (const k of KITGUNS) rows.push([`${k} (Kitgun)`, 'pistol', 0]);
 // Weapons whose second form takes its own riven, which WFCD lists only once.
 rows.push(['Vinquibus (melee)', 'melee', 0]);
 
+// Archguns WFCD doesn't file under Arch-Gun.
+rows.push(['Arquebex', 'archgun', 0]);
+
+// Robotic (companion) weapons take Robotic rivens, but roll with their associated class's values.
+// Prime/Prisma variants inherit from the base weapon.
+const ROBOTIC_CLASS = {
+  Akaten: 'melee', Artax: 'rifle', Batoten: 'melee', 'Burst Laser': 'pistol', Cryotra: 'rifle',
+  Deconstructor: 'melee', 'Deth Machine Rifle': 'rifle', Helstrum: 'rifle', Lacerten: 'melee',
+  'Laser Rifle': 'rifle', Multron: 'rifle', Stinger: 'rifle', Sweeper: 'shotgun', Tazicor: 'rifle',
+  Verglas: 'rifle', Vulcax: 'rifle', Vulklok: 'rifle',
+};
+const robotic = await (await fetch(BASE + 'SentinelWeapons.json')).json();
+for (const w of robotic) {
+  const base = w.name.replace(/^(Prime|Prisma) | Prime$/g, '');
+  const cls = ROBOTIC_CLASS[/** @type {keyof typeof ROBOTIC_CLASS} */ (base)];
+  if (cls) rows.push([w.name, cls, 0]);
+  else console.warn(`Skipped robotic weapon with no class: ${w.name}`);
+}
+
 const unique = [...new Map(rows.map(r => [r[0], r])).values()].sort((a, b) => a[0].localeCompare(b[0]));
 const date = new Date().toISOString().slice(0, 10);
 const body = unique.map(r => `  ${JSON.stringify(r)},`).join('\n');

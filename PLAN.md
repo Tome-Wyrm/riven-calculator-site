@@ -136,7 +136,7 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] Weapon search box on both views (native datalist; picking a weapon sets the class)
 - [x] Bow note on Fire Rate goals. Kitguns → Pistol, zaw strikes → Melee, Vinquibus (melee) added by hand
 - [x] `DaxDuviriAsymmetricalLongBowPlayerWeapon` is the **Cinta** (already listed as a rifle/bow)
-- [ ] Sentinel/robotic weapons not included yet
+- [x] Robotic weapons (25 including Prime/Prisma variants) with their associated class; Arquebex added as an archgun
 - CSV `family` column = which riven a weapon takes (Braton Prime → Braton, Dex Furis → Afuris).
   It came from your hand-made family lists; weapons not in them (archguns, zaws, Sirocco) default to
   their own name, with a few archgun variants mapped by hand.

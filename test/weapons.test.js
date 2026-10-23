@@ -15,6 +15,8 @@ test('known weapons map to the right class', () => {
   const expect = {
     Felarx: 'shotgun', Soma: 'rifle', Lacera: 'melee', Obex: 'melee', Imperator: 'archgun',
     'Catchmoon (Kitgun)': 'pistol', 'Balla (Zaw)': 'melee', Vinquibus: 'rifle', 'Vinquibus (melee)': 'melee',
+    Arquebex: 'archgun', Sweeper: 'shotgun', 'Deconstructor Prime': 'melee', 'Prisma Burst Laser': 'pistol',
+    'MK1-Braton': 'rifle',
   };
   for (const [name, cls] of Object.entries(expect)) assert.equal(byName.get(name)?.[1], cls, name);
   assert.equal(byName.get('Paris')?.[2], 1, 'Paris is a bow');
