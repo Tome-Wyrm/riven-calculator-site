@@ -84,6 +84,10 @@ const ELEMENT = [0.01, 0.01, 0.01, 0.0133, 0.01];
 export const ORDINARY = [
   //   id                   name                               prefix    suffix   rifle      shotgun    pistol     archgun    melee
   stat('damage',            'Damage',                          'Visi',   'Ata',   [0.0183333,0.0183,    0.0244,    0.0111,    0.0183],   'pct',    'both', { meleeName: 'Melee Damage' }),
+  // Faction damage
+  stat('corpus',            'Damage to Corpus',                'Manti',  'Tron',  ALL5(0.005),                                             'mult',   'both'),
+  stat('grineer',           'Damage to Grineer',               'Argi',   'Con',   ALL5(0.005),                                             'mult',   'both'),
+  stat('infested',          'Damage to Infested',              'Pura',   'Ada',   ALL5(0.005),                                             'mult',   'both'),
   // Base elements
   stat('cold',              'Cold',                            'Geli',   'Do',    ELEMENT,                                                 'pct',    'posOnly'),
   stat('electricity',       'Electricity',                     'Vexi',   'Tio',   ELEMENT,                                                 'pct',    'posOnly'),
@@ -115,10 +119,6 @@ export const ORDINARY = [
   stat('statusDuration',    'Status Duration',                 'Deci',   'Des',   ALL5(0.01111),                                           'pct',    'both'),
   stat('recoil',            'Weapon Recoil',                   'Zeti',   'Mag',   [-0.01,    -0.01,     -0.01,     -0.01,     _],        'pct',    'both'),
   stat('zoom',              'Zoom',                            'Hera',   'Lis',   [0.006666, 0.004666,  0.0089,    0.006666,  _],        'pct',    'both'),
-  // Faction damage
-  stat('corpus',            'Damage to Corpus',                'Manti',  'Tron',  ALL5(0.005),                                             'mult',   'both'),
-  stat('grineer',           'Damage to Grineer',               'Argi',   'Con',   ALL5(0.005),                                             'mult',   'both'),
-  stat('infested',          'Damage to Infested',              'Pura',   'Ada',   ALL5(0.005),                                             'mult',   'both'),
 ];
 
 /**

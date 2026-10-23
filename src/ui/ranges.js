@@ -84,15 +84,14 @@ function tableView() {
   const BASE_ELEMENTS = ['heat', 'cold', 'electricity', 'toxin'];
   const PHYSICAL = ['impact', 'puncture', 'slash'];
   const isElement = (/** @type {Stat} */ s) => !!s.from?.[0].every(id => BASE_ELEMENTS.includes(id));
+  const isDamage = (/** @type {Stat} */ s) =>
+    s.id === 'damage' || isFaction(s) || BASE_ELEMENTS.includes(s.id) || PHYSICAL.includes(s.id);
   const sections = [
-    section('Damage', ORDINARY.filter(s => s.id === 'damage')),
-    section('Base elements', ORDINARY.filter(s => BASE_ELEMENTS.includes(s.id))),
-    section('Physical damage', ORDINARY.filter(s => PHYSICAL.includes(s.id))),
-    section('Other stats', ORDINARY.filter(s =>
-      !isFaction(s) && s.id !== 'damage' && !BASE_ELEMENTS.includes(s.id) && !PHYSICAL.includes(s.id))
+    // Damage, then faction damage, base elements and physical types, in data order.
+    section('Damage', ORDINARY.filter(isDamage)),
+    section('Other stats', ORDINARY.filter(s => !isDamage(s))
       // Alphabetical by the name shown, so melee's "Attack Speed" sorts under A.
       .sort((a, b) => statName(a, state.cls).localeCompare(statName(b, state.cls)))),
-    section('Faction damage', ORDINARY.filter(isFaction)),
     section('Spliced (always positive)', SPLICED.filter(s => !isFaction(s) && !isElement(s))),
     section('Spliced elements', SPLICED.filter(isElement)),
     section('Spliced faction damage', SPLICED.filter(isFaction)),
