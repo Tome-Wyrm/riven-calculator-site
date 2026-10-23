@@ -68,6 +68,29 @@ test('fingerprint rolls reproduce the in-game display text', () => {
   }
 });
 
+// More screenshots, other shapes and the melee Impact/Puncture coefficient (0.0133). Rank 8.
+const INGAME_SHAPES = [
+  // Vinquibus melee (TnBayonetMeleeWeapon), ++
+  ['puncture',        'melee', '++',   '+',   65769889, '+129.7%'],
+  ['additionalCombo', 'melee', '++',   '+',  837879988, '+73.7%'],
+  // Obex (KickPunchWeapon), ++-
+  ['damage',          'melee', '++-',  '+',  973737259, '+264.5%'],
+  ['heat',            'melee', '++-',  '+',  625524962, '+135.9%'],
+  ['impact',          'melee', '++-',  '-', 1046153858, '-77.8%'],
+  // Vinquibus rifle (TnBayonetRifleWeapon), +++-; a recoil curse shows as a positive number
+  ['statusChance',    'rifle', '+++-', '+',  691947666, '+104.2%'],
+  ['puncture',        'rifle', '+++-', '+',  343166119, '+130.1%'],
+  ['cold',            'rifle', '+++-', '+',  397983968, '+98.6%'],
+  ['recoil',          'rifle', '+++-', '-',  420713326, '+79.2%'],
+];
+
+test('more in-game rivens across shapes match the display text', () => {
+  for (const [id, cls, shape, sign, value, text] of INGAME_SHAPES) {
+    const d = displayValue(S[id], cls, shape, sign, fingerprintToU(value));
+    assert.equal(format(S[id], d), text, `${id} ${cls} ${shape}`);
+  }
+});
+
 test('solveU inverts displayValue', () => {
   for (const u of [0, 0.25, 0.738, 1]) {
     const d = displayValue(S.ammoEfficiency, 'shotgun', '++-', '+', u);

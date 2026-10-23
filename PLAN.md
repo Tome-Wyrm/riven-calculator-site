@@ -167,7 +167,10 @@ Predicted before seeing the screenshots, all matched:
 | Soma (`TennoAR`) ++- | +267.2% Damage, +138.7% Electricity, −31.7% Ammo Max | — |
 | Lacera (`StalkerMios`) ++- | +129.3% Crit Dmg, +122.5% Status, −65.1% Finisher | +14.4%, +13.6%, −7.2% |
 
-These become Phase 2 golden tests. Fingerprint tags seen so far: `WeaponDamageAmountMod` (damage),
+Later batch, also all exact: Vinquibus melee `++`, Obex `++-` and Vinquibus rifle `+++-`. That
+confirms the melee Impact/Puncture coefficient of **0.0133** (−77.8% and +129.7%, where 0.013333
+would show −78.0% and +130.0%). The gun Puncture value (0.01333 vs 0.013333) is still
+unconfirmed, because the gap only shows on high rolls. These are all Phase 2 golden tests. Fingerprint tags seen so far: `WeaponDamageAmountMod` (damage),
 `WeaponElectricityDamageMod`, `WeaponAmmoMaxMod`, `WeaponCritDamageMod`, `WeaponStunChanceMod`
 (status chance), `WeaponMeleeFinisherDamageMod`.
 
