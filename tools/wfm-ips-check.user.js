@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WFM riven IPS checker
 // @namespace    riven-calculator-site
-// @version      2.0
+// @version      2.1
 // @description  Opens each weapon's warframe.market riven search and records which Impact/Puncture/Slash stats appear on its listings.
 // @match        https://warframe.market/auctions/search*
 // @grant        none
@@ -28,7 +28,7 @@
   const KEY = 'ipsCheck.v2';
   const AUTO_DELAY_MS = 4000;
   const MAX_WAIT_MS = 60000;      // results can take a while to load
-  const STABLE_MS = 3000;         // and may arrive in pieces: wait until the count stops changing
+  const STABLE_MS = 3000;         // at the bottom of the list, wait until no new entries appear
 
   /**
    * @typedef {{listings: number, seen: Record<string, string>}} Result   seen: type -> '+', '-' or '+-'
@@ -67,29 +67,51 @@
     location.href = `/auctions/search?${p}`;
   }
 
-  /** Scans the loaded listings for physical stats, e.g. "+11.4% Impact" or "-77.8% Impact". */
-  function scan() {
-    const text = document.body.innerText;
-    const listings = (text.match(/Selling price|Starting Price/g) || []).length;
+  /**
+   * Reads the listings currently rendered. The list is virtualised (only on-screen entries exist),
+   * so results accumulate in `found` while the page scrolls. Positive vs negative comes from which
+   * list a stat is in, not its sign: a Weapon Recoil curse shows as "+77.9%".
+   * @param {Map<string, {pos: string[], neg: string[]}>} found  auction link -> stat names
+   */
+  function harvest(found) {
+    for (const entry of document.querySelectorAll('section.auction-entry')) {
+      const link = entry.querySelector('.auction-entry__name a')?.getAttribute('href');
+      if (!link || found.has(link)) continue;
+      const names = (/** @type {string} */ sel) =>
+        [...entry.querySelectorAll(`${sel} .attribute-name`)].map(e => (e.textContent || '').trim());
+      found.set(link, { pos: names('.auction-entry__positive-attributes'), neg: names('.auction-entry__negative-attributes') });
+    }
+  }
+
+  /** @param {Map<string, {pos: string[], neg: string[]}>} found */
+  function tally(found) {
     /** @type {Record<string, string>} */
     const seen = {};
-    for (const m of text.matchAll(/([+-])\d+(?:\.\d+)?%\s+(Impact|Puncture|Slash)\b/g)) {
-      const cur = seen[m[2]] || '';
-      if (!cur.includes(m[1])) seen[m[2]] = m[1] === '+' ? '+' + cur : cur + '-';
+    for (const { pos, neg } of found.values()) {
+      for (const t of TYPES) {
+        const cur = seen[t] || '';
+        if (pos.includes(t) && !cur.includes('+')) seen[t] = '+' + cur;
+        if (neg.includes(t) && !(seen[t] || '').includes('-')) seen[t] = (seen[t] || '') + '-';
+      }
     }
-    return { text, listings, seen };
+    return seen;
   }
 
   function recordCurrent() {
     if (!db.current) return;
     const slug = db.current;
     const started = Date.now();
+    /** @type {Map<string, {pos: string[], neg: string[]}>} */
+    const found = new Map();
     let lastCount = -1, lastChange = Date.now();
     const timer = setInterval(() => {
-      const { text, listings, seen } = scan();
-      const empty = /No contracts found/.test(text);
-      if (listings !== lastCount) { lastCount = listings; lastChange = Date.now(); }
-      const stable = listings > 0 && Date.now() - lastChange >= STABLE_MS;
+      harvest(found);
+      const empty = /No contracts found/.test(document.body.innerText);
+      if (found.size !== lastCount) { lastCount = found.size; lastChange = Date.now(); }
+      // Keep scrolling to make the virtual list render the next entries.
+      const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 5;
+      if (found.size > 0 && !atBottom) window.scrollBy(0, window.innerHeight * 0.8);
+      const stable = found.size > 0 && atBottom && Date.now() - lastChange >= STABLE_MS;
       if (!empty && !stable) {
         if (Date.now() - started < MAX_WAIT_MS) return;
         // Never saw listings or "No contracts found" (a Cloudflare check, an error page): record
@@ -101,7 +123,7 @@
         return;
       }
       clearInterval(timer);
-      db.results[slug] = { listings: empty ? 0 : listings, seen: empty ? {} : seen };
+      db.results[slug] = { listings: found.size, seen: tally(found) };
       db.current = undefined;
       save();
       render();
