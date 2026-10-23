@@ -84,8 +84,13 @@ function tableView() {
   const BASE_ELEMENTS = ['heat', 'cold', 'electricity', 'toxin'];
   const PHYSICAL = ['impact', 'puncture', 'slash'];
   const isElement = (/** @type {Stat} */ s) => !!s.from?.[0].every(id => BASE_ELEMENTS.includes(id));
-  const COMBO = ['additionalCombo', 'chanceToGainCombo', 'comboDuration', 'initialCombo'];
-  const sortKey = (/** @type {Stat} */ s) => (COMBO.includes(s.id) ? 'Combo ' : '') + statName(s, state.cls);
+  const COMBO = ['comboDuration', 'additionalCombo', 'initialCombo', 'chanceToGainCombo'];
+  /** Combo stats last, in COMBO order; everything else alphabetical by the name shown. */
+  const byOtherOrder = (/** @type {Stat} */ a, /** @type {Stat} */ b) => {
+    const ca = COMBO.indexOf(a.id), cb = COMBO.indexOf(b.id);   // -1 for non-combo stats
+    if (ca !== cb) return ca - cb;
+    return statName(a, state.cls).localeCompare(statName(b, state.cls));
+  };
   const isDamage = (/** @type {Stat} */ s) =>
     s.id === 'damage' || BASE_ELEMENTS.includes(s.id) || PHYSICAL.includes(s.id);
   const sections = [
@@ -94,8 +99,8 @@ function tableView() {
     section('Faction damage', ORDINARY.filter(isFaction)),
     section('Other stats', ORDINARY.filter(s => !isDamage(s) && !isFaction(s))
       // Alphabetical by the name shown, so melee's "Attack Speed" sorts under A. The melee combo
-      // stats sort together as one block under "Combo".
-      .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))),
+      // stats go last as one block.
+      .sort(byOtherOrder)),
     section('Spliced (always positive)', SPLICED.filter(s => !isFaction(s) && !isElement(s))),
     section('Spliced elements', SPLICED.filter(isElement)),
     section('Spliced faction damage', SPLICED.filter(isFaction)),
