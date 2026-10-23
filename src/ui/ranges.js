@@ -5,13 +5,12 @@
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER, canRoll, range, format } from '../engine.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions } from './dom.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('../data/stats.js').Shape} Shape */
 /** @typedef {import('../engine.js').Sign} Sign */
-
-const CLASS_LABEL = { rifle: 'Rifle', shotgun: 'Shotgun', pistol: 'Pistol', archgun: 'Archgun', melee: 'Melee' };
 
 const state = {
   view: /** @type {'table' | 'compare'} */ ('table'),
@@ -20,17 +19,6 @@ const state = {
   rank: MAX_RANK,
   statId: 'critChance',
 };
-
-/** @param {string} tag @param {Record<string, string>} [attrs] @param {(Node | string)[]} [kids] */
-function el(tag, attrs = {}, kids = []) {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  e.append(...kids);
-  return e;
-}
-
-/** @param {Stat} stat @param {WeaponClass} cls */
-const statName = (stat, cls) => (cls === 'melee' && stat.meleeName) || stat.name;
 
 /**
  * One range cell: "+120.3% to +147.0%", or a dash when that sign can't roll.
@@ -48,24 +36,6 @@ function rangeCell(stat, cls, shape, sign) {
   return el('td', { class: sign === '+' ? 'pos' : 'neg' }, kids);
 }
 
-/** @param {string} name @param {string[]} options @param {string} value @param {(v: string) => void} onChange @param {(v: string) => string} [label] */
-function segmented(name, options, value, onChange, label = v => v) {
-  return el('div', { class: 'segmented', role: 'radiogroup', 'aria-label': name },
-    options.map(opt => {
-      const b = el('button', { type: 'button', role: 'radio', 'aria-checked': String(opt === value) }, [label(opt)]);
-      b.addEventListener('click', () => onChange(opt));
-      return b;
-    }));
-}
-
-/** @param {string} labelText @param {[string, string][]} options @param {string} value @param {(v: string) => void} onChange */
-function select(labelText, options, value, onChange) {
-  const s = /** @type {HTMLSelectElement} */ (el('select', {},
-    options.map(([v, text]) => el('option', v === value ? { value: v, selected: '' } : { value: v }, [text]))));
-  s.addEventListener('change', () => onChange(s.value));
-  return el('label', { class: 'field' }, [el('span', {}, [labelText]), s]);
-}
-
 function controls() {
   const set = (/** @type {Partial<typeof state>} */ patch) => { Object.assign(state, patch); render(); };
   const ranks = Array.from({ length: MAX_RANK + 1 }, (_, r) => /** @type {[string, string]} */ ([String(r), String(r)]));
@@ -78,9 +48,7 @@ function controls() {
   if (state.view === 'table') {
     items.push(segmented('Shape', SHAPE_ORDER, state.shape, v => set({ shape: /** @type {Shape} */ (v) })));
   } else {
-    const opts = [...ORDINARY, ...SPLICED]
-      .filter(s => s.b[state.cls] !== undefined)
-      .map(s => /** @type {[string, string]} */ ([s.id, statName(s, state.cls) + (s.spliced ? ' (spliced)' : '')]));
+    const opts = statOptions([...ORDINARY, ...SPLICED], state.cls);
     if (!opts.some(([id]) => id === state.statId)) state.statId = opts[0][0];
     items.push(select('Stat', opts, state.statId, v => set({ statId: v })));
   }

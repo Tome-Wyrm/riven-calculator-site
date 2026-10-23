@@ -145,6 +145,23 @@ table.ranges {
 .ranges td.na { color: var(--muted); text-align: center; }
 .ranges .sub { display: block; font-size: 0.8rem; opacity: 0.8; }
 
+/* Goal calculator */
+.field.target input {
+  font: inherit;
+  width: 7em;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+}
+
+.summary { margin: 0 0 8px; font-weight: 600; }
+.note { margin: 0 0 8px; color: var(--muted); font-size: 0.85rem; }
+.goals td.ok { background: var(--pos-bg); color: var(--pos-text); }
+.goals td.miss { background: var(--neg-bg); color: var(--neg-text); }
+.goals tr.best th { color: var(--accent); }
+
 .site-footer {
   margin: 32px auto 24px;
   color: var(--muted);

@@ -127,10 +127,10 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] "Compare shapes" mode: one stat × all 4 shapes side by side
 
 ### Phase 4 — Goal calculator (the new feature)
-- [ ] Inputs: class (or weapon, Phase 5), stat, comparator (`at least` / `at most` / `closest to`), target value
-- [ ] Output: per-shape result card/table (✓/✗, range, required roll %, chance), best shape highlighted
-- [ ] Explain the "why" in one line (e.g. "needs a top 26% roll; only `++-` reaches it")
-- [ ] Input validation: units shown next to the target box, sign handling for negative-only stats
+- [x] Inputs: class (weapon lookup comes in Phase 5), stat, comparator (`at least` / `at most` / `closest to`), target value, rank
+- [x] Output: per-shape table (range, meets goal, roll needed, chance), best shape starred
+- [x] One-line summary, a note for spliced odds, and a note when the target reads as a curse
+- [x] Unit shown next to the target box; the sign is inferred by the engine
 
 ### Phase 5 — Weapon lookup (Felarx → Shotgun)
 - [ ] A one-off script in `tools/` (run by hand) pulls the weapon list from WFCD
