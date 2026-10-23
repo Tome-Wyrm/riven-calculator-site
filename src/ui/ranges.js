@@ -85,11 +85,12 @@ function tableView() {
   const PHYSICAL = ['impact', 'puncture', 'slash'];
   const isElement = (/** @type {Stat} */ s) => !!s.from?.[0].every(id => BASE_ELEMENTS.includes(id));
   const isDamage = (/** @type {Stat} */ s) =>
-    s.id === 'damage' || isFaction(s) || BASE_ELEMENTS.includes(s.id) || PHYSICAL.includes(s.id);
+    s.id === 'damage' || BASE_ELEMENTS.includes(s.id) || PHYSICAL.includes(s.id);
   const sections = [
-    // Damage, then faction damage, base elements and physical types, in data order.
+    // Damage, base elements and physical types, in data order; then faction damage.
     section('Damage', ORDINARY.filter(isDamage)),
-    section('Other stats', ORDINARY.filter(s => !isDamage(s))
+    section('Faction damage', ORDINARY.filter(isFaction)),
+    section('Other stats', ORDINARY.filter(s => !isDamage(s) && !isFaction(s))
       // Alphabetical by the name shown, so melee's "Attack Speed" sorts under A.
       .sort((a, b) => statName(a, state.cls).localeCompare(statName(b, state.cls)))),
     section('Spliced (always positive)', SPLICED.filter(s => !isFaction(s) && !isElement(s))),

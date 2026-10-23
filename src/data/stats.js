@@ -84,10 +84,6 @@ const ELEMENT = [0.01, 0.01, 0.01, 0.0133, 0.01];
 export const ORDINARY = [
   //   id                   name                               prefix    suffix   rifle      shotgun    pistol     archgun    melee
   stat('damage',            'Damage',                          'Visi',   'Ata',   [0.0183333,0.0183,    0.0244,    0.0111,    0.0183],   'pct',    'both', { meleeName: 'Melee Damage' }),
-  // Faction damage
-  stat('corpus',            'Damage to Corpus',                'Manti',  'Tron',  ALL5(0.005),                                             'mult',   'both'),
-  stat('grineer',           'Damage to Grineer',               'Argi',   'Con',   ALL5(0.005),                                             'mult',   'both'),
-  stat('infested',          'Damage to Infested',              'Pura',   'Ada',   ALL5(0.005),                                             'mult',   'both'),
   // Base elements
   stat('cold',              'Cold',                            'Geli',   'Do',    ELEMENT,                                                 'pct',    'posOnly'),
   stat('electricity',       'Electricity',                     'Vexi',   'Tio',   ELEMENT,                                                 'pct',    'posOnly'),
@@ -97,6 +93,10 @@ export const ORDINARY = [
   stat('impact',            'Impact',                          'Magna',  'Ton',   [0.013333, 0.013333,  0.013333,  0.01,      0.0133],   'pct',    'both'),
   stat('puncture',          'Puncture',                        'Insi',   'Cak',   [0.01333,  0.01333,   0.01333,   0.01,      0.0133],   'pct',    'both'),
   stat('slash',             'Slash',                           'Sci',    'Sus',   [0.013333, 0.013333,  0.013333,  0.01,      0.0133],   'pct',    'both'),
+  // Faction damage
+  stat('corpus',            'Damage to Corpus',                'Manti',  'Tron',  ALL5(0.005),                                             'mult',   'both'),
+  stat('grineer',           'Damage to Grineer',               'Argi',   'Con',   ALL5(0.005),                                             'mult',   'both'),
+  stat('infested',          'Damage to Infested',              'Pura',   'Ada',   ALL5(0.005),                                             'mult',   'both'),
   // Everything else, alphabetical (gun and melee)
   stat('additionalCombo',   'Additional Combo Count Chance',   'Laci',   'Nus',   [_,        _,         _,         _,         0.00653],  'pct',    'posOnly'),
   stat('ammoMax',           'Ammo Maximum',                    'Ampi',   'Bin',   [0.00555,  0.01,      0.01,      0.0111,    _],        'pct',    'both'),
