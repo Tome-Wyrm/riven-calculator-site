@@ -163,8 +163,9 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 ### Phase 7 — Weapon-specific rules (next)
 - [x] **Display quirks** via `quirks()` in the engine: an extra "Heavy attacks" line for melee Critical
       Chance and an "On bows" line for Fire Rate on bows, in the range table and as a calculator note
-  - [ ] Confirm whether a bow riven's own text shows the doubled Fire Rate or only the effect is doubled
-        (screenshot a bow riven with Fire Rate, e.g. Cinta or `GrnBow`)
+  - [x] Confirmed: a bow riven shows the **undoubled** number with a "(x2 for Bows)" label. A Cinta
+        `+++` riven shows +49.7% Fire Rate, inside the normal rifle range of 48.6–59.4%, so the
+        effect is doubled but the text isn't. The range table already works this way.
 - [x] **IPS eligibility**: a 4th weapon field, one letter each for Impact/Puncture/Slash (`y` can roll,
       `n` can't, `?` unsure). Generated from the WFCD damage breakdowns, using the >25% rule on both the
       whole weapon and its primary attack; any disagreement or missing data becomes `?`. Hand overrides
