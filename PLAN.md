@@ -71,17 +71,41 @@ tools/                one-off scripts, e.g. regenerate weapons.js
       later phase is visible live.
 
 ### Phase 1 — Stat data (`src/data/stats.js`)
-- [ ] Define the stat schema: `id`, display name, prefix/suffix, `b` per class
-      (rifle/shotgun/pistol/archgun/melee, `null` = not rollable), `unit`
+- [x] Define the stat schema: `id`, display name, prefix/suffix, `b` per class
+      (rifle/shotgun/pistol/archgun/melee, missing = not rollable), `unit`
       (`pct` | `pctNeg` | `mult` | `sec` | `m` | `flat`), `polarity`
       (`both` | `posOnly` | `negOnly`), `spliced: boolean`, splice recipe(s)
-- [ ] Enter the 32 ordinary + 18 spliced coefficients from the wiki tables
-- [ ] Shape table (`L` bonus/malus) as data, not code
-- [ ] **Reconcile discrepancies** between the wiki footnotes and the spreadsheet before trusting either:
-  - Wiki marks Damage/Melee Damage "positive only", but the sheet shows negatives
-  - Sheet shows no negative for melee Attack Speed or Initial Combo
-  - Sheet merges "Additional Combo Count Chance" (+) and "Chance to Gain Combo Count" (−)
-    into one row. These are different stats with different `b`, so keep them separate.
+- [x] Enter the 32 ordinary + 18 spliced coefficients from the wiki tables
+- [x] Shape table (`L` bonus/malus) as data, not code
+- [x] Reconcile the discrepancies between the wiki and the spreadsheet (see **Data decisions** below)
+- [x] Transcription test: every positive `++-` cell of the spreadsheet is reproduced from the coefficients
+- [x] Confirm melee Attack Speed can roll negative (decision 3)
+
+#### Data decisions
+
+Sources weighed: the wiki's coefficient tables and footnotes; your spreadsheet; the
+[warframe.market riven attribute list](https://api.warframe.market/v2/riven/attributes), which is
+current (it already lists the 44.1 splice stats) and flags `positiveOnly` / `negativeOnly` per stat;
+and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_History).
+
+1. **Damage / Melee Damage can roll negative.** The wiki's "positive only" footnote looks wrong:
+   warframe.market doesn't flag it as positive-only, the patch notes repeatedly fix bugs with
+   "negative Damage Rivens" (19.5.4, 25.0.4, 32.3), and your sheet shows the negatives.
+2. **Initial Combo is positive only.** The wiki's coefficient table, warframe.market and your sheet all agree.
+3. **Melee Attack Speed can roll negative (confirmed).** Your sheet leaves it blank, but
+   warframe.market has Lacera rivens listed with −6.2%, −6.1% and −4.1% Attack Speed (unranked).
+   Those values sit outside today's ranges, so they were probably rolled under the old dispositions,
+   but they prove a melee Attack Speed curse exists.
+4. **The combo row is split in two.** "Additional Combo Count Chance" (positive only, b 0.00653) and
+   "Chance to Gain Combo Count" (negative only, b −0.01165, shown as −100v) are separate stats.
+   warframe.market confirms this. The sheet's merged row is just a layout choice.
+5. **Spliced stats are positive only.** The wiki's splicing rules say a spliced trait is always a
+   buff. warframe.market just doesn't flag them, since they can't be cycled into anyway.
+6. **Impact / Puncture / Slash have different coefficients** (0.013333 vs 0.01333 on guns; melee
+   puncture 0.0133). The sheet's merged row matches Impact and Slash, while Puncture comes out
+   about 0.04 lower. Each stat keeps its own wiki value.
+7. **Elements and Punch Through are positive only** (all sources agree). **Weapon Recoil** has a
+   negative coefficient, so a buff shows as a negative %.
 
 ### Phase 2 — Math engine (`src/engine.js`, pure functions, no DOM)
 - [ ] `rollValue(stat, class, shape, rank, sign, u)` → raw `v` (fround, step by step)
@@ -129,11 +153,27 @@ tools/                one-off scripts, e.g. regenerate weapons.js
 
 ---
 
+## Verified in game (2026-10-23)
+
+The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.
+For curses, a **higher u means a bigger negative** (no flip). In-game display is **1 decimal**.
+Predicted before seeing the screenshots, all matched:
+
+| Riven (internal name) | Rank 8 | Rank 0 |
+|---|---|---|
+| Soma (`TennoAR`) ++- | +267.2% Damage, +138.7% Electricity, −31.7% Ammo Max | — |
+| Lacera (`StalkerMios`) ++- | +129.3% Crit Dmg, +122.5% Status, −65.1% Finisher | +14.4%, +13.6%, −7.2% |
+
+These become Phase 2 golden tests. Fingerprint tags seen so far: `WeaponDamageAmountMod` (damage),
+`WeaponElectricityDamageMod`, `WeaponAmmoMaxMod`, `WeaponCritDamageMod`, `WeaponStunChanceMod`
+(status chance), `WeaponMeleeFinisherDamageMod`.
+
+**Stretch idea:** paste the player JSON → grade every owned riven automatically (needs the full
+tag → stat map, and internal weapon path → name).
+
 ## Open questions (decide before Phase 2)
 
-1. **Are rolls continuous or discrete?** The wiki says the value is "a base 30 integer mapped onto
-   that range", which suggests 31 discrete steps. That changes the probability output slightly
-   and changes "closest to" into "nearest achievable step". Needs confirming.
+1. ~~Continuous or discrete rolls?~~ Settled: 2³⁰ steps, so effectively continuous.
 2. **Spliced-stat probability.** A spliced trait takes the *higher* u of its two parents, so
    P(u ≥ x) = 1 − x² rather than 1 − x (for Ammo Efficiency ≥ 70%: ~46% instead of ~26%).
    The wiki also says a negative parent's "true" u is used, which may make the math more involved.
