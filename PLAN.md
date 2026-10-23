@@ -161,15 +161,18 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] Footer: data source + "last updated" for the weapon snapshot
 
 ### Phase 7 — Weapon-specific rules (next)
-- [ ] **Display quirks**, shown wherever a value is shown (range table, calculator, later the grader):
-  - Fire Rate ×2 on bows (the `isBow` flag already exists): check whether the riven's own text shows
-    the doubled number or only the effect is doubled, using one of your bow rivens (Cinta, `GrnBow`)
-  - Melee Critical Chance ×2 on heavy attacks: an extra "heavy attack" line under the normal value
-- [ ] **IPS eligibility** (a weapon with ≤25% of a physical type usually can't roll that type):
-  - Find the data. WFCD weapons carry a per-type `damage` breakdown, and PEP or the wiki may list it too.
-  - Add an IPS field to `weapons.js` (generated), with hand overrides for the known exceptions
-  - Hide the ineligible stats when a weapon is picked; class-only views keep showing them
-- [ ] Bump the weapon builder and tests; check a couple of IPS-limited weapons (e.g. Simulor: no Slash)
+- [x] **Display quirks** via `quirks()` in the engine: an extra "Heavy attacks" line for melee Critical
+      Chance and an "On bows" line for Fire Rate on bows, in the range table and as a calculator note
+  - [ ] Confirm whether a bow riven's own text shows the doubled Fire Rate or only the effect is doubled
+        (screenshot a bow riven with Fire Rate, e.g. Cinta or `GrnBow`)
+- [x] **IPS eligibility**: a 4th weapon field, one letter each for Impact/Puncture/Slash (`y` can roll,
+      `n` can't, `?` unsure). Generated from the WFCD damage breakdowns, using the >25% rule on both the
+      whole weapon and its primary attack; any disagreement or missing data becomes `?`. Hand overrides
+      come from in-game rivens.
+  - Picking a weapon hides `n` stats and marks `?` stats "may not roll"; class-only views show everything
+  - Checked against your rivens: Cinta, Vinquibus and Obex all rolled IPS stats their codes allow
+  - About 45 weapons have at least one `?`; 7 (the kitguns and Corufell Prime) have no damage data
+- [x] Tests: `quirks`, `weaponCanRoll`, and IPS codes for Simulor, Felarx, Soma, Obex, Cinta, Vinquibus
 
 ### Phase 8 — Riven grader
 Back-solve the roll quality u for each stat on a riven you already own.

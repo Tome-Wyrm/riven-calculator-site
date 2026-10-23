@@ -100,6 +100,33 @@ export function format(stat, display, decimals) {
 }
 
 /**
+ * Effects that apply at a multiple of the riven's displayed value: melee Critical Chance counts
+ * double on heavy attacks, and Fire Rate counts double on bows.
+ * @param {Stat} stat @param {WeaponClass} cls @param {boolean} isBow
+ * @returns {{label: string, factor: number}[]}
+ */
+export function quirks(stat, cls, isBow) {
+  const out = [];
+  if (stat.id === 'critChance' && cls === 'melee') out.push({ label: 'Heavy attacks', factor: 2 });
+  if (stat.id === 'fireRate' && isBow) out.push({ label: 'On bows', factor: 2 });
+  return out;
+}
+
+const IPS_INDEX = { impact: 0, puncture: 1, slash: 2 };
+
+/**
+ * Whether a weapon can roll a stat, from its IPS code (see weapons.js). Only Impact, Puncture and
+ * Slash depend on the weapon; everything else is 'y'.
+ * @param {Stat} stat @param {string} [ipsCode] e.g. 'nyy'; omitted when no weapon is picked
+ * @returns {'y' | 'n' | '?'}
+ */
+export function weaponCanRoll(stat, ipsCode) {
+  const i = IPS_INDEX[/** @type {keyof typeof IPS_INDEX} */ (stat.id)];
+  if (i === undefined || !ipsCode) return 'y';
+  return /** @type {'y' | 'n' | '?'} */ (ipsCode[i]);
+}
+
+/**
  * Probability that u lands in [a, b]. Ordinary stats roll u uniformly. A spliced stat keeps the
  * higher u of its two parents, so its u follows max(U1, U2) with CDF u².
  * @param {number} a @param {number} b @param {boolean} spliced

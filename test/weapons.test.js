@@ -20,5 +20,9 @@ test('known weapons map to the right class', () => {
   };
   for (const [name, cls] of Object.entries(expect)) assert.equal(byName.get(name)?.[1], cls, name);
   assert.equal(byName.get('Paris')?.[2], 1, 'Paris is a bow');
+  // IPS eligibility, including weapons whose rivens rolled an IPS stat in game
+  const ips = { Simulor: 'nnn', Felarx: 'nyy', Soma: 'nyy', Obex: 'ynn', Cinta: 'nyn', Vinquibus: 'nyy' };
+  for (const [name, code] of Object.entries(ips)) assert.equal(byName.get(name)?.[3], code, `${name} IPS`);
+  for (const [name, , , code] of WEAPONS) assert.match(code, /^[yn?]{3}$/, name);
   for (const name of ['Sirocco', 'Arquebex']) assert.equal(byName.has(name), false, `${name} takes no riven`);
 });

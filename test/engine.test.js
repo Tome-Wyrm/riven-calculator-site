@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STAT_BY_ID as S } from '../src/data/stats.js';
 import {
-  range, displayValue, format, solveU, canRoll, evaluateGoal, fingerprintToU, probability,
+  range, displayValue, format, solveU, canRoll, evaluateGoal, fingerprintToU, probability, quirks, weaponCanRoll,
 } from '../src/engine.js';
 
 const near = (got, want, tol, msg) =>
@@ -91,6 +91,21 @@ test('more in-game rivens across shapes match the display text', () => {
     const d = displayValue(S[id], cls, shape, sign, fingerprintToU(value));
     assert.equal(format(S[id], d), text, `${id} ${cls} ${shape}`);
   }
+});
+
+test('quirks: melee crit doubles on heavies, fire rate doubles on bows only', () => {
+  assert.deepEqual(quirks(S.critChance, 'melee', false), [{ label: 'Heavy attacks', factor: 2 }]);
+  assert.deepEqual(quirks(S.critChance, 'rifle', false), []);
+  assert.deepEqual(quirks(S.fireRate, 'rifle', true), [{ label: 'On bows', factor: 2 }]);
+  assert.deepEqual(quirks(S.fireRate, 'rifle', false), []);
+});
+
+test('weaponCanRoll reads the IPS code for physical stats only', () => {
+  assert.equal(weaponCanRoll(S.impact, 'nyy'), 'n');
+  assert.equal(weaponCanRoll(S.slash, 'nyy'), 'y');
+  assert.equal(weaponCanRoll(S.puncture, 'n?n'), '?');
+  assert.equal(weaponCanRoll(S.critChance, 'nnn'), 'y');
+  assert.equal(weaponCanRoll(S.impact, undefined), 'y');
 });
 
 test('solveU inverts displayValue', () => {

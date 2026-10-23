@@ -2,12 +2,10 @@
 // Goal calculator: "can a <class> riven roll <op> <target> <stat>, and how likely is it?"
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { evaluateGoal, format } from '../engine.js';
+import { evaluateGoal, format, quirks, weaponCanRoll } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton } from './dom.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
-
-const IS_BOW = new Set(WEAPONS.filter(w => w[2]).map(w => w[0]));
 
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('../engine.js').Goal} Goal */
@@ -65,7 +63,7 @@ function summary(res, stat) {
 
 function controls() {
   const set = (/** @type {Partial<typeof state>} */ patch) => { Object.assign(state, patch); render(); };
-  const stats = statOptions([...ORDINARY, ...SPLICED], state.cls);
+  const stats = statOptions([...ORDINARY, ...SPLICED], state.cls, ipsOf(state.weapon));
   if (!stats.some(([id]) => id === state.statId)) state.statId = stats[0][0];
   const stat = STAT_BY_ID[state.statId];
 
@@ -110,8 +108,13 @@ function results() {
     notes.push(el('p', { class: 'note' }, [
       'Spliced stats keep the better roll of their two parent traits, so the chances assume max-of-two rolls.']));
   }
-  if (stat.id === 'fireRate' && IS_BOW.has(state.weapon)) {
-    notes.push(el('p', { class: 'note' }, ['Bows: fire rate rolls count double (charge rate).']));
+  if (weaponCanRoll(stat, ipsOf(state.weapon)) === '?') {
+    notes.push(el('p', { class: 'note' }, [
+      `${state.weapon} may not be able to roll ${statName(stat, state.cls)}: its damage data is unclear for this type.`]));
+  }
+  for (const q of quirks(stat, state.cls, isBow(state.weapon))) {
+    notes.push(el('p', { class: 'note' }, [
+      `${q.label}: this stat counts ×${q.factor}, so ${format(stat, state.target)} on the riven acts as ${format(stat, state.target * q.factor)}.`]));
   }
   if (res.sign === '-') {
     notes.push(el('p', { class: 'note' }, ['That target reads as a negative (curse) roll.']));

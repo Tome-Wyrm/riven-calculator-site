@@ -1,6 +1,9 @@
 // @ts-check
 // Small DOM helpers shared by the UI views.
 
+import { WEAPONS } from '../data/weapons.js';
+import { weaponCanRoll } from '../engine.js';
+
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
 
@@ -54,7 +57,7 @@ let pickerId = 0;
 
 /**
  * Weapon search box (native datalist). Picking a known weapon calls onPick with its riven class.
- * @param {[string, WeaponClass, number][]} weapons @param {string} value
+ * @param {[string, WeaponClass, number, string][]} weapons @param {string} value
  * @param {(name: string, cls: WeaponClass) => void} onPick
  */
 export function weaponPicker(weapons, value, onPick) {
@@ -71,12 +74,22 @@ export function weaponPicker(weapons, value, onPick) {
   return el('label', { class: 'field weapon' }, [el('span', {}, ['Weapon']), input, list]);
 }
 
+const WEAPON_BY_NAME = new Map(WEAPONS.map(w => [w[0], w]));
+
+/** The picked weapon's IPS code, or undefined when no weapon is picked. @param {string} name */
+export const ipsOf = name => WEAPON_BY_NAME.get(name)?.[3];
+
+/** @param {string} name */
+export const isBow = name => WEAPON_BY_NAME.get(name)?.[2] === 1;
+
 /**
- * Stat picker options for a class: ordinary then spliced, spliced ones tagged.
- * @param {Stat[]} stats @param {WeaponClass} cls @returns {[string, string][]}
+ * Stat picker options for a class: ordinary then spliced, spliced ones tagged. With a weapon's
+ * IPS code, physical stats it can't roll are dropped and unsure ones are tagged.
+ * @param {Stat[]} stats @param {WeaponClass} cls @param {string} [ipsCode] @returns {[string, string][]}
  */
-export function statOptions(stats, cls) {
+export function statOptions(stats, cls, ipsCode) {
   return stats
-    .filter(s => s.b[cls] !== undefined)
-    .map(s => [s.id, statName(s, cls) + (s.spliced ? ' (spliced)' : '')]);
+    .filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsCode) !== 'n')
+    .map(s => [s.id, statName(s, cls) + (s.spliced ? ' (spliced)' : '')
+      + (weaponCanRoll(s, ipsCode) === '?' ? ' (may not roll)' : '')]);
 }

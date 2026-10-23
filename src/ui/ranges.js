@@ -4,9 +4,9 @@
 //   compare — one stat across all four shapes
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { SHAPE_ORDER, canRoll, range, format } from '../engine.js';
+import { SHAPE_ORDER, canRoll, range, format, quirks, weaponCanRoll } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
-import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton } from './dom.js';
+import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
@@ -36,6 +36,12 @@ function rangeCell(stat, cls, shape, sign) {
     const pct = (/** @type {number} */ x) => `${x >= 1 ? '+' : '-'}${Math.abs((x - 1) * 100).toFixed(1)}%`;
     kids.push(el('span', { class: 'sub' }, [`${pct(r.at0)} to ${pct(r.at1)}`]));
   }
+  if (weaponCanRoll(stat, ipsOf(state.weapon)) === '?') {
+    kids.push(el('span', { class: 'sub' }, [`May not roll on ${state.weapon}`]));
+  }
+  for (const q of quirks(stat, cls, isBow(state.weapon))) {
+    kids.push(el('span', { class: 'sub' }, [`${q.label}: ${format(stat, r.at0 * q.factor)} to ${format(stat, r.at1 * q.factor)}`]));
+  }
   return el('td', { class: sign === '+' ? 'pos' : 'neg' }, kids);
 }
 
@@ -52,7 +58,7 @@ function controls() {
   if (state.view === 'table') {
     items.push(segmented('Shape', SHAPE_ORDER, state.shape, v => set({ shape: /** @type {Shape} */ (v) })));
   } else {
-    const opts = statOptions([...ORDINARY, ...SPLICED], state.cls);
+    const opts = statOptions([...ORDINARY, ...SPLICED], state.cls, ipsOf(state.weapon));
     if (!opts.some(([id]) => id === state.statId)) state.statId = opts[0][0];
     items.push(select('Stat', opts, state.statId, v => set({ statId: v })));
   }
@@ -64,7 +70,7 @@ function controls() {
 function section(title, stats) {
   const { cls, shape } = state;
   const rows = stats
-    .filter(s => s.b[cls] !== undefined)
+    .filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsOf(state.weapon)) !== 'n')
     .map(s => el('tr', {}, [el('th', { scope: 'row' }, [statName(s, cls)]), rangeCell(s, cls, shape, '+'), rangeCell(s, cls, shape, '-')]));
   if (rows.length === 0) return null;
   return el('tbody', {}, [el('tr', { class: 'group' }, [el('th', { colspan: '3', scope: 'colgroup' }, [title])]), ...rows]);
