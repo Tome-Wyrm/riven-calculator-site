@@ -137,7 +137,7 @@ function renderResults() {
 
 function render() {
   resultsBox = el('div', { 'aria-live': 'polite' });
-  root.replaceChildren(controls(), resultsBox, copyLinkButton());
+  root.replaceChildren(controls(), resultsBox, copyLinkButton('g'));
   renderResults();
 }
 

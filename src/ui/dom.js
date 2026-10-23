@@ -3,6 +3,7 @@
 
 import { WEAPONS } from '../data/weapons.js';
 import { weaponCanRoll } from '../engine.js';
+import { parseHash, updateHash } from './state.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
@@ -38,12 +39,16 @@ export function select(labelText, options, value, onChange) {
   return el('label', { class: 'field' }, [el('span', {}, [labelText]), s]);
 }
 
-/** Copies the current URL (which carries every view's state) to the clipboard. */
-export function copyLinkButton() {
+/**
+ * Copies a link to this section only: the page URL with just this view's state in the hash.
+ * @param {string} prefix  the view's hash prefix ('r', 'g' or 'v')
+ */
+export function copyLinkButton(prefix) {
   const b = /** @type {HTMLButtonElement} */ (el('button', { type: 'button', class: 'copy-link' }, ['Copy link']));
   b.addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText(location.href);
+      const hash = updateHash('', prefix, parseHash(location.hash, prefix));
+      await navigator.clipboard.writeText(`${location.origin}${location.pathname}#${hash}`);
       b.textContent = 'Copied!';
     } catch {
       b.textContent = 'Copy failed: use the address bar';

@@ -151,7 +151,7 @@ function renderResults() {
 
 function render() {
   resultsBox = el('div', { 'aria-live': 'polite' });
-  root.replaceChildren(controls(), statRows(), resultsBox, copyLinkButton());
+  root.replaceChildren(controls(), statRows(), resultsBox, copyLinkButton('v'));
   renderResults();
 }
 

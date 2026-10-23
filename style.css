@@ -65,7 +65,23 @@ main {
   min-width: 0;
 }
 
-.panel h2 { margin-top: 0; font-size: 1.15rem; }
+.panel h2 { margin: 0; font-size: 1.15rem; display: inline; }
+
+.panel > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel > summary::-webkit-details-marker { display: none; }
+.panel > summary::before {
+  content: '▸';
+  color: var(--accent);
+  transition: transform 0.15s;
+}
+.panel[open] > summary::before { transform: rotate(90deg); }
+.panel[open] > summary { margin-bottom: var(--gap); }
 
 .placeholder { color: var(--muted); font-style: italic; }
 

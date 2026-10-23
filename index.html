@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Riven Calculator</title>
-  <meta name="description" content="Warframe riven stat ranges by weapon class and shape, plus a goal calculator.">
+  <meta name="description" content="Warframe riven stat ranges by weapon class and shape, a goal calculator and a riven grader.">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="src/main.js"></script>
 </head>
@@ -15,20 +15,20 @@
   </header>
 
   <main>
-    <section id="ranges" class="panel" aria-labelledby="ranges-title">
-      <h2 id="ranges-title">Stat ranges</h2>
+    <details id="ranges" class="panel" open>
+      <summary><h2 id="ranges-title">Stat ranges</h2></summary>
       <div id="ranges-body"></div>
-    </section>
+    </details>
 
-    <section id="calculator" class="panel" aria-labelledby="calculator-title">
-      <h2 id="calculator-title">Goal calculator</h2>
+    <details id="calculator" class="panel" open>
+      <summary><h2 id="calculator-title">Goal calculator</h2></summary>
       <div id="calculator-body"></div>
-    </section>
+    </details>
 
-    <section id="grader" class="panel" aria-labelledby="grader-title">
-      <h2 id="grader-title">Riven grader</h2>
+    <details id="grader" class="panel" open>
+      <summary><h2 id="grader-title">Riven grader</h2></summary>
       <div id="grader-body"></div>
-    </section>
+    </details>
   </main>
 
   <footer class="site-footer">

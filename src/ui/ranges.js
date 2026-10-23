@@ -123,7 +123,7 @@ let root;
 
 function render() {
   const body = state.view === 'table' ? tableView() : compareView();
-  root.replaceChildren(controls(), body, copyLinkButton());
+  root.replaceChildren(controls(), body, copyLinkButton('r'));
   saveState('r', {
     view: state.view, weapon: state.weapon, cls: state.cls, rank: state.rank,
     ...(state.view === 'table' ? { shape: state.shape } : { stat: state.statId }),
