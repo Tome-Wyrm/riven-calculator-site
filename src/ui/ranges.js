@@ -80,10 +80,15 @@ function section(title, stats) {
 
 function tableView() {
   const isFaction = (/** @type {Stat} */ s) => s.unit === 'mult';
+  // A combined element is spliced from two base elements.
+  const BASE_ELEMENTS = ['heat', 'cold', 'electricity', 'toxin'];
+  const isElement = (/** @type {Stat} */ s) => !!s.from?.[0].every(id => BASE_ELEMENTS.includes(id));
   const sections = [
     section('Stats', ORDINARY.filter(s => !isFaction(s))),
     section('Faction damage', ORDINARY.filter(isFaction)),
-    section('Spliced (always positive)', SPLICED),
+    section('Spliced (always positive)', SPLICED.filter(s => !isFaction(s) && !isElement(s))),
+    section('Spliced elements', SPLICED.filter(isElement)),
+    section('Spliced faction damage', SPLICED.filter(isFaction)),
   ].filter(x => x !== null);
   const head = el('thead', {}, [el('tr', {}, [el('th', { scope: 'col' }, ['Stat']), el('th', { scope: 'col' }, ['Positive']), el('th', { scope: 'col' }, ['Negative'])])]);
   return el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges' }, [head, ...sections])]);

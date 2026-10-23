@@ -137,23 +137,25 @@ const RANGED = (/** @type {number} */ x) => [x, x, x, x, _];
 /** The 18 spliced stats. Always positive; they inherit the higher roll of their two parents. */
 export const SPLICED = [
   spliced('ammoEfficiency',      'Ammo Efficiency',              'Parci', 'Pia',  RANGED(-0.005),      'pctNeg', [['magazine', 'reloadSpeed'], ['recoil', 'ammoMax']]),
-  spliced('blast',               'Blast',                        'Fraga', 'Tus',  ALL5(0.01),          'pct',    [['heat', 'cold']]),
-  spliced('corrosive',           'Corrosive',                    'Cori',  'Or',   ALL5(0.01),          'pct',    [['toxin', 'electricity']]),
-  spliced('orokin',              'Damage to Orokin',             'Effi',  'Tas',  ALL5(0.005),         'mult',   [['grineer', 'corpus']]),
-  spliced('scaldra',             'Damage to Scaldra',            'Exsi',  'Llo',  ALL5(0.005),         'mult',   [['infested', 'grineer']]),
-  spliced('techrot',             'Damage to Techrot',            'Muti',  'Gia',  ALL5(0.005),         'mult',   [['corpus', 'infested']]),
-  spliced('gas',                 'Gas',                          'Cali',  'Fel',  ALL5(0.01),          'pct',    [['toxin', 'heat']]),
   spliced('heavyWindup',         'Heavy Attack Wind Up Speed',   'Veri',  'Lus',  MELEE_ONLY(0.0133),  'pct',    [['heavyEfficiency', 'comboDuration']]),
-  spliced('magnetic',            'Magnetic',                     'Magni', 'Bra',  ALL5(0.01),          'pct',    [['electricity', 'cold']]),
   spliced('meleeDamageOnHeavy',  'Melee Damage On Heavy Attack', 'Robi',  'Ndo',  MELEE_ONLY(0.0133),  'pct',    [['heavyEfficiency', 'additionalCombo']]),
   spliced('parryAngle',          'Parry Angle',                  'Defi',  'So',   MELEE_ONLY(0.009),   'pct',    [['fireRate', 'range']]),
-  spliced('radiation',           'Radiation',                    'Radi',  'Lo',   ALL5(0.01),          'pct',    [['heat', 'electricity']]),
   spliced('reloadWhileHolstered','Reload While Holstered',       'Auxi',  'Rro',  [0.01, 0.01, 0.01, _, _], 'pct', [['ammoMax', 'reloadSpeed'], ['ammoMax', 'magazine']]),
   spliced('slamDamage',          'Slam Attack Damage',           'Proci', 'Lam',  MELEE_ONLY(0.0133),  'pct',    [['damage', 'fireRate']]),
   spliced('statusDamage',        'Status Damage',                'Plaga', 'Mna',  ALL5(0.01),          'pct',    [['damage', 'statusChance']]),
-  spliced('viral',               'Viral',                        'Cari',  'Sco',  ALL5(0.01),          'pct',    [['toxin', 'cold']]),
   spliced('weakpointDamage',     'Weakpoint Damage',             'Eni',   'Vo',   RANGED(0.025),       'pct',    [['damage', 'zoom'], ['damage', 'multishot']]),
   spliced('weakpointCrit',       'Weakpoint Critical Chance',    'Exiti', 'Eus',  RANGED(0.0275),      'pct',    [['critChance', 'zoom'], ['critChance', 'multishot']]),
+  // Combined elements
+  spliced('blast',               'Blast',                        'Fraga', 'Tus',  ALL5(0.01),          'pct',    [['heat', 'cold']]),
+  spliced('corrosive',           'Corrosive',                    'Cori',  'Or',   ALL5(0.01),          'pct',    [['toxin', 'electricity']]),
+  spliced('gas',                 'Gas',                          'Cali',  'Fel',  ALL5(0.01),          'pct',    [['toxin', 'heat']]),
+  spliced('magnetic',            'Magnetic',                     'Magni', 'Bra',  ALL5(0.01),          'pct',    [['electricity', 'cold']]),
+  spliced('radiation',           'Radiation',                    'Radi',  'Lo',   ALL5(0.01),          'pct',    [['heat', 'electricity']]),
+  spliced('viral',               'Viral',                        'Cari',  'Sco',  ALL5(0.01),          'pct',    [['toxin', 'cold']]),
+  // Faction damage
+  spliced('orokin',              'Damage to Orokin',             'Effi',  'Tas',  ALL5(0.005),         'mult',   [['grineer', 'corpus']]),
+  spliced('scaldra',             'Damage to Scaldra',            'Exsi',  'Llo',  ALL5(0.005),         'mult',   [['infested', 'grineer']]),
+  spliced('techrot',             'Damage to Techrot',            'Muti',  'Gia',  ALL5(0.005),         'mult',   [['corpus', 'infested']]),
 ];
 
 export const STATS = [...ORDINARY, ...SPLICED];
