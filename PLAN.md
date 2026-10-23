@@ -137,8 +137,10 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] Bow note on Fire Rate goals. Kitguns → Pistol, zaw strikes → Melee, Vinquibus (melee) added by hand
 - [x] `DaxDuviriAsymmetricalLongBowPlayerWeapon` is the **Cinta** (already listed as a rifle/bow)
 - [ ] Sentinel/robotic weapons not included yet
-- `tools/data/internal_names.csv`: internal path → display name (4,000+ rows, ~880 weapons).
-  It's raw input for tools; the future player-JSON import can use it to name each riven's `compat` weapon.
+- `tools/data/internal_names.csv` (`path,name`): internal path → name for every riven weapon in
+  the WFCD list (601 rows). Gaps were filled from WFCD `uniqueName`, and the Vinquibus paths came
+  from your player data. Kitguns are missing, because riven `compat` points at a chamber part
+  (e.g. `InfModularBarrelEggPart`). The future player-JSON import uses this to name `compat`.
 - [x] A one-off script in `tools/` (run by hand) pulls the weapon list from WFCD
       `warframe-items` or the Public Export and writes a compact `src/data/weapons.js`
       (`{name: class}`). That snapshot is committed, so there is **no runtime fetch**.
