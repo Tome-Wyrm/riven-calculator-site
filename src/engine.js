@@ -218,7 +218,7 @@ function clampInterval(a, b) {
  * (Weapon Recoil buffs display negative, so this can't just be the target's sign.)
  * @param {Stat} stat @param {WeaponClass} cls @param {number} target @returns {Sign}
  */
-function inferSign(stat, cls, target) {
+export function inferSign(stat, cls, target) {
   if (stat.polarity === 'posOnly') return '+';
   if (stat.polarity === 'negOnly') return '-';
   const plus = displayValue(stat, cls, '++', '+', 0.5);
@@ -239,4 +239,31 @@ function markBest(results, op) {
     if (s1 > s0 + 1e-12 || (Math.abs(s1 - s0) <= 1e-12 && t1 > t0)) best = r;
   }
   if (op === 'near' || best.probability > 0) best.best = true;
+}
+
+/**
+ * The shape implied by how many positives and negatives a riven has, or null if none fits.
+ * @param {number} positives @param {number} negatives @returns {Shape | null}
+ */
+export function shapeFor(positives, negatives) {
+  return SHAPE_ORDER.find(s => SHAPES[s].positives === positives && SHAPES[s].negatives === negatives) ?? null;
+}
+
+/**
+ * Back-solves the roll quality u from a value as the game shows it. The game rounds to 1 decimal
+ * (faction multipliers to 2), so a shown value pins u to a small interval rather than a point.
+ * @param {Stat} stat @param {WeaponClass} cls @param {Shape} shape @param {Sign} sign
+ * @param {number} shown  the displayed number, e.g. 267.2 for "+267.2%"
+ * @param {number} [rank]
+ * @returns {{lo: number, hi: number, mid: number, possible: boolean}}
+ *   lo/hi clamped to [0, 1]; possible is false when no roll can show that value
+ */
+export function gradeRoll(stat, cls, shape, sign, shown, rank = MAX_RANK) {
+  const half = stat.unit === 'mult' ? 0.005 : 0.05;
+  const [a, b] = [solveU(stat, cls, shape, sign, shown - half, rank), solveU(stat, cls, shape, sign, shown + half, rank)]
+    .sort((x, y) => x - y);
+  const possible = b >= 0 && a <= 1;
+  const lo = Math.max(0, Math.min(1, a));
+  const hi = Math.max(0, Math.min(1, b));
+  return { lo, hi, mid: (lo + hi) / 2, possible };
 }

@@ -178,6 +178,22 @@ table.ranges {
 }
 .copy-link:hover { background: var(--bg); }
 
+/* Riven grader */
+.grade-rows { display: grid; gap: 8px; margin-bottom: var(--gap); justify-items: start; }
+.grade-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.icon-button {
+  font: inherit;
+  width: 2em;
+  height: 2em;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.icon-button:hover { color: var(--text); background: var(--bg); }
+.note.warn { color: var(--neg-text); background: var(--neg-bg); padding: 6px 10px; border-radius: var(--radius); }
+
 @media (max-width: 600px) {
   .site-header h1 { font-size: 1.6rem; }
   .panel { padding: 12px; }

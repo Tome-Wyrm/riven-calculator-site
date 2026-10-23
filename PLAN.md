@@ -177,11 +177,13 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 
 ### Phase 8 — Riven grader
 Back-solve the roll quality u for each stat on a riven you already own.
-- [ ] **Manual entry:** weapon, then up to 4 stat rows (stat + displayed value). The shape follows from
-      how many positives/negatives there are. The rank defaults to 8, with a rank picker for unranked rivens.
-- [ ] Output per stat: roll % (u), where it sits in the min–max range, and a simple grade. The game's
-      1-decimal rounding means each value pins u to a small interval: show it as a ± range, not a fake exact number.
-- [ ] Flag impossible values (outside the range for that shape/rank), which usually means a typo or the wrong rank
+- [x] **Manual entry:** weapon, then up to 4 stat rows (stat + displayed value). The sign of each value
+      sets positive/negative (recoil handled), and the shape follows from the counts. Rank picker, default 8.
+- [x] Output per stat: range for that shape/rank, roll quality (u for positives, 1 − u "mildness" for the
+      negative) shown as an interval when the rounding makes it wider than 0.5%, and a grade label.
+      `gradeRoll` / `shapeFor` in the engine; tests check all 18 in-game values' true u lands in the interval.
+- [x] Flags: impossible values (typo or wrong rank), invalid stat counts, duplicate stats, a sign the shape can't have
+- [x] Shareable state in the URL hash (prefix `v.`)
 - [ ] **Player JSON import:** paste the inventory JSON → grade every riven at once, using the exact `Value`
       instead of the rounded display. Needs:
   - the full fingerprint tag → stat map (about half are known so far; see "Verified in game")

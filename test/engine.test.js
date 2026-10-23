@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STAT_BY_ID as S } from '../src/data/stats.js';
 import {
-  range, displayValue, format, solveU, canRoll, evaluateGoal, fingerprintToU, probability, quirks, weaponCanRoll,
+  range, displayValue, format, solveU, canRoll, evaluateGoal, fingerprintToU, probability, quirks, weaponCanRoll, gradeRoll, shapeFor,
 } from '../src/engine.js';
 
 const near = (got, want, tol, msg) =>
@@ -106,6 +106,29 @@ test('weaponCanRoll reads the IPS code for physical stats only', () => {
   assert.equal(weaponCanRoll(S.puncture, 'n?n'), '?');
   assert.equal(weaponCanRoll(S.critChance, 'nnn'), 'y');
   assert.equal(weaponCanRoll(S.impact, undefined), 'y');
+});
+
+test('gradeRoll: the true roll from each fingerprint lies inside the interval from the shown text', () => {
+  const cases = [
+    ...INGAME.map(([id, cls, sign, value, rank, text]) => [id, cls, '++-', sign, value, rank, text]),
+    ...INGAME_SHAPES.map(([id, cls, shape, sign, value, text]) => [id, cls, shape, sign, value, 8, text]),
+  ];
+  for (const [id, cls, shape, sign, value, rank, text] of cases) {
+    const g = gradeRoll(S[id], cls, shape, sign, parseFloat(text), rank);
+    const u = fingerprintToU(value);
+    assert.ok(g.possible, `${id} ${text} possible`);
+    assert.ok(g.lo - 1e-6 <= u && u <= g.hi + 1e-6, `${id} ${text}: u=${u.toFixed(4)} not in [${g.lo.toFixed(4)}, ${g.hi.toFixed(4)}]`);
+    // One 0.1 display step is a small slice of the range (widest here: unranked Finisher, ~6%)
+    assert.ok(g.hi - g.lo < 0.07, `${id} interval width ${(g.hi - g.lo).toFixed(4)}`);
+  }
+});
+
+test('gradeRoll flags values no roll can show, and shapeFor maps counts to shapes', () => {
+  assert.equal(gradeRoll(S.damage, 'rifle', '++-', '+', 300).possible, false);   // max is 269.5
+  assert.equal(gradeRoll(S.damage, 'rifle', '++-', '+', 269.5).hi, 1);
+  assert.equal(shapeFor(2, 1), '++-');
+  assert.equal(shapeFor(3, 0), '+++');
+  assert.equal(shapeFor(1, 1), null);
 });
 
 test('solveU inverts displayValue', () => {
