@@ -121,10 +121,10 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
   "inherits the higher value" rule, and it isn't verified in game.
 
 ### Phase 3 — Range viewer (spreadsheet replacement)
-- [ ] Controls: weapon class, shape (`++`, `++-`, `+++`, `+++-`), rank (0–8, default 8)
-- [ ] Table: stat | positive range | negative range; hide stats the class can't roll
-- [ ] Separate sections for ordinary / faction / spliced stats (matching the sheet's layout)
-- [ ] Optional "compare shapes" mode: one stat × all 4 shapes side by side
+- [x] Controls: weapon class, shape (`++`, `++-`, `+++`, `+++-`), rank (0–8, default 8)
+- [x] Table: stat | positive range | negative range; hide stats the class can't roll
+- [x] Separate sections for ordinary / faction / spliced stats (matching the sheet's layout)
+- [x] "Compare shapes" mode: one stat × all 4 shapes side by side
 
 ### Phase 4 — Goal calculator (the new feature)
 - [ ] Inputs: class (or weapon, Phase 5), stat, comparator (`at least` / `at most` / `closest to`), target value

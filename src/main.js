@@ -1,4 +1,6 @@
 // @ts-check
-// Entry point: wires the UI modules to the page. Filled in from Phase 3 onward.
+// Entry point: wires the UI modules to the page.
 
-document.documentElement.dataset.app = 'ready';
+import { mountRanges } from './ui/ranges.js';
+
+mountRanges(/** @type {HTMLElement} */ (document.getElementById('ranges-body')));
