@@ -151,11 +151,8 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
       `warframe-items` or the Public Export and writes a compact `src/data/weapons.js`
       (`{name: class}`). That snapshot is committed, so there is **no runtime fetch**.
       Re-run it when new weapons release.
-- [ ] Map weapon → riven class, including special cases: Kitguns → Pistol coefficients,
+- [x] Map weapon → riven class, including special cases: Kitguns → Pistol coefficients,
       Sentinel/Robotic weapons → associated class, Zaws → Melee, archgun variants
-- [ ] Display quirks: Fire Rate ×2 for bows, melee Critical Chance ×2 on heavy attacks
-- [ ] (Later) per-weapon IPS eligibility (<25% physical type can't roll it). Exceptions are case
-      by case, so maybe just show a warning.
 
 ### Phase 6 — Polish
 - [x] Shareable state in the URL hash, one prefix per view (`#r.cls=melee&g.weapon=Felarx&g.op=gte&g.t=70`),
@@ -163,11 +160,68 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] Responsive layout (checked at 375px, no sideways scroll); light/dark following `prefers-color-scheme`
 - [x] Footer: data source + "last updated" for the weapon snapshot
 
-### Stretch (not planned yet)
-- Riven grader: enter an existing riven's values → back-solve u for each stat ("roll quality")
-- Multi-stat goals (e.g. ≥X CC **and** ≥Y CD) with combined probability
-- Stat-pool odds: chance of the stats appearing at all when cycling, plus Kuva cost estimates
-- Splice planner: which pair of traits to splice for a target spliced value
+### Phase 7 — Weapon-specific rules (next)
+- [ ] **Display quirks**, shown wherever a value is shown (range table, calculator, later the grader):
+  - Fire Rate ×2 on bows (the `isBow` flag already exists): check whether the riven's own text shows
+    the doubled number or only the effect is doubled, using one of your bow rivens (Cinta, `GrnBow`)
+  - Melee Critical Chance ×2 on heavy attacks: an extra "heavy attack" line under the normal value
+- [ ] **IPS eligibility** (a weapon with ≤25% of a physical type usually can't roll that type):
+  - Find the data. WFCD weapons carry a per-type `damage` breakdown, and PEP or the wiki may list it too.
+  - Add an IPS field to `weapons.js` (generated), with hand overrides for the known exceptions
+  - Hide the ineligible stats when a weapon is picked; class-only views keep showing them
+- [ ] Bump the weapon builder and tests; check a couple of IPS-limited weapons (e.g. Simulor: no Slash)
+
+### Phase 8 — Riven grader
+Back-solve the roll quality u for each stat on a riven you already own.
+- [ ] **Manual entry:** weapon, then up to 4 stat rows (stat + displayed value). The shape follows from
+      how many positives/negatives there are. The rank defaults to 8, with a rank picker for unranked rivens.
+- [ ] Output per stat: roll % (u), where it sits in the min–max range, and a simple grade. The game's
+      1-decimal rounding means each value pins u to a small interval: show it as a ± range, not a fake exact number.
+- [ ] Flag impossible values (outside the range for that shape/rank), which usually means a typo or the wrong rank
+- [ ] **Player JSON import:** paste the inventory JSON → grade every riven at once, using the exact `Value`
+      instead of the rounded display. Needs:
+  - the full fingerprint tag → stat map (about half are known so far; see "Verified in game")
+  - the `compat` path → weapon name, from `tools/data/internal_names.csv`, generated into a compact runtime module
+  - `PendingRerollFingerprint`: show the pending cycle next to the current stats
+  - how spliced traits appear in a fingerprint (unknown: needs a spliced riven's JSON)
+- [ ] **OCR from screenshots** (the biggest usability win: typing values in is tedious):
+  - Library: Tesseract.js, loaded lazily from a CDN only when someone uses OCR, so the rest of the site
+    stays dependency-free. Decide between the CDN and a vendored copy (several MB with the language data).
+  - Preprocess in a canvas: crop to the text block, then threshold the purple background to black-on-white
+  - Parse lines like `+267.2% Damage` and `-31.7% Ammo Maximum`, matching stat names fuzzily against
+    `stats.js` (including melee names and spliced names)
+  - Weapon: from the riven's title line. The first word(s) match a weapon name, and the rest is the stat
+    prefix/suffix name (e.g. "Soma **Visi**tio"), which can cross-check the parsed stats.
+  - **Rank:** the drain number in the top corner looks like 10 + rank (18 at max rank, 10 unranked
+    on your Lacera screenshots). That needs confirming at a middle rank.
+  - Always show the parsed result as an editable form before grading (OCR will misread sometimes)
+  - Test fixtures: your screenshots so far (Soma, Lacera ×2, Obex, Vinquibus ×2)
+
+### Phase 9 — Splice planner
+Answer "which traits do I splice, and how good must they be, to get spliced stat X ≥ target?"
+- [ ] For each recipe (`from` pairs in `stats.js`): the u needed on the spliced trait, converted back to
+      the displayed value each parent would need (the spliced trait keeps the *higher* parent roll,
+      so either parent reaching it is enough)
+- [ ] Shape is locked by splicing, so show results per shape and note that the riven keeps its layout
+- [ ] Negative parents: the wiki says the "true" u of a curse is used. Confirm the direction in game with
+      one splice (predict first, then compare, as we did for curses).
+- [ ] Odds of a target spliced value from fresh parents (max-of-two), reusing `probability(…, spliced)`
+
+### Phase 10 — Stat-pool odds and Kuva cost
+- [ ] Trait pool per class (and per weapon once IPS exists): which stats can appear as buffs vs curses
+- [ ] Odds that one cycle gives a wanted set of stats (draws without replacement, buffs then curse).
+      Unknowns to research: whether trait picks are uniform, and the shape distribution when nothing is locked.
+- [ ] Kuva cost: the cycle-cost table (900 → 3,500 cap; doubled with a locked trait) starting from the
+      riven's current `rerolls`, so the expected cost runs from where you are now
+- [ ] Locked-trait mode: shape fixed, one stat kept, odds for the remaining slots
+- [ ] Expected cycles and Kuva to hit a goal = combine with the roll-quality odds from the calculator
+
+### Phase 11 — Multi-stat goals
+- [ ] Several goal rows (stat + op + target) at once, e.g. ≥X Crit Chance **and** ≥Y Crit Damage
+- [ ] Per shape: P(all rolls meet their targets) = product of each stat's roll odds (rolls are independent)
+- [ ] Optionally × the stat-pool odds from Phase 10, giving "chance per cycle" and expected Kuva
+- [ ] Reject impossible combos (same stat twice, more stats than the shape has slots, spliced +
+      its own parents)
 
 ---
 
@@ -189,16 +243,13 @@ would show −78.0% and +130.0%). A Dax bow `+++-` riven at +138.4% Puncture con
 `WeaponElectricityDamageMod`, `WeaponAmmoMaxMod`, `WeaponCritDamageMod`, `WeaponStunChanceMod`
 (status chance), `WeaponMeleeFinisherDamageMod`.
 
-**Stretch idea:** paste the player JSON → grade every owned riven automatically (needs the full
-tag → stat map, and internal weapon path → name).
-
-## Open questions (decide before Phase 2)
+## Open questions
 
 1. ~~Continuous or discrete rolls?~~ Settled: 2³⁰ steps, so effectively continuous.
 2. **Spliced-stat probability.** A spliced trait takes the *higher* u of its two parents, so
    P(u ≥ x) = 1 − x² rather than 1 − x (for Ammo Efficiency ≥ 70%: ~46% instead of ~26%).
    The wiki also says a negative parent's "true" u is used, which may make the math more involved.
-   Do we show both numbers, or the spliced one only?
-3. **Rank selector:** keep it (the sheet has one) or assume rank 8 always?
-4. **Repo name / visibility:** the Pages URL will be `https://<user>.github.io/<repo>/`.
-   GitHub Pages needs a public repo unless you're on a paid plan.
+   Currently: the spliced odds only, with a note. To be confirmed in Phase 9.
+3. ~~Rank selector~~: kept (0–8).
+4. ~~Repo~~: `Tome-Wyrm/riven-calculator-site`, public, Pages from `main`.
+5. **OCR library delivery** (Phase 8): CDN on demand vs a vendored copy.
