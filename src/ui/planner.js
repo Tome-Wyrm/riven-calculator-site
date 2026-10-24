@@ -4,7 +4,7 @@
 // the Kuva it's likely to cost.
 
 import { CLASSES, SHAPES, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { SHAPE_ORDER } from '../engine.js';
+import { SHAPE_ORDER, range } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { pools } from '../cycle.js';
 import { planBuild, OP_TEXT } from '../planner.js';
@@ -226,7 +226,15 @@ function results() {
     const key = mineNow.have.filter(id => tracked.has(id)).sort().join();
     mine = steps.find(s => [...s.have].sort().join() === key) ?? null;
   }
+  // Goals every roll meets ("≥ 1") aren't wrong, just pointless: say so, and plan anyway.
+  const trivial = Object.entries(valueGoals()).flatMap(([id, g]) => {
+    const r = range(STAT_BY_ID[id], state.cls, state.shape, '+');
+    const [lo, hi] = [Math.abs(r.at0), Math.abs(r.at1)].sort((a, b) => a - b).map(v => Math.round(v * 100) / 100);
+    const always = g.op === 'gte' ? g.value <= lo : g.op === 'lte' ? g.value >= hi : false;
+    return always ? [`${name(id)} ${OP_TEXT[g.op]} ${g.value} is met by every roll (it rolls ${lo} to ${hi} on a ${state.shape} riven), so it doesn't change the plan.`] : [];
+  });
   const out = [
+    ...trivial.map(t => el('p', { class: 'note warn' }, [t])),
     el('p', { class: 'summary' }, [
       plan.expectedCycles < 0.005
         ? 'From your riven: no Kuva needed.'
