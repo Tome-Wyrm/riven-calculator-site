@@ -220,6 +220,17 @@ Back-solve the roll quality u for each stat on a riven you already own.
   - They also caught an IPS data error: an Exergis riven with Puncture, which our data says it
     can't roll. The grader now keeps such a stat (marked "not expected") instead of swapping it. The images live in `test/fixtures/local/`
     (git-ignored); the parser tests use their transcribed text.
+  - [x] **Second pass using what must be there** (`src/ocr-refine.js`):
+    - The riven's name encodes its positives (1–2 prefixes + the last positive's suffix:
+      "Toxi-vexi·pha" = Toxin, Electricity, Heat). It confirms which stats are positive, restores
+      lost signs (the stat not in the name is the negative) and fills in one garbled stat name.
+    - Range check: the rank is the one where the most values fit as read. Impossible values are
+      corrected (look-alike digit, stray leading digits, lost decimal point) only when exactly
+      one fewest-change reading fits; otherwise kept as read, with the candidates listed. Values
+      nothing fixes are flagged as out of range (seen on an Akarius riven from before the
+      disposition change).
+    - Result on the 21 screenshots: every stat and value correct; still missing are one weapon name
+      (split across lines) and the companion app's "+0" faction values.
   - [ ] Possible upgrade: WFHelper uses a YOLO text detector + PaddleOCR recogniser (ONNX), with a
         stat-band crop and retries. Much heavier (tens of MB of models), but more robust on full
         screenshots. Worth it only if Tesseract struggles on real-world uploads.

@@ -6,6 +6,7 @@
 // are downloaded).
 
 import { guessClass, inferRank, parseRivenText } from '../ocr-parse.js';
+import { findPositivesInHeader, refineStats } from '../ocr-refine.js';
 import { STAT_BY_ID } from '../data/stats.js';
 import { el } from './dom.js';
 import { loadIntoGrader } from './grader.js';
@@ -70,34 +71,47 @@ async function readScreenshot(blob) {
     const worker = await getWorker();
     const { data } = await worker.recognize(await prepare(blob));
     const parsed = parseRivenText(data.text);
-    // A faction stat needs its multiplier ("x1.06"); the companion app shows "+0" instead.
-    const noMultiplier = parsed.stats.filter(s => s.statId && STAT_BY_ID[s.statId].unit === 'mult' && !/^x/i.test(s.value));
-    // It stays in with no value, so the riven's shape still counts it.
-    const rows = parsed.stats.filter(s => s.statId)
-      .map(s => ({ statId: /** @type {string} */ (s.statId), value: noMultiplier.includes(s) ? '' : s.value }));
     const raw = el('details', {}, [el('summary', {}, ['Text that was read']), el('pre', { class: 'ocr-raw' }, [data.text])]);
+    // A faction stat needs its multiplier ("x1.06"); the companion app shows "+0" instead. It
+    // stays in with no value, so the riven's shape still counts it.
+    const noMultiplier = parsed.stats.filter(s => s.statId && STAT_BY_ID[s.statId].unit === 'mult' && !/^x/i.test(s.value));
+    const stats = parsed.stats.map(s => (noMultiplier.includes(s) ? { ...s, value: '' } : s));
+
+    // Second pass: the riven's name says which stats are positive (and recovers lost signs and
+    // garbled names); impossible values are corrected to the reading that fits the range.
+    const positives = findPositivesInHeader(parsed.header);
+    const cls = parsed.weapon?.cls ?? guessClass(stats.map(s => s.statId));
+    const refined = refineStats(stats, cls, positives, parsed.rank);
+    const rows = refined.stats.map(s => ({ statId: s.statId, value: s.value }));
     if (!rows.length) {
       say(['No riven stats found in that image. Try a tighter crop around the riven card.'], 'note warn');
       status.append(raw);
       return;
     }
-    // The drain number is small and next to an icon, so it's often missed or misread. The values
-    // themselves pin the rank (rank 8 values are 9x rank 0), and win if the two disagree.
-    const cls = parsed.weapon?.cls ?? guessClass(rows.map(r => r.statId));
-    const rank = inferRank(rows, cls, parsed.rank) ?? parsed.rank;
+    // The drain number is small and next to an icon, so it's often missed or misread; the values
+    // pin the rank (rank 8 values are 9x rank 0), and win if the two disagree.
+    const rank = refined.rank ?? inferRank(rows, cls, parsed.rank) ?? parsed.rank;
     loadIntoGrader({ weapon: parsed.weapon?.name ?? '', cls, rank: rank ?? 8, rows });
+
     const issues = [
       ...(parsed.weapon ? [] : ['the weapon (pick it above)']),
       ...(rank === null ? ['the rank (assumed 8)'] : []),
-      ...parsed.stats.filter(s => !s.statId).map(s => `the stat "${s.value} ${s.text}"`),
-      ...parsed.stats.filter(s => s.statId && s.value === '')
-        .map(s => `the value of ${STAT_BY_ID[/** @type {string} */ (s.statId)].name} (its sign was lost; type it in)`),
+      // Unrecognised names the riven's name couldn't fill in.
+      ...(refined.stats.length < parsed.stats.length
+        ? parsed.stats.filter(s => !s.statId).map(s => `the stat "${s.value || s.magnitude} ${s.text}"`)
+        : []),
+      ...rows.filter(r => r.value === '' && !noMultiplier.some(s => s.statId === r.statId))
+        .map(r => `the value of ${STAT_BY_ID[r.statId].name} (type it in)`),
       ...noMultiplier.map(s => `${STAT_BY_ID[/** @type {string} */ (s.statId)].name}, which shows "${s.value}" instead of a multiplier `
         + '(the companion app does this; type its x value from the game into that row)'),
     ];
     const found = rows.map(r => `${r.value} ${STAT_BY_ID[r.statId].name}`).join(', ');
     say([`Read ${parsed.weapon?.name ?? 'a riven'}${rank === null ? '' : `, rank ${rank}`}: ${found}. Check the values above.`],
       issues.length ? 'note warn' : 'note');
+    if (positives) {
+      status.append(el('p', { class: 'note' }, [`The riven's name confirms the positives: ${positives.map(id => STAT_BY_ID[id].name).join(', ')}.`]));
+    }
+    if (refined.notes.length) status.append(el('p', { class: 'note' }, [`Fixed using the name and the stat ranges: ${refined.notes.join('; ')}.`]));
     if (issues.length) status.append(el('p', { class: 'note warn' }, [`Couldn't read ${issues.join(', ')}.`]));
     status.append(raw);
   } catch (e) {

@@ -82,7 +82,7 @@ function bestMatch(key) {
 const VALUE_LINE = /^.{0,5}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\s*(.*)$/i;
 
 /** A percentage stat whose sign was lost (e.g. "102.7% Finisher Damage", or a lock icon read as digits). */
-const UNSIGNED_LINE = /^.{0,5}?\d+(?:[.,]\d+)?\s*%\s*([a-z].*)$/i;
+const UNSIGNED_LINE = /^.{0,5}?(\d+(?:[.,]\d+)?)\s*%\s*([a-z].*)$/i;
 
 /** Common OCR slips inside numbers: "XO. 58" → "X0.58". @param {string} l */
 const fixDigits = l => l.replace(/([x×+\-−–—‒])\s*[oO](?=\s*[.,\d])/gi, '$10').replace(/(\d)\s*([.,])\s*(\d)/g, '$1$2$3');
@@ -107,7 +107,9 @@ function findWeapon(lines) {
  * @typedef {object} OcrRiven
  * @property {{name: string, cls: WeaponClass} | null} weapon
  * @property {number | null} rank      from the drain number (10 + rank), when it was read
- * @property {{statId: string | null, value: string, text: string}[]} stats   statId null = unrecognised
+ * @property {{statId: string | null, value: string, magnitude?: string, text: string}[]} stats
+ *   statId null = unrecognised; value "" with a magnitude = the number was read but not its sign
+ * @property {string[]} header   lines above the first stat (the riven's name is at the end)
  */
 
 /** @param {string} text OCR output @returns {OcrRiven} */
@@ -137,7 +139,7 @@ export function parseRivenText(text) {
         stats.push({ statId: null, value, text: m[3] });
       } else if (unsigned) {
         // Its own stat, but with the value left blank: the sign can't be trusted.
-        stats.push({ statId: null, value: '', text: unsigned[1] });
+        stats.push({ statId: null, value: '', magnitude: unsigned[1].replace(',', '.'), text: unsigned[2] });
       } else if (stats.length) {
         stats[stats.length - 1].text += ' ' + l;             // a wrapped stat name
       }
@@ -145,7 +147,7 @@ export function parseRivenText(text) {
   }
   for (const s of stats) s.statId = matchStat(s.text);
 
-  return { weapon: findWeapon(header.length ? header : lines), rank, stats: stats.slice(0, 4) };
+  return { weapon: findWeapon(header.length ? header : lines), rank, stats: stats.slice(0, 4), header };
 }
 
 /**
