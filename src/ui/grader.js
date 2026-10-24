@@ -7,6 +7,7 @@ import { canRoll, fittingShapes, weaponCanRoll, format, gradeRoll, inferSign, le
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
+import { loadIntoPlanner } from './planner.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
@@ -145,6 +146,7 @@ function results() {
   const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   return el('div', {}, [
     el('p', { class: 'summary' }, [`Shape ${shape}` + (avg === null ? '' : ` · average positive roll ${signed(avg)}% (${letterGrade(avg)})`)]),
+    planButton(parsed, shape),
     ...(blanks ? [el('p', { class: 'note' }, [`${blanks} stat${blanks > 1 ? "s have" : " has"} no value yet: it still counts toward the shape (as whichever sign fits the other values), but isn't graded.`])] : []),
     el('p', { class: 'note' }, [
       'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The negative is scored by how mild it is. ',
@@ -152,6 +154,20 @@ function results() {
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
     ...(oddities.length ? [reportLink(oddities)] : []),
   ]);
+}
+
+/**
+ * Sends this riven to the Build planner as the riven to start from.
+ * @param {{stat: Stat, sign: string}[]} parsed @param {import('../data/stats.js').Shape} shape
+ */
+function planButton(parsed, shape) {
+  const b = el('button', { type: 'button', class: 'copy-link' }, ['Plan from this riven']);
+  b.addEventListener('click', () => loadIntoPlanner({
+    weapon: state.weapon, cls: state.cls, shape,
+    positives: parsed.filter(r => r.sign === '+').map(r => r.stat.id),
+    negative: parsed.find(r => r.sign === '-')?.stat.id ?? null,
+  }));
+  return b;
 }
 
 const ISSUES_URL = 'https://github.com/Tome-Wyrm/riven-calculator-site/issues/new';

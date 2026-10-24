@@ -236,3 +236,23 @@ export function mountPlanner(container) {
   restore();
   render();
 }
+
+/**
+ * Starts the plan from a riven the user has (from the grader): its weapon, shape and which of the
+ * target's stats it already has. The target itself is kept.
+ * @param {{weapon: string, cls: WeaponClass, positives: string[], negative: string | null, shape: Shape}} riven
+ */
+export function loadIntoPlanner(riven) {
+  if (riven.weapon || riven.cls !== state.cls) { state.weapon = riven.weapon; state.cls = riven.cls; }
+  const spliced = state.spliced && riven.positives.includes(state.spliced);
+  Object.assign(state, {
+    from: 'mine',
+    stage: spliced ? 'post' : 'pre',
+    myShape: riven.shape,
+    have: [...riven.positives, ...(riven.negative ? [`-${riven.negative}`] : [])],
+  });
+  render();
+  const details = /** @type {HTMLDetailsElement | null} */ (root.closest('details'));
+  if (details) details.open = true;
+  root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
