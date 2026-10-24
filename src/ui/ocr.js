@@ -84,7 +84,7 @@ async function readScreenshot(blob) {
     const positives = nameFitsStats(decoded, stats.filter(s => s.statId).length) ? decoded : null;
     const cls = parsed.weapon?.cls ?? guessClass(stats);
     const refined = refineStats(stats, cls, positives, parsed.rank);
-    const rows = refined.stats.map(s => ({ statId: s.statId, value: s.value }));
+    const rows = refined.stats.map(s => ({ statId: s.statId, value: s.value, ...(s.locked ? { locked: true } : {}) }));
     if (!rows.length) {
       say(['No riven stats found in that image. Try a tighter crop around the riven card.'], 'note warn');
       status.append(raw);
@@ -113,6 +113,8 @@ async function readScreenshot(blob) {
     if (positives) {
       status.append(el('p', { class: 'note' }, [`The riven's name confirms the positives: ${positives.map(id => STAT_BY_ID[id].name).join(', ')}.`]));
     }
+    const locked = rows.filter(r => r.locked);
+    if (locked.length) status.append(el('p', { class: 'note' }, [`Locked: ${locked.map(r => STAT_BY_ID[r.statId].name).join(', ')}.`]));
     if (refined.notes.length) status.append(el('p', { class: 'note' }, [`Fixed using the name and the stat ranges: ${refined.notes.join('; ')}.`]));
     if (issues.length) status.append(el('p', { class: 'note warn' }, [`Couldn't read ${issues.join(', ')}.`]));
     status.append(raw);

@@ -88,3 +88,11 @@ test('garbled or wrapped weapon names are matched fuzzily, among classes the val
   assert.equal(parseRivenText('pu Titr\non Plaga-\nacritor\n+108.6% Critical Damage\n+109.8% Status Damage\n+2.1 Range\nMR12').weapon, null);
   assert.equal(parseRivenText('Zzqxw\n+108.6% Critical Damage\nMR12').weapon, null);
 });
+
+test('a padlock read as "0" before the sign marks the stat locked (Sobek, Glaxion)', () => {
+  const r = parseRivenText('Sobek Plaga-\nhexacan\n+101.6% Status Chance\n0 +103.6% Status\nDamage\n0 +128.5% Multishot\nw&.-87.3% Ammo Maximum\nMR 16');
+  assert.deepEqual(r.stats.map(s => [s.statId, !!s.locked]),
+    [['statusChance', false], ['statusDamage', true], ['multishot', true], ['ammoMax', false]]);
+  const g = parseRivenText('Glaxion Cori-ignitox\n+93.7% ® Heat\n0+106.2% & Corrosive\n+93.5% 2 Toxin\n0 -58.4% Zoom\nMR 13');
+  assert.deepEqual(g.stats.map(s => !!s.locked), [false, true, false, true]);
+});

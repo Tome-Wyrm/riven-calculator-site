@@ -81,6 +81,13 @@ function bestMatch(key) {
  */
 const VALUE_LINE = /^.{0,5}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\s*(.*)$/i;
 
+/**
+ * A locked stat has a padlock before its value, which OCR reads as a "0" (or "O") right before the
+ * sign: "0 +103.6% Status Damage". (Sometimes as other digits, "214109.7%", which can't be told
+ * from a misread value: those aren't marked.)
+ */
+const LOCKED = /^[0Oo]\s*[+\-−–—‒x×]/;
+
 /** A percentage stat whose sign was lost (e.g. "102.7% Finisher Damage", or a lock icon read as digits). */
 const UNSIGNED_LINE = /^.{0,5}?(\d+(?:[.,]\d+)?)\s*%\s*([a-z].*)$/i;
 
@@ -136,7 +143,7 @@ function findWeaponExact(lines) {
  * @typedef {object} OcrRiven
  * @property {{name: string, cls: WeaponClass} | null} weapon
  * @property {number | null} rank      from the drain number (10 + rank), when it was read
- * @property {{statId: string | null, value: string, magnitude?: string, text: string}[]} stats
+ * @property {{statId: string | null, value: string, magnitude?: string, text: string, locked?: boolean}[]} stats
  *   statId null = unrecognised; value "" with a magnitude = the number was read but not its sign
  * @property {string[]} header   lines above the first stat (the riven's name is at the end)
  */
@@ -165,7 +172,7 @@ export function parseRivenText(text) {
       if (m && /[a-z]{2}/i.test(m[3])) {
         m[3] = m[3].replace(/[\W_]*MR\s*\d+.*$/i, '');        // the MR line merged onto the last stat
         const value = m[1].replace(/\s/g, '').replace(/[−–—‒]/, '-').replace(/^[x×]/i, 'x').replace(',', '.');
-        stats.push({ statId: null, value, text: m[3] });
+        stats.push({ statId: null, value, text: m[3], ...(LOCKED.test(raw) ? { locked: true } : {}) });
       } else if (unsigned) {
         // Its own stat, but with the value left blank: the sign can't be trusted.
         stats.push({ statId: null, value: '', magnitude: unsigned[1].replace(',', '.'), text: unsigned[2] });

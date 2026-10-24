@@ -156,7 +156,9 @@ export function refineStats(stats, cls, positives, drainRank) {
     notes.push(...known.filter(r => r.note).map(r => `${STAT_BY_ID[/** @type {string} */ (r.statId)].name}: ${r.note}`));
   }
   return {
-    stats: rows.filter(r => r.statId).map(r => ({ statId: /** @type {string} */ (r.statId), value: r.value, note: r.note })),
+    stats: rows.filter(r => r.statId).map(r => ({
+      statId: /** @type {string} */ (r.statId), value: r.value, note: r.note, ...(r.locked ? { locked: true } : {}),
+    })),
     rank: best ? best.rank : null,
     notes,
   };

@@ -30,6 +30,7 @@ const state = {
   myPos: [NONE, NONE, NONE],
   myNeg: NONE,
   myVals: ['', '', ''],                 // its positives' values, '' = not given
+  myLocks: /** @type {string[]} */ ([]), // stats locked on it now
 };
 
 /** "100", "+100%", "x1.3" → 100 / 1.3; null for blank or junk. @param {string} v */
@@ -48,6 +49,30 @@ function valueGoals() {
 
 /** Whether a shown value meets a goal. @param {number} v @param {import('../planner.js').ValueGoal} g */
 const meetsGoal = (v, g) => (g.op === 'gte' ? v >= g.value : g.op === 'lte' ? v <= g.value : v === g.value);
+
+/** A padlock toggle for one of your riven's stats. @param {string} id */
+function lockToggle(id) {
+  const on = state.myLocks.includes(id);
+  const b = el('button', { type: 'button', class: 'icon-button lock', 'aria-pressed': String(on), 'aria-label': `${name(id)} locked`, title: 'Locked now' }, ['🔒']);
+  b.addEventListener('click', () => {
+    state.myLocks = on ? state.myLocks.filter(x => x !== id) : [...state.myLocks, id];
+    render();
+  });
+  return b;
+}
+
+/**
+ * The next move from your riven, given what's locked on it now: "Unlock Cold, lock Toxin and cycle".
+ * @param {string} action @param {string[]} parents
+ */
+function nextMove(action, parents) {
+  if (action === 'splice') return actionText(action, parents);
+  const want = action === 'cycle' ? null : action.startsWith('-') ? action.slice(1) : action;
+  const unlock = state.myLocks.filter(id => id !== want);
+  const keep = want !== null && state.myLocks.includes(want);
+  const text = want === null ? 'cycle' : `${keep ? 'keep' : 'lock'} ${name(action)} ${keep ? 'locked ' : ''}and cycle`;
+  return unlock.length ? `Unlock ${unlock.map(name).join(', ')}, ${text}` : text[0].toUpperCase() + text.slice(1) + (want === null ? ', nothing locked' : '');
+}
 
 /**
  * A number box that updates on change (not every keystroke, so re-rendering doesn't steal focus).
@@ -164,6 +189,7 @@ function controls() {
     const myPosOptions = /** @type {[string, string][]} */ ([...posOptions, ...splicedList.map(s => [s.id, name(s.id)])]);
     state.myPos = state.myPos.map(id => (myPosOptions.some(([v]) => v === id) ? id : NONE));
     if (!negative.includes(state.myNeg)) state.myNeg = NONE;
+    state.myLocks = state.myLocks.filter(id => state.myPos.includes(id) || id === state.myNeg);
     rows.push(el('h3', { class: 'plan-stage' }, ['Your riven now']));
     const goals = valueGoals();
     rows.push(...state.myPos.map((id, i) => el('div', { class: 'controls' }, [
@@ -173,6 +199,7 @@ function controls() {
         set({ myPos });
       }),
       // Only asked when there's a value goal for that stat.
+      ...(id ? [lockToggle(id)] : []),
       ...(id && goals[id] ? [numberBox('value', state.myVals[i], 'meets it', v => {
         const myVals = [...state.myVals];
         myVals[i] = v;
@@ -181,6 +208,7 @@ function controls() {
     ])));
     rows.push(el('div', { class: 'controls' }, [
       select('Its negative', [[NONE, 'None'], ...negOptions.slice(1)], state.myNeg, v => set({ myNeg: v })),
+      ...(state.myNeg ? [lockToggle(state.myNeg)] : []),
     ]));
     const now = splicesNow(positive);
     if (now.length) rows.push(el('p', { class: 'note next' }, [`It can splice now: ${now.join('; ')}.`]));
@@ -246,7 +274,7 @@ function results() {
   ];
   if (state.from === 'mine') {
     out.push(el('p', { class: 'note next' }, [mine
-      ? `Your next move: ${actionText(mine.action, parents)}.`
+      ? `Your next move: ${nextMove(mine.action, parents)}.`
       : `Your riven isn't the ${state.shape} shape the target needs${state.spliced && mineNow?.stage === 'post' ? ', and a spliced riven\'s shape can\'t change' : ''}: cycle it unlocked until it is.`]));
   }
 
@@ -294,6 +322,7 @@ function renderResults() {
     min: state.want.map((id, i) => (id && state.mins[i] ? `${id}:${state.ops[i]}:${state.mins[i]}` : '')).filter(Boolean).join(','),
     ...(state.from === 'mine' ? {
       from: 'mine', mp: state.myPos.filter(Boolean).join(','), mn: state.myNeg,
+      ml: state.myLocks.join(','),
       mv: state.myPos.map((id, i) => (id && state.myVals[i] ? `${id}:${state.myVals[i]}` : '')).filter(Boolean).join(','),
     } : {}),
   });
@@ -325,6 +354,7 @@ function restore() {
     })),
     mv: v => Object.fromEntries(v.split(',').map(p => p.split(':'))),
     mn: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
+    ml: v => v.split(',').filter(id => STAT_BY_ID[id]),
   });
   if (saved.weapon !== undefined) {
     state.weapon = saved.weapon;
@@ -338,6 +368,7 @@ function restore() {
   state.from = saved.from ?? 'fresh';
   if (saved.mp) state.myPos = [...saved.mp, NONE, NONE, NONE].slice(0, 3);
   if (saved.mn !== undefined) state.myNeg = saved.mn;
+  if (saved.ml) state.myLocks = saved.ml;
   if (saved.min) {
     state.mins = state.want.map(id => saved.min[id]?.value ?? '');
     state.ops = state.want.map(id => saved.min[id]?.op ?? 'gte');
@@ -355,7 +386,7 @@ export function mountPlanner(container) {
 /**
  * Starts the plan from a riven the user has (from the grader): its weapon and stats. The target
  * itself is kept.
- * @param {{weapon: string, cls: WeaponClass, positives: string[], values?: string[], negative: string | null, shape: Shape}} riven
+ * @param {{weapon: string, cls: WeaponClass, positives: string[], values?: string[], negative: string | null, shape: Shape, locked?: string[]}} riven
  */
 export function loadIntoPlanner(riven) {
   if (riven.weapon || riven.cls !== state.cls) { state.weapon = riven.weapon; state.cls = riven.cls; }
@@ -364,6 +395,7 @@ export function loadIntoPlanner(riven) {
     myPos: [...riven.positives, NONE, NONE, NONE].slice(0, 3),
     myVals: [...(riven.values ?? []), '', '', ''].slice(0, 3),
     myNeg: riven.negative ?? NONE,
+    myLocks: riven.locked ?? [],
   });
   render();
   const details = /** @type {HTMLDetailsElement | null} */ (root.closest('details'));

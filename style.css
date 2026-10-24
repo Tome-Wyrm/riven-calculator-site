@@ -208,6 +208,8 @@ table.ranges {
   cursor: pointer;
 }
 .icon-button:hover { color: var(--text); background: var(--bg); }
+.icon-button.lock { filter: grayscale(1); opacity: 0.45; }
+.icon-button.lock[aria-pressed="true"] { filter: none; opacity: 1; border-color: var(--accent); }
 .goals td.grade { font-weight: 700; color: var(--accent); }
 
 /* Build planner */

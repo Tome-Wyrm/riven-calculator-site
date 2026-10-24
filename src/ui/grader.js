@@ -18,7 +18,7 @@ const state = {
   weapon: '',
   cls: /** @type {WeaponClass} */ ('rifle'),
   rank: MAX_RANK,
-  rows: /** @type {{statId: string, value: string}[]} */ ([]),
+  rows: /** @type {{statId: string, value: string, locked?: boolean}[]} */ ([]),
 };
 
 const signed = (/** @type {number} */ x) => `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(1)}`;
@@ -61,10 +61,17 @@ function statRows() {
     // Results update as you type without rebuilding the inputs, so focus stays put.
     input.addEventListener('input', () => { row.value = input.value; renderResults(); });
     const remove = el('button', { type: 'button', class: 'icon-button', 'aria-label': `Remove stat ${i + 1}` }, ['×']);
+    // Locked (padlock in game): doesn't change the grade, but the Build planner uses it.
+    const lock = el('button', {
+      type: 'button', class: 'icon-button lock', 'aria-label': `Stat ${i + 1} locked`, 'aria-pressed': String(!!row.locked),
+      title: 'Locked in game',
+    }, ['🔒']);
+    lock.addEventListener('click', () => { row.locked = !row.locked; render(); });
     remove.addEventListener('click', () => { state.rows.splice(i, 1); render(); });
     return el('div', { class: 'grade-row' }, [
       select(`Stat ${i + 1}`, options, row.statId, v => { row.statId = v; render(); }),
       el('label', { class: 'field target' }, [input]),
+      lock,
       remove,
     ]);
   });
@@ -162,6 +169,7 @@ function planButton(parsed, shape) {
     positives: parsed.filter(r => r.sign === '+').map(r => r.stat.id),
     values: parsed.filter(r => r.sign === '+').map(r => String(Math.abs(/** @type {number} */ (r.shown)))),
     negative: parsed.find(r => r.sign === '-')?.stat.id ?? null,
+    locked: state.rows.filter(r => r.locked).map(r => r.statId),
   }));
   return b;
 }
@@ -202,7 +210,7 @@ function renderResults() {
   resultsBox.replaceChildren(results());
   saveState('v', {
     weapon: state.weapon, cls: state.cls, rank: state.rank,
-    rows: state.rows.map(r => `${r.statId}:${r.value}`).join(';'),
+    rows: state.rows.map(r => `${r.statId}:${r.value}${r.locked ? ':l' : ''}`).join(';'),
   });
 }
 
@@ -220,8 +228,8 @@ function restore() {
     rank: num(0, MAX_RANK),
     rows: v => {
       const rows = v.split(';').slice(0, MAX_ROWS).map(p => {
-        const [statId, value = ''] = p.split(':');
-        return { statId, value };
+        const [statId, value = '', lock] = p.split(':');
+        return { statId, value, ...(lock === 'l' ? { locked: true } : {}) };
       }).filter(r => STAT_BY_ID[r.statId]);
       return rows.length ? rows : undefined;
     },
@@ -239,7 +247,7 @@ function restore() {
 
 /**
  * Fills the grader with a riven (used by the inventory importer).
- * @param {{weapon: string, cls: WeaponClass, rank: number, rows: {statId: string, value: string}[]}} riven
+ * @param {{weapon: string, cls: WeaponClass, rank: number, rows: {statId: string, value: string, locked?: boolean}[]}} riven
  */
 export function loadIntoGrader(riven) {
   Object.assign(state, riven);
