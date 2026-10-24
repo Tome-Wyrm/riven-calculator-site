@@ -66,7 +66,7 @@ function lockToggle(id) {
  * @param {string} action @param {string[]} parents
  */
 function nextMove(action, parents) {
-  if (action === 'splice') return actionText(action, parents);
+  if (action === 'splice') return actionText(action, parents, current().have);
   const want = action === 'cycle' ? null : action.startsWith('-') ? action.slice(1) : action;
   const unlock = state.myLocks.filter(id => id !== want);
   const keep = want !== null && state.myLocks.includes(want);
@@ -112,8 +112,9 @@ function splicesNow(positive) {
   const pos = state.myPos.filter(Boolean);
   if (pos.some(id => STAT_BY_ID[id].spliced)) return [];     // one splice per riven
   return SPLICED.filter(s => s.b[state.cls] !== undefined).flatMap(s => /** @type {string[][]} */ (s.from)
-    .filter(r => r.every(id => pos.includes(id) && positive.includes(id)))
-    .map(r => `${r.map(name).join(' + ')} → ${name(s.id)}`));
+    // Both parents as positives, or one of them as the curse.
+    .filter(r => r.every(id => pos.includes(id) || id === state.myNeg) && r.some(id => pos.includes(id)))
+    .map(r => `${r.map(id => (id === state.myNeg ? name(`-${id}`) : name(id))).join(' + ')} → ${name(s.id)}`));
 }
 
 const kuva = (/** @type {number} */ n) => `${Math.round(n).toLocaleString('en-US')} Kuva`;
@@ -216,10 +217,13 @@ function controls() {
   return el('div', {}, rows);
 }
 
-/** @param {string} action */
-function actionText(action, parents) {
+/**
+ * @param {string} action @param {string[]} parents
+ * @param {string[]} [have] the riven's stats at that point ('-x' = x is its curse, which can be a parent)
+ */
+function actionText(action, parents, have = []) {
   if (action === 'cycle') return 'Cycle, nothing locked';
-  if (action === 'splice') return `Splice ${parents.map(name).join(' + ')} → ${name(state.spliced)}`;
+  if (action === 'splice') return `Splice ${parents.map(id => name(have.includes(`-${id}`) ? `-${id}` : id)).join(' + ')} → ${name(state.spliced)}`;
   return `Lock ${name(action)} and cycle`;
 }
 
@@ -284,7 +288,7 @@ function results() {
     if (!steps.length) return [];
     const rows = steps.map(s => el('tr', mine === s ? { class: 'best' } : {}, [
       el('th', { scope: 'row' }, [s.have.length ? s.have.map(name).join(', ') : 'None of them']),
-      el('td', {}, [actionText(s.action, parents)]),
+      el('td', {}, [actionText(s.action, parents, s.have)]),
       el('td', {}, [`${kuva(s.kuva)} · ${cyc(s.cycles)}`]),
     ]));
     return [
@@ -297,7 +301,8 @@ function results() {
   const goals = valueGoals();
   const goalList = [...want.map(id => (goals[id] ? `${name(id)} ${OP_TEXT[goals[id].op]} ${goals[id].value}` : name(id))), ...(state.negative ? [name(`-${state.negative}`)] : [])].join(', ');
   if (state.spliced) {
-    out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')} on a ${state.shape} riven, then splice ${name(state.spliced)}`));
+    const curseOk = SHAPES[state.shape].negatives > 0 && parents.some(id => pools(state.cls, ipsOf(state.weapon)).negative.includes(id));
+    out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')}${curseOk ? ' (one of them can be the curse)' : ''} on a ${state.shape} riven, then splice ${name(state.spliced)}`));
     out.push(...table('post', `2. With ${name(state.spliced)} in place, cycle for ${goalList}`));
   } else {
     out.push(...table('post', `Cycle for ${goalList} on a ${state.shape} riven`));

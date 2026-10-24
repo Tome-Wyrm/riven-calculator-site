@@ -6,7 +6,10 @@
 // riven currently has, whether it has the wanted negative, and its shape. In each state you either
 // cycle unlocked, or lock one of the wanted traits you have (keeps it and the shape, costs double).
 // Reaching both splice parents on the target shape lets you splice (free): the parents are consumed,
-// a random trait of the same sign replaces them, the spliced trait stays and the shape is frozen.
+// the spliced trait stays and the shape is frozen. A parent can be the curse (Critical Chance +
+// -Zoom → Weak Point Critical Chance): then the spliced stat takes the positive parent's place and
+// a random curse replaces the negative one. With two positive parents, a random positive fills the
+// second slot.
 // Policy iteration finds the cheapest action in every state; the result is exact for the model.
 //
 // Value goals ("Toxin at least 100%"): a wanted stat only counts once it rolls at least that much.
@@ -48,8 +51,9 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
  * @property {'gte' | 'lte' | 'eq'} op  at least, at most, or exactly (as the game shows it)
  * @property {number} value  a magnitude: "100" for +100%, "90" for -90% Weapon Recoil, "1.3" for x1.3
  *
- * @typedef {{stage: 'pre' | 'post', mask: number, neg: boolean, shape: Shape}} State
- *   mask = bits over the stage's tracked positives
+ * @typedef {{stage: 'pre' | 'post', mask: number, neg: number, shape: Shape}} State
+ *   mask = bits over the stage's tracked positives; neg = what the negative is: 0 something else
+ *   (or none), 1 the wanted negative, 2 / 3 the first / second splice parent (before the splice)
  */
 
 /**
@@ -73,13 +77,19 @@ function solveFor(t, parents) {
 
   /** @type {Map<string, State>} */
   const states = new Map();
-  const key = (/** @type {State} */ s) => `${s.stage}|${s.mask}|${+s.neg}|${s.shape}`;
+  const key = (/** @type {State} */ s) => `${s.stage}|${s.mask}|${s.neg}|${s.shape}`;
+  /** The stat a negative code stands for. @param {number} code @returns {string | null} */
+  const negStat = code => (code === 1 ? targetNeg : code >= 2 && parents ? parents[code - 2] : null);
+  /** Negative codes possible in a stage: parents only before the splice, and only if they can be curses. */
+  const negCodes = (/** @type {'pre' | 'post'} */ stage) => [0, ...(targetNeg ? [1] : []),
+    ...(stage === 'pre' && parents ? [2, 3].filter(c => negPool.includes(/** @type {string} */ (negStat(c))) && negStat(c) !== targetNeg) : [])];
   const add = (/** @type {State} */ s) => { const k = key(s); if (!states.has(k)) states.set(k, s); return k; };
   const stages = /** @type {('pre' | 'post')[]} */ (parents ? ['pre', 'post'] : ['post']);
   for (const stage of stages) {
     const n = (stage === 'pre' ? preTracked : postTracked).length;
-    for (let mask = 0; mask < 1 << n; mask++) for (const neg of [false, true]) for (const shape of SHAPE_ORDER) {
-      if (neg && (!targetNeg || SHAPES[shape].negatives === 0)) continue;
+    for (let mask = 0; mask < 1 << n; mask++) for (const neg of negCodes(stage)) for (const shape of SHAPE_ORDER) {
+      if (neg && SHAPES[shape].negatives === 0) continue;
+      if (neg >= 2 && mask & (1 << (neg - 2))) continue;          // a parent can't be both
       if (stage === 'post' && S && shape !== t.shape) continue;   // splicing froze the shape
       add({ stage, mask, neg, shape });
     }
@@ -87,8 +97,10 @@ function solveFor(t, parents) {
 
   const tracked = (/** @type {State} */ s) => (s.stage === 'pre' ? preTracked : postTracked);
   const isDone = (/** @type {State} */ s) => s.stage === 'post' && s.shape === t.shape
-    && s.mask === (1 << postTracked.length) - 1 && (!targetNeg || s.neg);
-  const canSplice = (/** @type {State} */ s) => s.stage === 'pre' && s.shape === t.shape && (s.mask & parentMask) === parentMask;
+    && s.mask === (1 << postTracked.length) - 1 && (!targetNeg || s.neg === 1);
+  // Both parents as positives, or one as a positive and the other as the curse.
+  const canSplice = (/** @type {State} */ s) => s.stage === 'pre' && s.shape === t.shape
+    && ((s.mask & parentMask) === parentMask || (s.neg >= 2 && (s.mask & (1 << (3 - s.neg))) !== 0));
 
   /**
    * The chance a freshly rolled positive meets its value goal on a shape (1 with no goal). The game
@@ -145,7 +157,7 @@ function solveFor(t, parents) {
       const d = k - fixedPos.length;
       if (d < 0) continue;
       // A stat locked as the negative can't also be drawn as a positive.
-      const pool = posPool.filter(id => !fixedPos.includes(id) && !(lockNeg && id === targetNeg));
+      const pool = posPool.filter(id => !fixedPos.includes(id) && !(lockNeg && id === negStat(s.neg)));
       const T = tr.filter(id => pool.includes(id));
       const X = targetNeg && pool.includes(targetNeg) && !tr.includes(targetNeg) ? 1 : 0;
       const others = pool.filter(id => !T.includes(id) && id !== targetNeg);
@@ -161,19 +173,25 @@ function solveFor(t, parents) {
           if (m < 0 || m > O2) continue;
           const p0 = (binom(O1, j) * binom(O2, m)) / total / shapes.length;
           if (!p0) continue;
-          // Negative drawn from the negative pool minus everything that's already a positive.
+          // Negative drawn from the negative pool minus everything that's already a positive: the
+          // chance of each stat we track as a curse (the wanted one, or a parent not drawn as a positive).
           const taken = negFixedPos + A.filter(id => negPool.includes(id)).length + x + j;
-          const pNeg = x === 0 ? 1 / (negPool.length - taken) : 0;
+          const negChances = negCodes(s.stage).filter(code => code > 0).map(code => {
+            const id = /** @type {string} */ (negStat(code));
+            const free = code === 1 ? x === 0 : !A.includes(id) && !fixedPos.includes(id);
+            return /** @type {[number, number]} */ ([code, free ? 1 / (negPool.length - taken) : 0]);
+          });
           for (const [good, q] of rolls(A, shape)) {
             const p = p0 * q;
             let mask = 0;
             for (const id of [...good, ...(lockPos ? [lockPos] : [])]) mask |= 1 << tr.indexOf(id);
-            /** @param {boolean} neg @param {number} w */
+            /** @param {number} neg @param {number} w */
             const put = (neg, w) => { const kk = key({ stage: s.stage, mask, neg, shape }); out.set(kk, (out.get(kk) ?? 0) + w); };
-            if (c === 0 || !targetNeg) { put(false, p); continue; }
-            if (lockNeg) { put(true, p); continue; }
-            put(true, p * pNeg);
-            put(false, p * (1 - pNeg));
+            if (c === 0) { put(0, p); continue; }
+            if (lockNeg) { put(s.neg, p); continue; }
+            let rest = 1;
+            for (const [code, q] of negChances) { if (q) put(code, p * q); rest -= q; }
+            put(0, p * rest);
           }
         }
       }
@@ -181,19 +199,35 @@ function solveFor(t, parents) {
     return out;
   }
 
-  /** Splicing: parents consumed, a random positive replaces them, shape frozen. @param {State} s */
+  /**
+   * Splicing: parents consumed, shape frozen. Two positive parents: a random positive takes the
+   * second slot. A curse parent: a random curse replaces it.
+   * @param {State} s
+   */
   function splice(s) {
     const out = new Map();
     let mask = 0;
     const survivors = preTracked.filter((id, i) => i >= 2 && s.mask & (1 << i));
     for (const id of survivors) mask |= 1 << postTracked.indexOf(id);
+    if (s.neg >= 2) {
+      // The new curse: from the negative pool minus the riven's positives (approximated by how
+      // many positives the shape has; most stats can be either sign).
+      const left = negPool.length - SHAPES[s.shape].positives;
+      const pTarget = targetNeg && targetNeg !== S && !survivors.includes(targetNeg) ? 1 / left : 0;
+      for (const [neg, w] of /** @type {[number, number][]} */ ([[1, pTarget], [0, 1 - pTarget]])) {
+        if (!w) continue;
+        const kk = key({ stage: 'post', mask, neg, shape: s.shape });
+        out.set(kk, (out.get(kk) ?? 0) + w);
+      }
+      return out;
+    }
     const pool = posPool.filter(id => id !== S && !survivors.includes(id));
     for (const id of pool) {
       const i = postTracked.indexOf(id);
       const q = i >= 0 ? meets(id, s.shape) : 0;
       for (const [m, w] of /** @type {[number, number][]} */ ([[mask | (i >= 0 ? 1 << i : 0), q], [mask, 1 - q]])) {
         if (!w) continue;
-        const kk = key({ stage: 'post', mask: m, neg: s.neg, shape: s.shape });
+        const kk = key({ stage: 'post', mask: m, neg: s.neg === 1 ? 1 : 0, shape: s.shape });
         out.set(kk, (out.get(kk) ?? 0) + w / pool.length);
       }
     }
@@ -205,7 +239,7 @@ function solveFor(t, parents) {
     if (canSplice(s)) return [{ lock: 'SPLICE', label: 'splice' }];
     const acts = [{ lock: null, label: 'cycle' }];
     tracked(s).forEach((id, i) => { if (s.mask & (1 << i)) acts.push({ lock: id, label: `lock ${id}` }); });
-    if (s.neg) acts.push({ lock: 'NEG', label: `lock ${targetNeg}` });
+    if (s.neg) acts.push({ lock: 'NEG', label: `lock ${negStat(s.neg)}` });
     return acts;
   }
 
@@ -256,7 +290,7 @@ function solveFor(t, parents) {
     if (!changed) break;
   }
   const C = evaluate('cycles');
-  return { states, keys, index, table, policy, V, C, isDone, canSplice, cycle, preTracked, postTracked, stage0: stages[0] };
+  return { states, keys, index, table, policy, V, C, isDone, canSplice, cycle, negStat, preTracked, postTracked, stage0: stages[0] };
 }
 
 /** Solves A·x = b (augmented rows), partial pivoting. @param {Float64Array[]} A */
@@ -310,12 +344,18 @@ export function planBuild(t, current = null) {
       const tr = current.stage === 'pre' ? sol.preTracked : sol.postTracked;
       let mask = 0;
       for (const id of current.have) if (!id.startsWith('-') && tr.includes(id)) mask |= 1 << tr.indexOf(id);
-      const neg = !!t.negative && current.have.includes(`-${t.negative}`) && SHAPES[current.shape].negatives > 0;
       const stage = sol.parents ? current.stage : 'post';
-      return new Map([[`${stage}|${mask}|${+neg}|${current.shape}`, 1]]);
+      // The riven's negative: the wanted one (1), a splice parent (2 / 3, before the splice), or other.
+      const curse = current.have.find(id => id.startsWith('-'))?.slice(1);
+      let neg = 0;
+      if (curse && SHAPES[current.shape].negatives > 0) {
+        if (curse === t.negative) neg = 1;
+        else if (stage === 'pre' && sol.parents?.includes(curse)) neg = 2 + sol.parents.indexOf(curse);
+      }
+      return new Map([[`${stage}|${mask}|${neg}|${current.shape}`, 1]]);
     }
     // A fresh riven: as if one unlocked cycle from nothing.
-    return sol.cycle({ stage: sol.stage0, mask: 0, neg: false, shape: SHAPE_ORDER[0] }, { lock: null });
+    return sol.cycle({ stage: sol.stage0, mask: 0, neg: 0, shape: SHAPE_ORDER[0] }, { lock: null });
   };
   const expected = (/** @type {any} */ sol, /** @type {number[]} */ vals) =>
     [...start(sol)].reduce((sum, [k, p]) => sum + p * vals[sol.index.get(k)], 0);
@@ -374,9 +414,9 @@ export function planBuild(t, current = null) {
     const a = best.table[i][best.policy[i]];
     steps.push({
       stage: s.stage,
-      have: [...tr.filter((/** @type {string} */ _, /** @type {number} */ b) => s.mask & (1 << b)), ...(s.neg ? [`-${t.negative}`] : [])],
+      have: [...tr.filter((/** @type {string} */ _, /** @type {number} */ b) => s.mask & (1 << b)), ...(s.neg ? [`-${best.negStat(s.neg)}`] : [])],
       shape: s.shape,
-      action: a.lock === 'SPLICE' ? 'splice' : a.lock === 'NEG' ? `-${t.negative}` : a.lock ?? 'cycle',
+      action: a.lock === 'SPLICE' ? 'splice' : a.lock === 'NEG' ? `-${best.negStat(s.neg)}` : a.lock ?? 'cycle',
       kuva: best.V[i],
       cycles: best.C[i],
     });

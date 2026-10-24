@@ -69,3 +69,16 @@ test('value goals: a riven that already meets them is done', () => {
     { stage: 'post', have: ['toxin', 'multishot'], shape: '++' });
   assert.equal(plan.expectedCycles, 0);
 });
+
+test('a curse can be a splice parent (Mausolon: Critical Chance + -Zoom → Weak Point Critical Chance)', () => {
+  const target = { cls: 'archgun', positives: ['damage', 'toxin'], spliced: 'weakpointCrit', parents: ['critChance', 'zoom'], negative: null, shape: '+++-' };
+  const plan = planBuild(target, { stage: 'pre', have: ['damage', 'critChance', 'toxin', '-zoom'], shape: '+++-' });
+  assert.equal(plan.expectedCycles, 0);
+  assert.equal(plan.steps.find(s => s.have.includes('-zoom') && s.have.includes('critChance'))?.action, 'splice');
+  // Allowing Zoom as the curse makes the route cheaper than needing it as a positive.
+  const fresh = planBuild(target);
+  assert.ok(fresh.expectedKuva > 0);
+  // With a wanted curse, the new random curse only sometimes matches it.
+  const wanted = planBuild({ ...target, negative: 'recoil' }, { stage: 'pre', have: ['damage', 'critChance', 'toxin', '-zoom'], shape: '+++-' });
+  assert.ok(wanted.expectedCycles > 0);
+});
