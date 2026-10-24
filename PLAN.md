@@ -265,6 +265,15 @@ Back-solve the roll quality u for each stat on a riven you already own.
         about 0.5x today's rank-8 ranges (an old riven, like the Akarius one), and the spliced
         Status Damage (+52.5%) came in at the same scale. The Mausolon splice (Critical Chance +
         -Zoom → Weak Point Critical Chance +291.7%) fits today's ranges.
+  - [x] First cycle log (2026-10-23): one Lacera riven, 48 unlocked cycles (screenshots x77–x124).
+        - Shapes: ++ 13, ++- 12, +++ 13, +++- 10 (12 each expected; chi² 0.5, df 3): fits 25% each.
+        - Rolls: all 141 values fit today's rank-8 ranges. Spread by fifths 27/20/35/21/38, mean
+          0.54 (0.50 expected, 1.6 standard errors high; chi² 9.3, df 4, p ≈ 0.05): even rolls,
+          perhaps a slight lean high; needs more data.
+        - Stats: 119 positive draws over a 21-stat pool; chi² 26.9, df 20 (p ≈ 0.14), so roughly even,
+          but Slash and Range never came up as positives (5.7 each expected; even draws would leave
+          both at zero about 0.2% of the time). A lead to check: maybe they're excluded or rarer on
+          Lacera. More cycles on this riven, or another melee riven, would settle it.
 
 ### Phase 9 — Splice planner
 Answer "which traits do I splice, and how good must they be, to get spliced stat X ≥ target?"
