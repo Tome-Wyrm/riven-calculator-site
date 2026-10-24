@@ -11,7 +11,7 @@
 //
 // Value goals ("Toxin at least 100%"): a wanted stat only counts once it rolls at least that much.
 // Each cycle rerolls the values of unlocked stats (roll uniform from worst to best); a locked stat
-// keeps its value, and stats that survive a splice keep theirs.
+// keeps its value, and stats that survive a splice keep theirs (both seen in game).
 //
 // Assumptions (see src/cycle.js): each shape equally likely when unlocked, stats drawn evenly with
 // no repeats, rolls uniform, values at rank 8, and a flat cost per cycle (riven past its 10th

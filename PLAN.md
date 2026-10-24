@@ -258,6 +258,13 @@ Back-solve the roll quality u for each stat on a riven you already own.
       decode is only trusted if it fits the stat count (4 stats → 3 positives).
     - With no weapon name, the class is the one where the values fit (+99.4% Multishot fits a
       shotgun riven, not a rifle one), not just the first that can roll the stats.
+  - [x] Splice screen seen (Felarx Insi-visidex, and a Mausolon one): the two parents are marked
+        red, the preview shows the spliced stat's value and "???" for the random replacement, and
+        the other stats keep their exact values (Puncture +70.3%, -44.5% Critical Chance) — so the
+        planner's "survivors keep their values" assumption holds. That Felarx riven's values are all
+        about 0.5x today's rank-8 ranges (an old riven, like the Akarius one), and the spliced
+        Status Damage (+52.5%) came in at the same scale. The Mausolon splice (Critical Chance +
+        -Zoom → Weak Point Critical Chance +291.7%) fits today's ranges.
 
 ### Phase 9 — Splice planner
 Answer "which traits do I splice, and how good must they be, to get spliced stat X ≥ target?"
