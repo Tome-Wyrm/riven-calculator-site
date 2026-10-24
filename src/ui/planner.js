@@ -4,10 +4,10 @@
 // the Kuva it's likely to cost.
 
 import { CLASSES, SHAPES, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { SHAPE_ORDER, range } from '../engine.js';
+import { SHAPE_ORDER, range, solveU, rollScore } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { pools } from '../cycle.js';
-import { planBuild, OP_TEXT } from '../planner.js';
+import { planBuild, OP_TEXT, splicedRollNeeded } from '../planner.js';
 import { CLASS_LABEL, el, statName, segmented, select, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf } from './state.js';
 
@@ -30,6 +30,8 @@ const state = {
   myPos: [NONE, NONE, NONE],
   myNeg: NONE,
   myVals: ['', '', ''],                 // its positives' values, '' = not given
+  myNegVal: '',                         // its curse's value (asked when the curse is a splice parent)
+  splicedMin: '',                       // least value wanted for the spliced stat, '' = any
   myLocks: /** @type {string[]} */ ([]), // stats locked on it now
 };
 
@@ -44,7 +46,37 @@ function valueGoals() {
   /** @type {Record<string, import('../planner.js').ValueGoal>} */
   const out = {};
   state.want.forEach((id, i) => { const m = magnitude(state.mins[i]); if (id && m !== null) out[id] = { op: state.ops[i], value: m }; });
+  const sm = magnitude(state.splicedMin);
+  if (state.spliced && sm !== null) out[state.spliced] = { op: 'gte', value: sm };
   return out;
+}
+
+/** The splice parents that matter for the spliced stat's goal: every recipe's, or the chosen one's. */
+function goalParents() {
+  if (!state.spliced || !valueGoals()[state.spliced]) return [];
+  const recipes = state.recipe ? [state.recipe.split('+')] : /** @type {string[][]} */ (STAT_BY_ID[state.spliced].from);
+  return [...new Set(recipes.flat())];
+}
+
+/**
+ * Your riven's parents whose roll is good enough for the spliced stat's goal (the spliced stat
+ * keeps the better parent roll). A parent with no value given counts as good.
+ * @param {Shape} shape
+ */
+function goodParents(shape) {
+  const need = splicedRollNeeded({ cls: state.cls, positives: [], spliced: state.spliced || null, negative: null, shape: state.shape, goals: valueGoals() });
+  if (need === null) return undefined;
+  const rollOf = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign, /** @type {string} */ v) => {
+    const m = magnitude(v);
+    if (m === null) return 1;
+    const r = range(STAT_BY_ID[id], state.cls, shape, sign);
+    return solveU(STAT_BY_ID[id], state.cls, shape, sign, Math.sign(r.at1) * m);
+  };
+  return goalParents().filter(id => {
+    const i = state.myPos.indexOf(id);
+    if (i >= 0) return rollOf(id, '+', state.myVals[i]) >= need;
+    return id === state.myNeg && rollOf(id, '-', state.myNegVal) >= need;
+  });
 }
 
 /** Whether a shown value meets a goal. @param {number} v @param {import('../planner.js').ValueGoal} g */
@@ -104,6 +136,7 @@ function current() {
     shape,
     stage: state.spliced && pos.includes(state.spliced) ? 'post' : 'pre',
     have: [...good, ...(state.myNeg ? [`-${state.myNeg}`] : [])],
+    goodParents: shape ? goodParents(shape) : undefined,
   };
 }
 
@@ -116,6 +149,9 @@ function splicesNow(positive) {
     .filter(r => r.every(id => pos.includes(id) || id === state.myNeg) && r.some(id => pos.includes(id)))
     .map(r => `${r.map(id => (id === state.myNeg ? name(`-${id}`) : name(id))).join(' + ')} → ${name(s.id)}`));
 }
+
+/** A roll on the grader's ±10% scale. @param {number} u */
+const rollText = u => { const x = rollScore(u); return `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(4)}%`; };
 
 const kuva = (/** @type {number} */ n) => `${Math.round(n).toLocaleString('en-US')} Kuva`;
 const cyc = (/** @type {number} */ n) => `${n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString('en-US')} cycles`;
@@ -153,6 +189,7 @@ function controls() {
     ]),
     el('div', { class: 'controls' }, [
       select('Spliced', splicedOptions, state.spliced, v => set({ spliced: v })),
+      ...(state.spliced ? [numberBox('Spliced value at least', state.splicedMin, 'any value', v => set({ splicedMin: v }), '≥')] : []),
       ...(recipes.length > 1 ? [select('From', recipeOptions, state.recipe, v => set({ recipe: v }))] : []),
     ]),
     ...state.want.map((id, i) => el('div', { class: 'controls' }, [
@@ -199,9 +236,9 @@ function controls() {
         myPos[i] = v;
         set({ myPos });
       }),
-      // Only asked when there's a value goal for that stat.
+      // Only asked when there's a value goal for that stat, or it's a parent of a spliced stat with one.
       ...(id ? [lockToggle(id)] : []),
-      ...(id && goals[id] ? [numberBox('value', state.myVals[i], 'meets it', v => {
+      ...(id && (goals[id] || goalParents().includes(id)) ? [numberBox('value', state.myVals[i], 'meets it', v => {
         const myVals = [...state.myVals];
         myVals[i] = v;
         set({ myVals });
@@ -210,9 +247,16 @@ function controls() {
     rows.push(el('div', { class: 'controls' }, [
       select('Its negative', [[NONE, 'None'], ...negOptions.slice(1)], state.myNeg, v => set({ myNeg: v })),
       ...(state.myNeg ? [lockToggle(state.myNeg)] : []),
+      ...(state.myNeg && goalParents().includes(state.myNeg)
+        ? [numberBox('value', state.myNegVal, 'good enough', v => set({ myNegVal: v }))] : []),
     ]));
     const now = splicesNow(positive);
     if (now.length) rows.push(el('p', { class: 'note next' }, [`It can splice now: ${now.join('; ')}.`]));
+    // ...but for a spliced goal, only with a parent that rolled well enough.
+    const cur = current();
+    if (now.length && cur.shape && cur.goodParents && !cur.goodParents.length && state.spliced && now.some(t => t.endsWith(name(state.spliced)))) {
+      rows.push(el('p', { class: 'note warn' }, [`Neither parent rolled well enough for ${name(state.spliced)} ≥ ${valueGoals()[state.spliced].value} yet (the spliced stat keeps the better parent roll).`]));
+    }
   }
   return el('div', {}, rows);
 }
@@ -243,7 +287,9 @@ function results() {
       cls: state.cls, ipsCode: ipsOf(state.weapon), positives: want, spliced: state.spliced || null,
       parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape: state.shape,
       goals: valueGoals(),
-    }, mineNow && mineNow.shape ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape } : null);
+    }, mineNow && mineNow.shape
+      ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape, goodParents: mineNow.goodParents }
+      : null);
   } catch (e) {
     return el('p', { class: 'note warn' }, [e instanceof Error ? e.message : String(e)]);
   }
@@ -256,7 +302,9 @@ function results() {
     const steps = plan.steps.filter(s => s.stage === stage && s.shape === mineNow.shape);
     const tracked = new Set(steps.flatMap(s => s.have));
     const key = mineNow.have.filter(id => tracked.has(id)).sort().join();
-    mine = steps.find(s => [...s.have].sort().join() === key) ?? null;
+    // With a spliced goal, rows also differ by which parents rolled well enough.
+    const goodKey = (mineNow.goodParents ?? []).filter(id => mineNow.have.some(h => h === id || h === `-${id}`)).sort().join();
+    mine = steps.find(s => [...s.have].sort().join() === key && (!plan.steps.some(x => x.good.length) || [...s.good].sort().join() === goodKey)) ?? null;
   }
   // Goals every roll meets ("≥ 1") aren't wrong, just pointless: say so, and plan anyway.
   const trivial = Object.entries(valueGoals()).flatMap(([id, g]) => {
@@ -287,7 +335,9 @@ function results() {
     const steps = plan.steps.filter(s => s.stage === stage);
     if (!steps.length) return [];
     const rows = steps.map(s => el('tr', mine === s ? { class: 'best' } : {}, [
-      el('th', { scope: 'row' }, [s.have.length ? s.have.map(name).join(', ') : 'None of them']),
+      el('th', { scope: 'row' }, [s.have.length
+        ? s.have.map(id => name(id) + (s.good.includes(id.replace(/^-/, '')) ? ' (good roll)' : '')).join(', ')
+        : 'None of them']),
       el('td', {}, [actionText(s.action, parents, s.have)]),
       el('td', {}, [`${kuva(s.kuva)} · ${cyc(s.cycles)}`]),
     ]));
@@ -302,7 +352,11 @@ function results() {
   const goalList = [...want.map(id => (goals[id] ? `${name(id)} ${OP_TEXT[goals[id].op]} ${goals[id].value}` : name(id))), ...(state.negative ? [name(`-${state.negative}`)] : [])].join(', ');
   if (state.spliced) {
     const curseOk = SHAPES[state.shape].negatives > 0 && parents.some(id => pools(state.cls, ipsOf(state.weapon)).negative.includes(id));
-    out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')}${curseOk ? ' (one of them can be the curse)' : ''} on a ${state.shape} riven, then splice ${name(state.spliced)}`));
+    // The spliced stat keeps the better parent roll: with a goal, say what a parent needs.
+    const need = splicedRollNeeded({ cls: state.cls, positives: [], spliced: state.spliced, negative: null, shape: state.shape, goals });
+    const needText = need === null ? ''
+      : `, with one of them rolling at least ${rollText(need)} (for ${name(state.spliced)} ≥ ${goals[state.spliced].value}; it keeps the better roll)`;
+    out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')}${curseOk ? ' (one of them can be the curse)' : ''}${needText} on a ${state.shape} riven, then splice ${name(state.spliced)}`));
     out.push(...table('post', `2. With ${name(state.spliced)} in place, cycle for ${goalList}`));
   } else {
     out.push(...table('post', `Cycle for ${goalList} on a ${state.shape} riven`));
@@ -325,10 +379,12 @@ function renderResults() {
     weapon: state.weapon, cls: state.cls, spliced: state.spliced, recipe: state.recipe,
     want: state.want.filter(Boolean).join(','), neg: state.negative, shape: state.shape,
     min: state.want.map((id, i) => (id && state.mins[i] ? `${id}:${state.ops[i]}:${state.mins[i]}` : '')).filter(Boolean).join(','),
+    smin: state.spliced ? state.splicedMin : '',
     ...(state.from === 'mine' ? {
       from: 'mine', mp: state.myPos.filter(Boolean).join(','), mn: state.myNeg,
       ml: state.myLocks.join(','),
       mv: state.myPos.map((id, i) => (id && state.myVals[i] ? `${id}:${state.myVals[i]}` : '')).filter(Boolean).join(','),
+      mnv: state.myNeg ? state.myNegVal : '',
     } : {}),
   });
 }
@@ -358,6 +414,8 @@ function restore() {
       return [id, { op: ['gte', 'lte', 'eq'].includes(op) ? op : 'gte', value }];
     })),
     mv: v => Object.fromEntries(v.split(',').map(p => p.split(':'))),
+    smin: v => v,
+    mnv: v => v,
     mn: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
     ml: v => v.split(',').filter(id => STAT_BY_ID[id]),
   });
@@ -379,6 +437,8 @@ function restore() {
     state.ops = state.want.map(id => saved.min[id]?.op ?? 'gte');
   }
   if (saved.mv) state.myVals = state.myPos.map(id => saved.mv[id] ?? '');
+  if (saved.smin !== undefined) state.splicedMin = saved.smin;
+  if (saved.mnv !== undefined) state.myNegVal = saved.mnv;
 }
 
 /** @param {HTMLElement} container */
@@ -391,7 +451,7 @@ export function mountPlanner(container) {
 /**
  * Starts the plan from a riven the user has (from the grader): its weapon and stats. The target
  * itself is kept.
- * @param {{weapon: string, cls: WeaponClass, positives: string[], values?: string[], negative: string | null, shape: Shape, locked?: string[]}} riven
+ * @param {{weapon: string, cls: WeaponClass, positives: string[], values?: string[], negative: string | null, negValue?: string, shape: Shape, locked?: string[]}} riven
  */
 export function loadIntoPlanner(riven) {
   if (riven.weapon || riven.cls !== state.cls) { state.weapon = riven.weapon; state.cls = riven.cls; }
@@ -400,6 +460,7 @@ export function loadIntoPlanner(riven) {
     myPos: [...riven.positives, NONE, NONE, NONE].slice(0, 3),
     myVals: [...(riven.values ?? []), '', '', ''].slice(0, 3),
     myNeg: riven.negative ?? NONE,
+    myNegVal: riven.negValue ?? '',
     myLocks: riven.locked ?? [],
   });
   render();

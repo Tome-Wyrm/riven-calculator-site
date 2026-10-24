@@ -82,3 +82,15 @@ test('a curse can be a splice parent (Mausolon: Critical Chance + -Zoom → Weak
   const wanted = planBuild({ ...target, negative: 'recoil' }, { stage: 'pre', have: ['damage', 'critChance', 'toxin', '-zoom'], shape: '+++-' });
   assert.ok(wanted.expectedCycles > 0);
 });
+
+test('a goal for the spliced stat: only splice once a parent rolled well enough', () => {
+  const base = { cls: 'shotgun', ipsCode: '?y?', positives: ['critDamage'], spliced: 'viral', negative: null, shape: '+++-' };
+  const any = planBuild(base);
+  const high = planBuild({ ...base, goals: { viral: { op: 'gte', value: 105 } } });
+  assert.ok(high.expectedKuva > any.expectedKuva, `${high.expectedKuva} vs ${any.expectedKuva}`);
+  // Parents on the riven: a good roll on either one splices now, two bad ones don't.
+  const riven = { stage: /** @type {'pre'} */ ('pre'), have: ['critDamage', 'cold', 'toxin', '-recoil'], shape: /** @type {'+++-'} */ ('+++-') };
+  assert.equal(planBuild({ ...base, goals: { viral: { op: 'gte', value: 105 } } }, { ...riven, goodParents: ['toxin'] }).expectedCycles, 0);
+  assert.ok(planBuild({ ...base, goals: { viral: { op: 'gte', value: 105 } } }, { ...riven, goodParents: [] }).expectedCycles > 0);
+  assert.throws(() => planBuild({ ...base, goals: { viral: { op: 'gte', value: 999 } } }), /can't reach/);
+});

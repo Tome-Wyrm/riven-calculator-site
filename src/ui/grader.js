@@ -170,6 +170,7 @@ function planButton(parsed, shape) {
     positives: parsed.filter(r => r.sign === '+').map(r => r.stat.id),
     values: parsed.filter(r => r.sign === '+').map(r => String(Math.abs(/** @type {number} */ (r.shown)))),
     negative: parsed.find(r => r.sign === '-')?.stat.id ?? null,
+    negValue: (n => (n ? String(Math.abs(/** @type {number} */ (n.shown))) : ''))(parsed.find(r => r.sign === '-')),
     locked: state.rows.filter(r => r.locked).map(r => r.statId),
   }));
   return b;
