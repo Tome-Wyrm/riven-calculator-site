@@ -198,18 +198,28 @@ Back-solve the roll quality u for each stat on a riven you already own.
   - [ ] **TODO (blocked: needs a spliced riven, from The Icebind):** find how spliced traits appear in
         a fingerprint (their tag names, and whether they sit in `buffs` or somewhere else), then add
         them to `TAG_TO_STAT` in `src/import.js` and add a test. Until then they show as unrecognised.
-- [ ] **OCR from screenshots** (the biggest usability win: typing values in is tedious):
-  - Library: Tesseract.js, loaded lazily from a CDN only when someone uses OCR, so the rest of the site
-    stays dependency-free. Decide between the CDN and a vendored copy (several MB with the language data).
-  - Preprocess in a canvas: crop to the text block, then threshold the purple background to black-on-white
-  - Parse lines like `+267.2% Damage` and `-31.7% Ammo Maximum`, matching stat names fuzzily against
-    `stats.js` (including melee names and spliced names)
-  - Weapon: from the riven's title line. The first word(s) match a weapon name, and the rest is the stat
-    prefix/suffix name (e.g. "Soma **Visi**tio"), which can cross-check the parsed stats.
-  - **Rank:** the drain number in the top corner looks like 10 + rank (18 at max rank, 10 unranked
-    on your Lacera screenshots). That needs confirming at a middle rank.
-  - Always show the parsed result as an editable form before grading (OCR will misread sometimes)
-  - Test fixtures: your screenshots so far (Soma, Lacera ×2, Obex, Vinquibus ×2)
+- [x] **OCR from screenshots** (`src/ocr-parse.js`, `src/ui/ocr.js`): drop, paste (Ctrl+V) or choose
+      an image; the result fills the grader, which acts as the editable check.
+  - Tesseract.js 5.1.1 from jsDelivr, loaded only on first use (the image itself stays in the browser).
+    Sparse-text mode (PSM 11).
+  - Preprocess: upscale (up to 4x, ~2400px wide) and invert to greyscale. A hard black/white threshold
+    was tried first and lost the decimal points.
+  - Parser: values with up to 3 junk characters before them; fuzzy stat-name matching (edit
+    distance ≤ 25%), also trying without a glued-on icon; wrapped names; MR line merged or not.
+  - Weapon: longest weapon name at the start of a header line, also without stray short tokens.
+    No weapon → class guessed from which class can roll every stat read.
+  - Rank: the drain number (10 + rank) if read and consistent; otherwise from the values (the
+    ranks at which every value is possible, preferring 8, then 0).
+  - Companion app quirk: faction stats show as "+0". The row is kept blank, and both the grader and
+    the rank logic try it as positive and as negative (`fittingShapes`). On the example it's the negative.
+  - Real-image check on 8 screenshots (Soma, Lacera ×2, Obex, Vinquibus ×2, Cinta, companion-app
+    Soma): all weapons, ranks and values read correctly. The images live in `test/fixtures/local/`
+    (git-ignored); the parser tests use their transcribed text.
+  - [ ] Possible upgrade: WFHelper uses a YOLO text detector + PaddleOCR recogniser (ONNX), with a
+        stat-band crop and retries. Much heavier (tens of MB of models), but more robust on full
+        screenshots. Worth it only if Tesseract struggles on real-world uploads.
+  - [ ] Unconfirmed: drain = 10 + rank at middle ranks (only 0 and 8 seen); the value-based rank
+        covers it either way.
 
 ### Phase 9 — Splice planner
 Answer "which traits do I splice, and how good must they be, to get spliced stat X ≥ target?"
@@ -266,4 +276,4 @@ would show −78.0% and +130.0%). A Dax bow `+++-` riven at +138.4% Puncture con
    Currently: the spliced odds only, with a note. To be confirmed in Phase 9.
 3. ~~Rank selector~~: kept (0–8).
 4. ~~Repo~~: `Tome-Wyrm/riven-calculator-site`, public, Pages from `main`.
-5. **OCR library delivery** (Phase 8): CDN on demand vs a vendored copy.
+5. ~~OCR library delivery~~: CDN on demand (jsDelivr, pinned version).

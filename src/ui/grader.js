@@ -3,7 +3,7 @@
 // ±10% scale, with a letter grade.
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { canRoll, format, gradeRoll, inferSign, letterGrade, range, rollScore, shapeFor } from '../engine.js';
+import { canRoll, fittingShapes, format, gradeRoll, inferSign, letterGrade, range, rollScore, shapeFor } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
@@ -87,9 +87,14 @@ function results() {
   const problems = [];
   const ids = parsed.map(r => r.stat.id);
   if (new Set(ids).size !== ids.length) problems.push('The same stat is listed twice.');
-  const positives = parsed.filter(r => r.sign === '+').length;
-  const negatives = parsed.length - positives;
-  const shape = shapeFor(positives, negatives);
+  // A stat with no value yet (e.g. a faction stat the companion app shows as "+0") still takes a
+  // slot, but its sign is unknown: use whichever shape makes every entered value possible.
+  const blanks = state.rows.filter(r => r.value.trim() === '').length;
+  const positives = parsed.filter(r => r.sign === '+').length + blanks;
+  const negatives = parsed.length + blanks - positives;
+  const shape = blanks
+    ? (fittingShapes(/** @type {{stat: Stat, shown: number}[]} */ (parsed), blanks, cls, rank)[0] ?? shapeFor(positives, negatives))
+    : shapeFor(positives, negatives);
   if (!shape && parsed.length) {
     problems.push(`${positives} positive and ${negatives} negative: a riven has 2 or 3 positives and at most 1 negative.`);
   }
@@ -127,6 +132,7 @@ function results() {
   const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   return el('div', {}, [
     el('p', { class: 'summary' }, [`Shape ${shape}` + (avg === null ? '' : ` · average positive roll ${signed(avg)}% (${letterGrade(avg)})`)]),
+    ...(blanks ? [el('p', { class: 'note' }, [`${blanks} stat${blanks > 1 ? "s have" : " has"} no value yet: it still counts toward the shape (as whichever sign fits the other values), but isn't graded.`])] : []),
     el('p', { class: 'note' }, [
       'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The negative is scored by how mild it is. ',
       'Grades: S ≥ +9.5, A+ ≥ +7.5, A ≥ +5.5, A- ≥ +3.5, B+ ≥ +1.5, B ≥ −1.5, B- ≥ −3.5, C+ ≥ −5.5, C ≥ −7.5, C- ≥ −9.5, else F.']),

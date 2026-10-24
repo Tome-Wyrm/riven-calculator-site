@@ -6,6 +6,7 @@ import { mountRanges } from './ui/ranges.js';
 import { mountCalculator } from './ui/calculator.js';
 import { mountGrader } from './ui/grader.js';
 import { mountImporter } from './ui/importer.js';
+import { mountOcr } from './ui/ocr.js';
 
 const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
@@ -16,6 +17,7 @@ mountRanges(byId('ranges-body'));
 mountCalculator(byId('calculator-body'));
 mountGrader(byId('grader-body'));
 mountImporter(byId('import-body'));
+mountOcr(byId('ocr-body'));
 byId('weapons-updated').textContent = WEAPONS_UPDATED;
 
 // Collapsible sections: remember which are closed (a per-viewer convenience, so failures are fine).

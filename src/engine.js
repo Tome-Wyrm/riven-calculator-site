@@ -285,3 +285,25 @@ export const rollScore = (/** @type {number} */ u, mild = false) => ((mild ? 1 -
 export function letterGrade(score) {
   return GRADES.find(([min]) => score >= min - 1e-9)?.[1] ?? 'F';
 }
+
+/**
+ * Shapes a riven could have, given stats with known shown values plus `blanks` stats whose value
+ * (and so sign) is unknown, e.g. a faction stat the companion app shows as "+0". A shape fits
+ * when the counts work out and every known value is possible at `rank`.
+ * @param {{stat: Stat, shown: number}[]} entries @param {number} blanks
+ * @param {WeaponClass} cls @param {number} [rank]
+ * @returns {Shape[]}
+ */
+export function fittingShapes(entries, blanks, cls, rank = MAX_RANK) {
+  const signed = entries.map(e => ({ ...e, sign: inferSign(e.stat, cls, e.shown) }));
+  const pos = signed.filter(e => e.sign === '+').length;
+  const out = [];
+  for (let blankNeg = 0; blankNeg <= blanks; blankNeg++) {
+    const shape = shapeFor(pos + blanks - blankNeg, signed.length - pos + blankNeg);
+    if (shape && !out.includes(shape) && signed.every(e =>
+      canRoll(e.stat, cls, shape, e.sign) && gradeRoll(e.stat, cls, shape, e.sign, e.shown, rank).possible)) {
+      out.push(shape);
+    }
+  }
+  return out;
+}
