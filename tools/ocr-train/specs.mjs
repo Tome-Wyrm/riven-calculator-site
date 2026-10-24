@@ -78,8 +78,8 @@ for (let n = 0; n < count; n++) {
   const named = shuffle(pos.filter(id => !STAT_BY_ID[id].spliced && STAT_BY_ID[id].prefix));
   const name = named.length ? rivenName(named.slice(0, 3)) : 'Visitio';
   out.push({
-    // Our list tells variants apart with a bracket ("Vinquibus (melee)"); the game doesn't.
-    weapon, cls, shape, rank, title: `${weapon.replace(/\s*\(.*\)$/, '')} ${name}`,
+    // "(Zaw)" and "(Kitgun)" are our labels; the game does show "Vinquibus (melee)".
+    weapon, cls, shape, rank, title: `${weapon.replace(/\s*\((Zaw|Kitgun)\)$/, '')} ${name}`,
     drain: 10 + rank, mr: 8 + Math.floor(rand() * 9), cycles: rand() < 0.2 ? 0 : 1 + Math.floor(rand() * 120),
     stats,
   });
