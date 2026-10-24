@@ -219,7 +219,7 @@ def card(spec, weight='Medium'):
     bx, by = W - backer.width - 16, 22
     im.alpha_composite(backer, (bx, by))
     matched = spec.get('matched')
-    drain = round((spec['drain'] + 0.01) / 2) if matched else spec['drain']   # halved, rounding up
+    drain = round((spec["drain"] + 0.01) / 2) if matched else spec["drain"]   # halved, rounding up (confirmed in game: 17 shows 9)
     c = MATCHED if matched else (225, 215, 245)
     # Digits then the polarity symbol, about as tall as the digits, right after them.
     dft = font('Bold', 20)
