@@ -25,6 +25,7 @@ import { pools, cycleCost } from './cycle.js';
 /** @typedef {import('./data/stats.js').Shape} Shape */
 
 export const FLAT_COST = cycleCost(99);          // 3,500
+export const OP_TEXT = { gte: '≥', lte: '≤', eq: '=' };
 const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
   if (k < 0 || k > n) return 0;
   let r = 1;
@@ -41,8 +42,11 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
  * @property {string[]} [parents]     which recipe to splice it from (default: the cheapest)
  * @property {string | null} negative wanted negative, or null for "don't care"
  * @property {Shape} shape            the finished riven's shape
- * @property {Record<string, number>} [minimums]  wanted positive → the least it must show at rank 8,
- *   as a magnitude ("100" for +100%, "90" for -90% Weapon Recoil, "1.3" for x1.3)
+ * @property {Record<string, ValueGoal>} [goals]  wanted positive → the value it must show at rank 8
+ *
+ * @typedef {object} ValueGoal
+ * @property {'gte' | 'lte' | 'eq'} op  at least, at most, or exactly (as the game shows it)
+ * @property {number} value  a magnitude: "100" for +100%, "90" for -90% Weapon Recoil, "1.3" for x1.3
  *
  * @typedef {{stage: 'pre' | 'post', mask: number, neg: boolean, shape: Shape}} State
  *   mask = bits over the stage's tracked positives
@@ -86,18 +90,28 @@ function solveFor(t, parents) {
     && s.mask === (1 << postTracked.length) - 1 && (!targetNeg || s.neg);
   const canSplice = (/** @type {State} */ s) => s.stage === 'pre' && s.shape === t.shape && (s.mask & parentMask) === parentMask;
 
-  /** The chance a freshly rolled positive meets its minimum on a shape (1 with no minimum). */
+  /**
+   * The chance a freshly rolled positive meets its value goal on a shape (1 with no goal). The game
+   * rounds what it shows (1 decimal, 2 for multipliers), so "≥ 148.5" includes rolls showing as
+   * 148.5: a perfect roll is a goal like any other.
+   */
   const meets = (/** @type {string} */ id, /** @type {Shape} */ shape) => {
-    const min = t.minimums?.[id];
-    if (min === undefined || (parents?.includes(id) && !t.positives.includes(id))) return 1;
+    const goal = t.goals?.[id];
+    if (!goal) return 1;
     const stat = STAT_BY_ID[id];
-    const shown = range(stat, t.cls, shape, '+').at1 < 0 ? -Math.abs(min) : Math.abs(min);
-    return Math.min(1, Math.max(0, 1 - solveU(stat, t.cls, shape, '+', shown)));
+    const half = stat.unit === 'mult' ? 0.005 : 0.05;
+    const r = range(stat, t.cls, shape, '+');
+    const sign = r.at1 < 0 ? -1 : 1;           // e.g. recoil shows as negative when it's the positive
+    const u = (/** @type {number} */ mag) => Math.min(1, Math.max(0, solveU(stat, t.cls, shape, '+', sign * mag)));
+    const lo = goal.op === 'lte' ? 0 : u(goal.value - half);
+    const hi = goal.op === 'gte' ? 1 : u(goal.value + half);
+    return Math.max(0, hi - lo);
   };
   for (const id of postTracked) {
     if (meets(id, t.shape) === 0) {
-      const best = range(STAT_BY_ID[id], t.cls, t.shape, '+').at1;
-      throw new Error(`${STAT_BY_ID[id].name} can't reach ${t.minimums?.[id]} on a ${t.shape} riven (best ${Math.round(Math.abs(best) * 10) / 10}).`);
+      const r = range(STAT_BY_ID[id], t.cls, t.shape, '+');
+      const [lo, hi] = [Math.abs(r.at0), Math.abs(r.at1)].sort((a, b) => a - b).map(v => Math.round(v * 100) / 100);
+      throw new Error(`${STAT_BY_ID[id].name} can't be ${OP_TEXT[/** @type {ValueGoal} */ (t.goals?.[id]).op]} ${t.goals?.[id]?.value} on a ${t.shape} riven (it rolls ${lo} to ${hi}).`);
     }
   }
   /**

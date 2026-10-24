@@ -7,7 +7,7 @@ import { CLASSES, SHAPES, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { pools } from '../cycle.js';
-import { planBuild } from '../planner.js';
+import { planBuild, OP_TEXT } from '../planner.js';
 import { CLASS_LABEL, el, statName, segmented, select, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf } from './state.js';
 
@@ -21,7 +21,8 @@ const state = {
   spliced: NONE,
   recipe: NONE,                         // "a+b", or '' for the cheapest
   want: [NONE, NONE, NONE],
-  mins: ['', '', ''],                   // least value wanted for each positive, '' = any
+  mins: ['', '', ''],                   // value wanted for each positive, '' = any
+  ops: /** @type {('gte' | 'lte' | 'eq')[]} */ (['gte', 'gte', 'gte']),
   negative: NONE,
   shape: /** @type {Shape} */ ('+++-'),
   from: /** @type {'fresh' | 'mine'} */ ('fresh'),
@@ -37,22 +38,26 @@ const magnitude = v => {
   return m ? Number(m[0]) : null;
 };
 
-/** The value goals as the planner takes them. @returns {Record<string, number>} */
-function minimums() {
-  /** @type {Record<string, number>} */
+/** The value goals as the planner takes them. @returns {Record<string, import('../planner.js').ValueGoal>} */
+function valueGoals() {
+  /** @type {Record<string, import('../planner.js').ValueGoal>} */
   const out = {};
-  state.want.forEach((id, i) => { const m = magnitude(state.mins[i]); if (id && m !== null) out[id] = m; });
+  state.want.forEach((id, i) => { const m = magnitude(state.mins[i]); if (id && m !== null) out[id] = { op: state.ops[i], value: m }; });
   return out;
 }
+
+/** Whether a shown value meets a goal. @param {number} v @param {import('../planner.js').ValueGoal} g */
+const meetsGoal = (v, g) => (g.op === 'gte' ? v >= g.value : g.op === 'lte' ? v <= g.value : v === g.value);
 
 /**
  * A number box that updates on change (not every keystroke, so re-rendering doesn't steal focus).
  * @param {string} labelText @param {string} value @param {string} placeholder @param {(v: string) => void} onChange
+ * @param {string} [shown]  the visible label, if different ('' for none: labelText stays as the accessible name)
  */
-function numberBox(labelText, value, placeholder, onChange) {
+function numberBox(labelText, value, placeholder, onChange, shown = labelText) {
   const input = /** @type {HTMLInputElement} */ (el('input', { type: 'text', inputmode: 'decimal', value, placeholder, 'aria-label': labelText }));
   input.addEventListener('change', () => onChange(input.value.trim()));
-  return el('label', { class: 'field target' }, [el('span', {}, [labelText]), input]);
+  return el('label', { class: 'field target' }, [...(shown ? [el('span', {}, [shown])] : []), input]);
 }
 
 /**
@@ -65,10 +70,10 @@ function current() {
   const shape = pos.length >= 2 && new Set(pos).size === pos.length
     ? /** @type {Shape} */ ('+'.repeat(pos.length) + (state.myNeg ? '-' : '')) : null;
   // A stat whose value is given and below the goal doesn't count yet.
-  const mins = minimums();
+  const goals = valueGoals();
   const good = state.myPos.filter((id, i) => {
     const v = magnitude(state.myVals[i]);
-    return id && !(mins[id] !== undefined && v !== null && v < mins[id]);
+    return id && !(goals[id] && v !== null && !meetsGoal(v, goals[id]));
   });
   return {
     shape,
@@ -130,11 +135,18 @@ function controls() {
         want[i] = v;
         set({ want });
       }),
-      ...(id ? [numberBox('at least', state.mins[i], 'any', v => {
-        const mins = [...state.mins];
-        mins[i] = v;
-        set({ mins });
-      })] : []),
+      ...(id ? [
+        segmented(`Positive ${i + 1} value`, ['gte', 'lte', 'eq'], state.ops[i], v => {
+          const ops = [...state.ops];
+          ops[i] = /** @type {any} */ (v);
+          set({ ops });
+        }, v => OP_TEXT[/** @type {'gte' | 'lte' | 'eq'} */ (v)]),
+        numberBox(`Positive ${i + 1} value`, state.mins[i], 'any value', v => {
+          const mins = [...state.mins];
+          mins[i] = v;
+          set({ mins });
+        }, ''),
+      ] : []),
     ])),
     el('div', { class: 'controls' }, [
       select('Negative', negOptions, state.negative, v => set({ negative: v })),
@@ -153,7 +165,7 @@ function controls() {
     state.myPos = state.myPos.map(id => (myPosOptions.some(([v]) => v === id) ? id : NONE));
     if (!negative.includes(state.myNeg)) state.myNeg = NONE;
     rows.push(el('h3', { class: 'plan-stage' }, ['Your riven now']));
-    const goals = minimums();
+    const goals = valueGoals();
     rows.push(...state.myPos.map((id, i) => el('div', { class: 'controls' }, [
       select(`Its positive ${i + 1}`, myPosOptions, id, v => {
         const myPos = [...state.myPos];
@@ -161,7 +173,7 @@ function controls() {
         set({ myPos });
       }),
       // Only asked when there's a value goal for that stat.
-      ...(id && goals[id] !== undefined ? [numberBox('value', state.myVals[i], 'meets it', v => {
+      ...(id && goals[id] ? [numberBox('value', state.myVals[i], 'meets it', v => {
         const myVals = [...state.myVals];
         myVals[i] = v;
         set({ myVals });
@@ -198,7 +210,7 @@ function results() {
     plan = planBuild({
       cls: state.cls, ipsCode: ipsOf(state.weapon), positives: want, spliced: state.spliced || null,
       parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape: state.shape,
-      minimums: minimums(),
+      goals: valueGoals(),
     }, mineNow && mineNow.shape ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape } : null);
   } catch (e) {
     return el('p', { class: 'note warn' }, [e instanceof Error ? e.message : String(e)]);
@@ -246,8 +258,8 @@ function results() {
         el('tbody', {}, rows)])]),
     ];
   };
-  const goals = minimums();
-  const goalList = [...want.map(id => (goals[id] !== undefined ? `${name(id)} ≥ ${goals[id]}` : name(id))), ...(state.negative ? [name(`-${state.negative}`)] : [])].join(', ');
+  const goals = valueGoals();
+  const goalList = [...want.map(id => (goals[id] ? `${name(id)} ${OP_TEXT[goals[id].op]} ${goals[id].value}` : name(id))), ...(state.negative ? [name(`-${state.negative}`)] : [])].join(', ');
   if (state.spliced) {
     out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')} on a ${state.shape} riven, then splice ${name(state.spliced)}`));
     out.push(...table('post', `2. With ${name(state.spliced)} in place, cycle for ${goalList}`));
@@ -271,7 +283,7 @@ function renderResults() {
   saveState('p', {
     weapon: state.weapon, cls: state.cls, spliced: state.spliced, recipe: state.recipe,
     want: state.want.filter(Boolean).join(','), neg: state.negative, shape: state.shape,
-    min: state.want.map((id, i) => (id && state.mins[i] ? `${id}:${state.mins[i]}` : '')).filter(Boolean).join(','),
+    min: state.want.map((id, i) => (id && state.mins[i] ? `${id}:${state.ops[i]}:${state.mins[i]}` : '')).filter(Boolean).join(','),
     ...(state.from === 'mine' ? {
       from: 'mine', mp: state.myPos.filter(Boolean).join(','), mn: state.myNeg,
       mv: state.myPos.map((id, i) => (id && state.myVals[i] ? `${id}:${state.myVals[i]}` : '')).filter(Boolean).join(','),
@@ -298,7 +310,11 @@ function restore() {
     shape: oneOf(SHAPE_ORDER),
     from: oneOf(/** @type {const} */ (['fresh', 'mine'])),
     mp: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
-    min: v => Object.fromEntries(v.split(',').map(p => p.split(':'))),
+    min: v => Object.fromEntries(v.split(',').map(p => {
+      const [id, ...rest] = p.split(':');
+      const [op, value] = rest.length > 1 ? rest : ['gte', rest[0]];   // old links: "id:value"
+      return [id, { op: ['gte', 'lte', 'eq'].includes(op) ? op : 'gte', value }];
+    })),
     mv: v => Object.fromEntries(v.split(',').map(p => p.split(':'))),
     mn: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
   });
@@ -314,7 +330,10 @@ function restore() {
   state.from = saved.from ?? 'fresh';
   if (saved.mp) state.myPos = [...saved.mp, NONE, NONE, NONE].slice(0, 3);
   if (saved.mn !== undefined) state.myNeg = saved.mn;
-  if (saved.min) state.mins = state.want.map(id => saved.min[id] ?? '');
+  if (saved.min) {
+    state.mins = state.want.map(id => saved.min[id]?.value ?? '');
+    state.ops = state.want.map(id => saved.min[id]?.op ?? 'gte');
+  }
   if (saved.mv) state.myVals = state.myPos.map(id => saved.mv[id] ?? '');
 }
 
