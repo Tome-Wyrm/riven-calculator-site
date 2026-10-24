@@ -250,8 +250,14 @@ Back-solve the roll quality u for each stat on a riven you already own.
   - [ ] Possible upgrade: WFHelper uses a YOLO text detector + PaddleOCR recogniser (ONNX), with a
         stat-band crop and retries. Much heavier (tens of MB of models), but more robust on full
         screenshots. Worth it only if Tesseract struggles on real-world uploads.
-  - [ ] Unconfirmed: drain = 10 + rank at middle ranks (only 0 and 8 seen); the value-based rank
-        covers it either way.
+  - [x] Drain = 10 + rank confirmed at a middle rank: a Phantasma riven at rank 6 (from its values)
+        shows a green 8, i.e. 16 halved because the riven's polarity matches the slot. Halved drains
+        (green, 5–9) aren't parsed as a rank; the values decide.
+  - Two more fixes from Phantasma screenshots (one with the cursor over the name):
+    - A partly hidden name can decode to too few positives ("P?ci-toxican" → "toxican" = 2): a
+      decode is only trusted if it fits the stat count (4 stats → 3 positives).
+    - With no weapon name, the class is the one where the values fit (+99.4% Multishot fits a
+      shotgun riven, not a rifle one), not just the first that can roll the stats.
 
 ### Phase 9 — Splice planner
 Answer "which traits do I splice, and how good must they be, to get spliced stat X ≥ target?"

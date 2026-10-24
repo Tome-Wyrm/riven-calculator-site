@@ -193,3 +193,16 @@ function tryRank(rows, cls, shapeHint, rank) {
   }
   return { fixes, edits, asRead };
 }
+
+/**
+ * Whether a decoded name fits the number of stats read: 4 stats is +++- (3 positives), 2 stats is
+ * ++ (2), and 3 stats is ++- or +++. A partly hidden name can still decode, to too few positives
+ * ("P?ci-toxican" → just "toxican"), so a mismatch means the decode can't be trusted.
+ * @param {string[] | null} positives @param {number} statCount
+ */
+export function nameFitsStats(positives, statCount) {
+  if (!positives) return false;
+  if (statCount === 4) return positives.length === 3;
+  if (statCount === 2) return positives.length === 2;
+  return statCount === 3;
+}

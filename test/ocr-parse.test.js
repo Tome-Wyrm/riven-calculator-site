@@ -53,6 +53,9 @@ test('weapon names survive a stray space; class is guessed from stats when no we
   assert.equal(parseRivenText('10+\nL acera Acridex\n+14.4% Critical Damage').weapon?.name, 'Lacera');
   assert.equal(guessClass(['critDamage', 'statusChance', 'finisher']), 'melee');
   assert.equal(guessClass(['damage', 'zoom']), 'rifle');
+  // Phantasma (shotgun) riven with the weapon name unread: +99.4% Multishot only fits a shotgun.
+  assert.equal(guessClass([{ statId: 'toxin', value: '+74.9' }, { statId: 'multishot', value: '+99.4' },
+    { statId: 'ammoEfficiency', value: '+42.6' }, { statId: 'puncture', value: '-85.1' }]), 'shotgun');
 });
 
 test('fixes O-for-0, stray spaces and unsigned lines (from real screenshots)', () => {

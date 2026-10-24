@@ -187,11 +187,20 @@ export function inferRank(stats, cls, drainRank = null) {
 }
 
 /**
- * Without a weapon name, the weapon class that can roll every recognised stat (melee-only stats
- * like Finisher Damage point to melee). Rifle when nothing narrows it down.
- * @param {(string | null)[]} statIds @returns {WeaponClass}
+ * Without a weapon name, the weapon class the stats point to: one that can roll every recognised
+ * stat and at whose ranges the values actually fit (e.g. +99.4% Multishot fits a shotgun +++-
+ * riven but no rifle one). Falls back to the first class that can roll them all, then rifle.
+ * @param {(string | null)[] | {statId: string | null, value: string}[]} stats
+ * @returns {WeaponClass}
  */
-export function guessClass(statIds) {
-  const ids = statIds.filter(Boolean);
-  return CLASSES.find(c => ids.every(id => STAT_BY_ID[/** @type {string} */ (id)].b[c] !== undefined)) ?? 'rifle';
+export function guessClass(stats) {
+  const rows = stats.map(s => (typeof s === 'object' && s !== null ? s : { statId: s, value: '' }));
+  const ids = rows.map(r => r.statId).filter(Boolean);
+  const rollable = CLASSES.filter(c => ids.every(id => STAT_BY_ID[/** @type {string} */ (id)].b[c] !== undefined));
+  const withValues = rows.filter(r => r.statId && /^[+\-x]?\d/i.test(r.value));
+  if (withValues.length) {
+    const fits = rollable.find(c => possibleRanks(/** @type {any} */ (rows.filter(r => r.statId)), c).length > 0);
+    if (fits) return fits;
+  }
+  return rollable[0] ?? 'rifle';
 }

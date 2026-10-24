@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { decodeRivenName, findPositivesInHeader, numberVariants, refineStats } from '../src/ocr-refine.js';
+import { decodeRivenName, findPositivesInHeader, nameFitsStats, numberVariants, refineStats } from '../src/ocr-refine.js';
 
 test('riven names decode to their positive stats (names from real screenshots)', () => {
   const cases = {
@@ -78,4 +78,12 @@ test('refineStats: a misread digit is corrected, a garbled name recovered', () =
   const amb = soma('+287.2');
   assert.equal(amb.stats[0].value, '+287.2');
   assert.match(amb.notes.join(), /\+267\.2.*\+237\.2|\+237\.2.*\+267\.2/);
+});
+
+test('a partly hidden name that decodes to too few positives is not trusted', () => {
+  // "Phantasma P?ci-toxican" (cursor over "Parci"): "toxican" decodes, but 4 stats need 3 positives
+  assert.deepEqual(decodeRivenName('toxican'), ['toxin', 'multishot']);
+  assert.equal(nameFitsStats(['toxin', 'multishot'], 4), false);
+  assert.equal(nameFitsStats(['ammoEfficiency', 'toxin', 'multishot'], 4), true);
+  assert.equal(nameFitsStats(['toxin', 'multishot'], 3), true);
 });

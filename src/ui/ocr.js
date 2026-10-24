@@ -6,7 +6,7 @@
 // are downloaded).
 
 import { guessClass, inferRank, parseRivenText } from '../ocr-parse.js';
-import { findPositivesInHeader, refineStats } from '../ocr-refine.js';
+import { findPositivesInHeader, nameFitsStats, refineStats } from '../ocr-refine.js';
 import { STAT_BY_ID } from '../data/stats.js';
 import { el } from './dom.js';
 import { loadIntoGrader } from './grader.js';
@@ -79,8 +79,10 @@ async function readScreenshot(blob) {
 
     // Second pass: the riven's name says which stats are positive (and recovers lost signs and
     // garbled names); impossible values are corrected to the reading that fits the range.
-    const positives = findPositivesInHeader(parsed.header);
-    const cls = parsed.weapon?.cls ?? guessClass(stats.map(s => s.statId));
+    // A partly hidden name can decode to too few positives: only trust it if it fits the stat count.
+    const decoded = findPositivesInHeader(parsed.header);
+    const positives = nameFitsStats(decoded, stats.filter(s => s.statId).length) ? decoded : null;
+    const cls = parsed.weapon?.cls ?? guessClass(stats);
     const refined = refineStats(stats, cls, positives, parsed.rank);
     const rows = refined.stats.map(s => ({ statId: s.statId, value: s.value }));
     if (!rows.length) {
