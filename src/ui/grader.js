@@ -153,13 +153,14 @@ function results() {
 
 /**
  * Sends this riven to the Build planner as the riven to start from.
- * @param {{stat: Stat, sign: string}[]} parsed @param {import('../data/stats.js').Shape} shape
+ * @param {{stat: Stat, sign: string, shown: number | null}[]} parsed @param {import('../data/stats.js').Shape} shape
  */
 function planButton(parsed, shape) {
   const b = el('button', { type: 'button', class: 'copy-link' }, ['Plan from this riven']);
   b.addEventListener('click', () => loadIntoPlanner({
     weapon: state.weapon, cls: state.cls, shape,
     positives: parsed.filter(r => r.sign === '+').map(r => r.stat.id),
+    values: parsed.filter(r => r.sign === '+').map(r => String(Math.abs(/** @type {number} */ (r.shown)))),
     negative: parsed.find(r => r.sign === '-')?.stat.id ?? null,
   }));
   return b;

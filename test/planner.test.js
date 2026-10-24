@@ -47,3 +47,19 @@ test('a riven that already has both parents splices straight into the target: 0 
   assert.equal(plan.median.cycles, 0);
   assert.equal(plan.likely.cycles, 0);
 });
+
+test('value goals: a minimum makes it cost more, and an impossible one is refused', () => {
+  const base = { cls: 'shotgun', ipsCode: '?y?', positives: ['toxin', 'multishot'], spliced: null, negative: null, shape: '++' };
+  const any = planBuild(base);
+  const good = planBuild({ ...base, minimums: { toxin: 110 } });
+  assert.ok(good.expectedKuva > any.expectedKuva * 1.5, `${good.expectedKuva} vs ${any.expectedKuva}`);
+  // No minimum, or one below the worst roll, changes nothing.
+  near(planBuild({ ...base, minimums: { toxin: 1 } }).expectedKuva, any.expectedKuva, 1);
+  assert.throws(() => planBuild({ ...base, minimums: { toxin: 9999 } }), /can't reach/);
+});
+
+test('value goals: a riven that already meets them is done', () => {
+  const plan = planBuild({ cls: 'shotgun', ipsCode: '?y?', positives: ['toxin'], spliced: null, negative: null, shape: '++', minimums: { toxin: 100 } },
+    { stage: 'post', have: ['toxin', 'multishot'], shape: '++' });
+  assert.equal(plan.expectedCycles, 0);
+});

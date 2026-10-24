@@ -21,13 +21,39 @@ const state = {
   spliced: NONE,
   recipe: NONE,                         // "a+b", or '' for the cheapest
   want: [NONE, NONE, NONE],
+  mins: ['', '', ''],                   // least value wanted for each positive, '' = any
   negative: NONE,
   shape: /** @type {Shape} */ ('+++-'),
   from: /** @type {'fresh' | 'mine'} */ ('fresh'),
   // The riven you have now: its positives (spliced ones included) and its negative.
   myPos: [NONE, NONE, NONE],
   myNeg: NONE,
+  myVals: ['', '', ''],                 // its positives' values, '' = not given
 };
+
+/** "100", "+100%", "x1.3" → 100 / 1.3; null for blank or junk. @param {string} v */
+const magnitude = v => {
+  const m = v.replace(',', '.').match(/\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : null;
+};
+
+/** The value goals as the planner takes them. @returns {Record<string, number>} */
+function minimums() {
+  /** @type {Record<string, number>} */
+  const out = {};
+  state.want.forEach((id, i) => { const m = magnitude(state.mins[i]); if (id && m !== null) out[id] = m; });
+  return out;
+}
+
+/**
+ * A number box that updates on change (not every keystroke, so re-rendering doesn't steal focus).
+ * @param {string} labelText @param {string} value @param {string} placeholder @param {(v: string) => void} onChange
+ */
+function numberBox(labelText, value, placeholder, onChange) {
+  const input = /** @type {HTMLInputElement} */ (el('input', { type: 'text', inputmode: 'decimal', value, placeholder, 'aria-label': labelText }));
+  input.addEventListener('change', () => onChange(input.value.trim()));
+  return el('label', { class: 'field target' }, [el('span', {}, [labelText]), input]);
+}
 
 /**
  * The riven you have, as the planner needs it: its shape (null if it isn't a real riven), whether
@@ -38,10 +64,16 @@ function current() {
   const pos = state.myPos.filter(Boolean);
   const shape = pos.length >= 2 && new Set(pos).size === pos.length
     ? /** @type {Shape} */ ('+'.repeat(pos.length) + (state.myNeg ? '-' : '')) : null;
+  // A stat whose value is given and below the goal doesn't count yet.
+  const mins = minimums();
+  const good = state.myPos.filter((id, i) => {
+    const v = magnitude(state.myVals[i]);
+    return id && !(mins[id] !== undefined && v !== null && v < mins[id]);
+  });
   return {
     shape,
     stage: state.spliced && pos.includes(state.spliced) ? 'post' : 'pre',
-    have: [...pos, ...(state.myNeg ? [`-${state.myNeg}`] : [])],
+    have: [...good, ...(state.myNeg ? [`-${state.myNeg}`] : [])],
   };
 }
 
@@ -91,12 +123,19 @@ function controls() {
     el('div', { class: 'controls' }, [
       select('Spliced', splicedOptions, state.spliced, v => set({ spliced: v })),
       ...(recipes.length > 1 ? [select('From', recipeOptions, state.recipe, v => set({ recipe: v }))] : []),
-      ...state.want.map((id, i) => select(`Positive ${i + 1}`, posOptions, id, v => {
+    ]),
+    ...state.want.map((id, i) => el('div', { class: 'controls' }, [
+      select(`Positive ${i + 1}`, posOptions, id, v => {
         const want = [...state.want];
         want[i] = v;
         set({ want });
-      })),
-    ]),
+      }),
+      ...(id ? [numberBox('at least', state.mins[i], 'any', v => {
+        const mins = [...state.mins];
+        mins[i] = v;
+        set({ mins });
+      })] : []),
+    ])),
     el('div', { class: 'controls' }, [
       select('Negative', negOptions, state.negative, v => set({ negative: v })),
       select('Shape', (shapes.length ? shapes : SHAPE_ORDER).map(s => /** @type {[string, string]} */ ([s, s])), state.shape,
@@ -114,12 +153,21 @@ function controls() {
     state.myPos = state.myPos.map(id => (myPosOptions.some(([v]) => v === id) ? id : NONE));
     if (!negative.includes(state.myNeg)) state.myNeg = NONE;
     rows.push(el('h3', { class: 'plan-stage' }, ['Your riven now']));
-    rows.push(el('div', { class: 'controls' }, [
-      ...state.myPos.map((id, i) => select(`Its positive ${i + 1}`, myPosOptions, id, v => {
+    const goals = minimums();
+    rows.push(...state.myPos.map((id, i) => el('div', { class: 'controls' }, [
+      select(`Its positive ${i + 1}`, myPosOptions, id, v => {
         const myPos = [...state.myPos];
         myPos[i] = v;
         set({ myPos });
-      })),
+      }),
+      // Only asked when there's a value goal for that stat.
+      ...(id && goals[id] !== undefined ? [numberBox('value', state.myVals[i], 'meets it', v => {
+        const myVals = [...state.myVals];
+        myVals[i] = v;
+        set({ myVals });
+      })] : []),
+    ])));
+    rows.push(el('div', { class: 'controls' }, [
       select('Its negative', [[NONE, 'None'], ...negOptions.slice(1)], state.myNeg, v => set({ myNeg: v })),
     ]));
     const now = splicesNow(positive);
@@ -150,6 +198,7 @@ function results() {
     plan = planBuild({
       cls: state.cls, ipsCode: ipsOf(state.weapon), positives: want, spliced: state.spliced || null,
       parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape: state.shape,
+      minimums: minimums(),
     }, mineNow && mineNow.shape ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape } : null);
   } catch (e) {
     return el('p', { class: 'note warn' }, [e instanceof Error ? e.message : String(e)]);
@@ -197,7 +246,8 @@ function results() {
         el('tbody', {}, rows)])]),
     ];
   };
-  const goalList = [...want.map(name), ...(state.negative ? [name(`-${state.negative}`)] : [])].join(', ');
+  const goals = minimums();
+  const goalList = [...want.map(id => (goals[id] !== undefined ? `${name(id)} ≥ ${goals[id]}` : name(id))), ...(state.negative ? [name(`-${state.negative}`)] : [])].join(', ');
   if (state.spliced) {
     out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')} on a ${state.shape} riven, then splice ${name(state.spliced)}`));
     out.push(...table('post', `2. With ${name(state.spliced)} in place, cycle for ${goalList}`));
@@ -207,7 +257,7 @@ function results() {
   out.push(el('p', { class: 'note' }, [
     `Rows are for a ${state.shape} riven; on any other shape, cycle unlocked until it changes. `
     + 'Costs assume the riven is past its 10th cycle (3,500 Kuva, 7,000 with a lock). Odds use the community model: '
-    + 'each shape equally likely when unlocked, stats drawn evenly with no repeats. Roll quality isn\'t included.']));
+    + 'each shape equally likely when unlocked, stats drawn evenly with no repeats. Values are at rank 8, with every roll equally likely.']));
   return el('div', {}, out);
 }
 
@@ -221,7 +271,11 @@ function renderResults() {
   saveState('p', {
     weapon: state.weapon, cls: state.cls, spliced: state.spliced, recipe: state.recipe,
     want: state.want.filter(Boolean).join(','), neg: state.negative, shape: state.shape,
-    ...(state.from === 'mine' ? { from: 'mine', mp: state.myPos.filter(Boolean).join(','), mn: state.myNeg } : {}),
+    min: state.want.map((id, i) => (id && state.mins[i] ? `${id}:${state.mins[i]}` : '')).filter(Boolean).join(','),
+    ...(state.from === 'mine' ? {
+      from: 'mine', mp: state.myPos.filter(Boolean).join(','), mn: state.myNeg,
+      mv: state.myPos.map((id, i) => (id && state.myVals[i] ? `${id}:${state.myVals[i]}` : '')).filter(Boolean).join(','),
+    } : {}),
   });
 }
 
@@ -244,6 +298,8 @@ function restore() {
     shape: oneOf(SHAPE_ORDER),
     from: oneOf(/** @type {const} */ (['fresh', 'mine'])),
     mp: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
+    min: v => Object.fromEntries(v.split(',').map(p => p.split(':'))),
+    mv: v => Object.fromEntries(v.split(',').map(p => p.split(':'))),
     mn: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
   });
   if (saved.weapon !== undefined) {
@@ -258,6 +314,8 @@ function restore() {
   state.from = saved.from ?? 'fresh';
   if (saved.mp) state.myPos = [...saved.mp, NONE, NONE, NONE].slice(0, 3);
   if (saved.mn !== undefined) state.myNeg = saved.mn;
+  if (saved.min) state.mins = state.want.map(id => saved.min[id] ?? '');
+  if (saved.mv) state.myVals = state.myPos.map(id => saved.mv[id] ?? '');
 }
 
 /** @param {HTMLElement} container */
@@ -270,13 +328,14 @@ export function mountPlanner(container) {
 /**
  * Starts the plan from a riven the user has (from the grader): its weapon and stats. The target
  * itself is kept.
- * @param {{weapon: string, cls: WeaponClass, positives: string[], negative: string | null, shape: Shape}} riven
+ * @param {{weapon: string, cls: WeaponClass, positives: string[], values?: string[], negative: string | null, shape: Shape}} riven
  */
 export function loadIntoPlanner(riven) {
   if (riven.weapon || riven.cls !== state.cls) { state.weapon = riven.weapon; state.cls = riven.cls; }
   Object.assign(state, {
     from: 'mine',
     myPos: [...riven.positives, NONE, NONE, NONE].slice(0, 3),
+    myVals: [...(riven.values ?? []), '', '', ''].slice(0, 3),
     myNeg: riven.negative ?? NONE,
   });
   render();

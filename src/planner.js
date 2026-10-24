@@ -9,11 +9,16 @@
 // a random trait of the same sign replaces them, the spliced trait stays and the shape is frozen.
 // Policy iteration finds the cheapest action in every state; the result is exact for the model.
 //
+// Value goals ("Toxin at least 100%"): a wanted stat only counts once it rolls at least that much.
+// Each cycle rerolls the values of unlocked stats (roll uniform from worst to best); a locked stat
+// keeps its value, and stats that survive a splice keep theirs.
+//
 // Assumptions (see src/cycle.js): each shape equally likely when unlocked, stats drawn evenly with
-// no repeats, and a flat cost per cycle (riven past its 10th cycle: 3,500, or 7,000 locked).
+// no repeats, rolls uniform, values at rank 8, and a flat cost per cycle (riven past its 10th
+// cycle: 3,500, or 7,000 locked).
 
 import { SHAPES, STAT_BY_ID } from './data/stats.js';
-import { SHAPE_ORDER } from './engine.js';
+import { SHAPE_ORDER, range, solveU } from './engine.js';
 import { pools, cycleCost } from './cycle.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
@@ -36,6 +41,8 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
  * @property {string[]} [parents]     which recipe to splice it from (default: the cheapest)
  * @property {string | null} negative wanted negative, or null for "don't care"
  * @property {Shape} shape            the finished riven's shape
+ * @property {Record<string, number>} [minimums]  wanted positive → the least it must show at rank 8,
+ *   as a magnitude ("100" for +100%, "90" for -90% Weapon Recoil, "1.3" for x1.3)
  *
  * @typedef {{stage: 'pre' | 'post', mask: number, neg: boolean, shape: Shape}} State
  *   mask = bits over the stage's tracked positives
@@ -79,6 +86,34 @@ function solveFor(t, parents) {
     && s.mask === (1 << postTracked.length) - 1 && (!targetNeg || s.neg);
   const canSplice = (/** @type {State} */ s) => s.stage === 'pre' && s.shape === t.shape && (s.mask & parentMask) === parentMask;
 
+  /** The chance a freshly rolled positive meets its minimum on a shape (1 with no minimum). */
+  const meets = (/** @type {string} */ id, /** @type {Shape} */ shape) => {
+    const min = t.minimums?.[id];
+    if (min === undefined || (parents?.includes(id) && !t.positives.includes(id))) return 1;
+    const stat = STAT_BY_ID[id];
+    const shown = range(stat, t.cls, shape, '+').at1 < 0 ? -Math.abs(min) : Math.abs(min);
+    return Math.min(1, Math.max(0, 1 - solveU(stat, t.cls, shape, '+', shown)));
+  };
+  for (const id of postTracked) {
+    if (meets(id, t.shape) === 0) {
+      const best = range(STAT_BY_ID[id], t.cls, t.shape, '+').at1;
+      throw new Error(`${STAT_BY_ID[id].name} can't reach ${t.minimums?.[id]} on a ${t.shape} riven (best ${Math.round(Math.abs(best) * 10) / 10}).`);
+    }
+  }
+  /**
+   * Splits drawn stats into the ones that rolled well enough and the rest.
+   * @param {string[]} drawn @param {Shape} shape @returns {[string[], number][]} [good ones, probability]
+   */
+  const rolls = (drawn, shape) => {
+    let out = /** @type {[string[], number][]} */ ([[[], 1]]);
+    for (const id of drawn) {
+      const q = meets(id, shape);
+      out = out.flatMap(([good, p]) => /** @type {[string[], number][]} */ ([[[...good, id], p * q], [good, p * (1 - q)]]))
+        .filter(([, p]) => p > 0);
+    }
+    return out;
+  };
+
   /**
    * Outcome distribution of one cycle.
    * @param {State} s @param {{lock: string | null}} action  lock = tracked id or 'NEG' or null
@@ -110,20 +145,22 @@ function solveFor(t, parents) {
         for (let x = 0; x <= X; x++) for (let j = 0; j <= O1; j++) {
           const m = d - A.length - x - j;
           if (m < 0 || m > O2) continue;
-          const p = (binom(O1, j) * binom(O2, m)) / total / shapes.length;
-          if (!p) continue;
-          let mask = 0;
-          for (const id of [...A, ...(lockPos ? [lockPos] : [])]) mask |= 1 << tr.indexOf(id);
-          /** @param {boolean} neg @param {number} q */
-          const put = (neg, q) => { const kk = key({ stage: s.stage, mask, neg, shape }); out.set(kk, (out.get(kk) ?? 0) + q); };
-          if (c === 0 || !targetNeg) { put(false, p); continue; }
-          if (lockNeg) { put(true, p); continue; }
+          const p0 = (binom(O1, j) * binom(O2, m)) / total / shapes.length;
+          if (!p0) continue;
           // Negative drawn from the negative pool minus everything that's already a positive.
           const taken = negFixedPos + A.filter(id => negPool.includes(id)).length + x + j;
-          const left = negPool.length - taken;
-          const pNeg = x === 0 ? 1 / left : 0;
-          put(true, p * pNeg);
-          put(false, p * (1 - pNeg));
+          const pNeg = x === 0 ? 1 / (negPool.length - taken) : 0;
+          for (const [good, q] of rolls(A, shape)) {
+            const p = p0 * q;
+            let mask = 0;
+            for (const id of [...good, ...(lockPos ? [lockPos] : [])]) mask |= 1 << tr.indexOf(id);
+            /** @param {boolean} neg @param {number} w */
+            const put = (neg, w) => { const kk = key({ stage: s.stage, mask, neg, shape }); out.set(kk, (out.get(kk) ?? 0) + w); };
+            if (c === 0 || !targetNeg) { put(false, p); continue; }
+            if (lockNeg) { put(true, p); continue; }
+            put(true, p * pNeg);
+            put(false, p * (1 - pNeg));
+          }
         }
       }
     }
@@ -139,9 +176,12 @@ function solveFor(t, parents) {
     const pool = posPool.filter(id => id !== S && !survivors.includes(id));
     for (const id of pool) {
       const i = postTracked.indexOf(id);
-      const m = i >= 0 ? mask | (1 << i) : mask;
-      const kk = key({ stage: 'post', mask: m, neg: s.neg, shape: s.shape });
-      out.set(kk, (out.get(kk) ?? 0) + 1 / pool.length);
+      const q = i >= 0 ? meets(id, s.shape) : 0;
+      for (const [m, w] of /** @type {[number, number][]} */ ([[mask | (i >= 0 ? 1 << i : 0), q], [mask, 1 - q]])) {
+        if (!w) continue;
+        const kk = key({ stage: 'post', mask: m, neg: s.neg, shape: s.shape });
+        out.set(kk, (out.get(kk) ?? 0) + w / pool.length);
+      }
     }
     return out;
   }
