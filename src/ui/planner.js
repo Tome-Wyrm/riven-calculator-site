@@ -24,7 +24,7 @@ const state = {
   mins: ['', '', ''],                   // value wanted for each positive, '' = any
   ops: /** @type {('gte' | 'lte' | 'eq')[]} */ (['gte', 'gte', 'gte']),
   negative: NONE,
-  shape: /** @type {Shape} */ ('+++-'),
+  shape: /** @type {Shape | 'any'} */ ('any'),   // the finished riven's shape; 'any' = the cheapest
   from: /** @type {'fresh' | 'mine'} */ ('fresh'),
   // The riven you have now: its positives (spliced ones included) and its negative.
   myPos: [NONE, NONE, NONE],
@@ -40,6 +40,9 @@ const magnitude = v => {
   const m = v.replace(',', '.').match(/\d+(?:\.\d+)?/);
   return m ? Number(m[0]) : null;
 };
+
+/** The target shape being planned (state.shape, or with 'any' the shape being tried). */
+let T = /** @type {Shape} */ ('+++-');
 
 /** The value goals as the planner takes them. @returns {Record<string, import('../planner.js').ValueGoal>} */
 function valueGoals() {
@@ -64,7 +67,7 @@ function goalParents() {
  * @param {Shape} shape
  */
 function goodParents(shape) {
-  const need = splicedRollNeeded({ cls: state.cls, positives: [], spliced: state.spliced || null, negative: null, shape: state.shape, goals: valueGoals() });
+  const need = splicedRollNeeded({ cls: state.cls, positives: [], spliced: state.spliced || null, negative: null, shape: T, goals: valueGoals() });
   if (need === null) return undefined;
   const rollOf = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign, /** @type {string} */ v) => {
     const m = magnitude(v);
@@ -175,7 +178,7 @@ function controls() {
   if (!negative.includes(state.negative)) state.negative = NONE;
   if (!splicedList.some(s => s.id === state.spliced)) state.spliced = NONE;
   const shapes = validShapes();
-  if (!shapes.includes(state.shape)) state.shape = shapes[0] ?? '+++-';
+  if (state.shape !== 'any' && !shapes.includes(state.shape)) state.shape = 'any';
 
   const recipes = state.spliced ? /** @type {string[][]} */ (STAT_BY_ID[state.spliced].from).filter(r => r.every(id => positive.includes(id))) : [];
   const recipeOptions = /** @type {[string, string][]} */ ([[NONE, 'Cheapest'], ...recipes.map(r => [r.join('+'), r.map(name).join(' + ')])]);
@@ -213,8 +216,8 @@ function controls() {
     ])),
     el('div', { class: 'controls' }, [
       select('Negative', negOptions, state.negative, v => set({ negative: v })),
-      select('Shape', (shapes.length ? shapes : SHAPE_ORDER).map(s => /** @type {[string, string]} */ ([s, s])), state.shape,
-        v => set({ shape: /** @type {Shape} */ (v) })),
+      select('Shape', [['any', 'Any (cheapest)'], ...(shapes.length ? shapes : SHAPE_ORDER).map(s => /** @type {[string, string]} */ ([s, s]))], state.shape,
+        v => set({ shape: /** @type {Shape | 'any'} */ (v) })),
     ]),
     el('div', { class: 'controls' }, [
       segmented('Start from', ['fresh', 'mine'], state.from, v => set({ from: /** @type {any} */ (v) }),
@@ -277,22 +280,35 @@ function results() {
   if (new Set(want).size !== want.length) problems.push('The same positive is picked twice.');
   if (!want.length && !state.spliced) problems.push('Pick at least one stat you want.');
   if (!validShapes().length) problems.push('No riven shape can hold all of that.');
-  const mineNow = state.from === 'mine' ? current() : null;
-  if (mineNow && !mineNow.shape) problems.push('Enter your riven: at least 2 different positives.');
+  if (state.from === 'mine' && !current().shape) problems.push('Enter your riven: at least 2 different positives.');
   if (problems.length) return el('div', {}, problems.map(p => el('p', { class: 'note warn' }, [p])));
 
-  let plan;
-  try {
-    plan = planBuild({
-      cls: state.cls, ipsCode: ipsOf(state.weapon), positives: want, spliced: state.spliced || null,
-      parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape: state.shape,
-      goals: valueGoals(),
-    }, mineNow && mineNow.shape
-      ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape, goodParents: mineNow.goodParents }
-      : null);
-  } catch (e) {
-    return el('p', { class: 'note warn' }, [e instanceof Error ? e.message : String(e)]);
+  // Plan each candidate shape (just the chosen one, or with 'any' every shape that can hold the
+  // target) and keep the cheapest.
+  const candidates = state.shape === 'any' ? validShapes() : [state.shape];
+  /** @type {{shape: Shape, plan: ReturnType<typeof planBuild>, mineNow: ReturnType<typeof current> | null}[]} */
+  const tried = [];
+  const errors = [];
+  for (const shape of candidates) {
+    T = shape;
+    const mineNow = state.from === 'mine' ? current() : null;
+    try {
+      const plan = planBuild({
+        cls: state.cls, ipsCode: ipsOf(state.weapon), positives: want, spliced: state.spliced || null,
+        parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape,
+        goals: valueGoals(),
+      }, mineNow && mineNow.shape
+        ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape, goodParents: mineNow.goodParents }
+        : null);
+      tried.push({ shape, plan, mineNow });
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
   }
+  if (!tried.length) return el('p', { class: 'note warn' }, [errors[0] ?? "That target can't be reached."]);
+  tried.sort((a, b) => a.plan.expectedKuva - b.plan.expectedKuva);
+  const { plan, mineNow } = tried[0];
+  T = tried[0].shape;
 
   const parents = plan.parents ?? [];
   // The table row your riven is on: the stats it has among those the plan tracks at its stage.
@@ -308,11 +324,15 @@ function results() {
   }
   // Goals every roll meets ("≥ 1") aren't wrong, just pointless: say so, and plan anyway.
   const trivial = Object.entries(valueGoals()).flatMap(([id, g]) => {
-    const r = range(STAT_BY_ID[id], state.cls, state.shape, '+');
+    const r = range(STAT_BY_ID[id], state.cls, T, '+');
     const [lo, hi] = [Math.abs(r.at0), Math.abs(r.at1)].sort((a, b) => a - b).map(v => Math.round(v * 100) / 100);
     const always = g.op === 'gte' ? g.value <= lo : g.op === 'lte' ? g.value >= hi : false;
-    return always ? [`${name(id)} ${OP_TEXT[g.op]} ${g.value} is met by every roll (it rolls ${lo} to ${hi} on a ${state.shape} riven), so it doesn't change the plan.`] : [];
+    return always ? [`${name(id)} ${OP_TEXT[g.op]} ${g.value} is met by every roll (it rolls ${lo} to ${hi} on a ${T} riven), so it doesn't change the plan.`] : [];
   });
+  const shapeNote = state.shape === 'any' && tried.length > 1
+    ? [el('p', { class: 'note' }, [`Cheapest shape: ${T}. `
+      + tried.slice(1).map(x => `${x.shape} would average ${kuva(x.plan.expectedKuva)}`).join('; ') + '.'])]
+    : [];
   const out = [
     ...trivial.map(t => el('p', { class: 'note warn' }, [t])),
     el('p', { class: 'summary' }, [
@@ -323,11 +343,13 @@ function results() {
       `Half of runs finish within ${cyc(plan.median.cycles)} (about ${kuva(plan.median.kuva)}); `
       + `9 in 10 within ${cyc(plan.likely.cycles)} (about ${kuva(plan.likely.kuva)}).`
       + (plan.alternatives.length ? ` Splicing from ${plan.alternatives.map(a => `${a.parents.map(name).join(' + ')} would average ${kuva(a.kuva)}`).join('; ')}.` : '')]),
+    ...shapeNote,
   ];
   if (state.from === 'mine') {
     out.push(el('p', { class: 'note next' }, [mine
       ? `Your next move: ${nextMove(mine.action, parents)}.`
-      : `Your riven isn't the ${state.shape} shape the target needs${state.spliced && mineNow?.stage === 'post' ? ', and a spliced riven\'s shape can\'t change' : ''}: cycle it unlocked until it is.`]));
+      : `Your riven isn't the ${T} shape the target needs${state.spliced && mineNow?.stage === 'post' ? ', and a spliced riven\'s shape can\'t change' : ''}: cycle it unlocked until it is.`
+        + (state.shape !== 'any' && mineNow?.shape ? ` (Or set Shape to Any to also plan for its own ${mineNow.shape} shape.)` : '')]));
   }
 
   /** @param {'pre' | 'post'} stage @param {string} title */
@@ -351,18 +373,18 @@ function results() {
   const goals = valueGoals();
   const goalList = [...want.map(id => (goals[id] ? `${name(id)} ${OP_TEXT[goals[id].op]} ${goals[id].value}` : name(id))), ...(state.negative ? [name(`-${state.negative}`)] : [])].join(', ');
   if (state.spliced) {
-    const curseOk = SHAPES[state.shape].negatives > 0 && parents.some(id => pools(state.cls, ipsOf(state.weapon)).negative.includes(id));
+    const curseOk = SHAPES[T].negatives > 0 && parents.some(id => pools(state.cls, ipsOf(state.weapon)).negative.includes(id));
     // The spliced stat keeps the better parent roll: with a goal, say what a parent needs.
-    const need = splicedRollNeeded({ cls: state.cls, positives: [], spliced: state.spliced, negative: null, shape: state.shape, goals });
+    const need = splicedRollNeeded({ cls: state.cls, positives: [], spliced: state.spliced, negative: null, shape: T, goals });
     const needText = need === null ? ''
       : `, with one of them rolling at least ${rollText(need)} (for ${name(state.spliced)} ≥ ${goals[state.spliced].value}; it keeps the better roll)`;
-    out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')}${curseOk ? ' (one of them can be the curse)' : ''}${needText} on a ${state.shape} riven, then splice ${name(state.spliced)}`));
+    out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')}${curseOk ? ' (one of them can be the curse)' : ''}${needText} on a ${T} riven, then splice ${name(state.spliced)}`));
     out.push(...table('post', `2. With ${name(state.spliced)} in place, cycle for ${goalList}`));
   } else {
-    out.push(...table('post', `Cycle for ${goalList} on a ${state.shape} riven`));
+    out.push(...table('post', `Cycle for ${goalList} on a ${T} riven`));
   }
   out.push(el('p', { class: 'note' }, [
-    `Rows are for a ${state.shape} riven; on any other shape, cycle unlocked until it changes. `
+    `Rows are for a ${T} riven; on any other shape, cycle unlocked until it changes. `
     + 'Costs assume the riven is past its 10th cycle (3,500 Kuva, 7,000 with a lock). Odds use the community model: '
     + 'each shape equally likely when unlocked, stats drawn evenly with no repeats. Values are at rank 8, with every roll equally likely.']));
   return el('div', {}, out);
@@ -405,7 +427,7 @@ function restore() {
     recipe: v => v,
     want: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
     neg: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
-    shape: oneOf(SHAPE_ORDER),
+    shape: oneOf(/** @type {(Shape | 'any')[]} */ ([...SHAPE_ORDER, 'any'])),
     from: oneOf(/** @type {const} */ (['fresh', 'mine'])),
     mp: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
     min: v => Object.fromEntries(v.split(',').map(p => {
