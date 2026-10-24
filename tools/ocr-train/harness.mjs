@@ -5,6 +5,7 @@
 //   node tools/ocr-train/harness.mjs tools/ocr-train/out/fuzzed   synthetic cards (each n.png + n.json)
 //   ... --limit 50  --workers 4  --psm 11  --width 2400 --maxscale 4 --invert 1 --contrast 1
 //   ... --show 10   (print the first 10 misses)
+//   ... --model tools/ocr-train/out/riven.traineddata   (a fine-tuned model instead of English)
 //
 // Images are decoded by prep.py (Pillow) and preprocessed by src/ocr-prep.js, the same code the
 // site runs in the browser, so a setting that helps here helps on the site.
@@ -70,7 +71,10 @@ async function main() {
 
   const scheduler = createScheduler();
   for (let i = 0; i < workers; i++) {
-    const w = await createWorker('eng');
+    const model = opt('model');
+    const w = model
+      ? await createWorker(path.basename(model, '.traineddata'), 1, { langPath: path.dirname(path.resolve(model)), gzip: false, cachePath: os.tmpdir(), cacheMethod: 'none' })
+      : await createWorker('eng');
     await w.setParameters({ tessedit_pageseg_mode: psm });
     scheduler.addWorker(w);
   }
@@ -102,7 +106,7 @@ async function main() {
       !okS && `stats [${gs.join(', ')}] ≠ [${ws.join(', ')}]`, !okL && 'locks'].filter(Boolean).join('; ')}`);
   }
   const pct = (/** @type {number} */ a, /** @type {number} */ b) => `${(100 * a / b).toFixed(1)}%`;
-  console.log(`${set}  psm=${psm} ${prepOpts.join(' ')}  (${score.cards} cards, ${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+  console.log(`${set}  ${opt('model') ? path.basename(opt('model')) : 'eng'}  psm=${psm} ${prepOpts.join(' ')}  (${score.cards} cards, ${((Date.now() - t0) / 1000).toFixed(0)} s)`);
   console.log(`  all right ${pct(score.perfect, score.cards)} · weapon ${pct(score.weapon, score.cards)} · rank ${pct(score.rank, score.cards)}`
     + ` · every stat ${pct(score.statsAll, score.cards)} · stat lines ${pct(score.stats, score.statsTotal)} · locks ${pct(score.locks, score.cards)}`);
   for (const m of misses.slice(0, show)) console.log('  ' + m);

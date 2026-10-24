@@ -147,3 +147,8 @@ test('a clean first word is enough when the rest of a stat name is garbled (Fela
   assert.equal(matchStat('Magazine Reloaded/s when Holsterd'), 'reloadWhileHolstered');
   assert.equal(matchStat('Qwxyzzy Blorp'), null);
 });
+
+test('the fine-tuned model reads a padlock as "#" and the cycle arrow as "@"', () => {
+  const r = parseRivenText('Glaxion Cori-ignitox\n+93.7% Heat\n# +106.2% Corrosive\n+93.5% Toxin\n# -58.4% Zoom\nMR 13\n@ 24');
+  assert.deepEqual(r.stats.map(s => [s.statId, !!s.locked]), [['heat', false], ['corrosive', true], ['toxin', false], ['zoom', true]]);
+});

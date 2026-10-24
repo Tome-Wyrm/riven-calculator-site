@@ -104,7 +104,7 @@ const VALUE_LINE = /^.{0,5}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\
  * to the value, "214109.7%", which can't be told from a misread value: those aren't marked.)
  * Tested on the junk read before a stat's value.
  */
-const LOCKED = /(^|\s)[0Oo8]\s*$/;
+const LOCKED = /(^|\s)[0Oo8#]\s*$/;   // "#": what the fine-tuned model reads a padlock as
 
 /** A value alone on its line ("+84.3"), its name on the next ("% Electricity"). */
 const BARE_VALUE = /^(?:.{0,5}?[+\-−–—‒x×]\s*\d+(?:[.,]\d+)?\s*%?|\d+(?:[.,]\d+)?\s*%)$/;   // unsigned: nothing else on the line

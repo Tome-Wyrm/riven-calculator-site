@@ -191,13 +191,17 @@ def card(spec, weight='Medium'):
     d = ImageDraw.Draw(text)
     y = top
     icons_later = []                                     # drawn on the image after the text layer
+    boxes = []                                           # (label, box) per text line, for training
     for t, ft, (locked, icon) in lines:
         y += pitch(ft)
+        asc, desc = ft.getmetrics()
         colour = LOCKED if locked else TEXT
         # The icon sits between the value and the name: "+101% [flame] Heat".
         value, _, rest = t.partition(' ') if icon else (t, '', '')
         tw = ft.getlength(t) + (17 if locked else 0) + (21 if icon else 0)
         x = (W - tw) / 2
+        # Label: the padlock as "#", damage icons left out (the model learns to skip them).
+        boxes.append(((('# ' if locked else '') + t), (x - 2, y - asc - 2, x + tw + 2, y + desc + 2)))
         if locked:
             padlock(d, x, y - 16, 15, colour)
             x += 17
@@ -226,12 +230,16 @@ def card(spec, weight='Medium'):
     mr_ft = font('Bold', 18)
     if spec['cycles']:
         d.text((tx + 22, ty + 17), f"MR {spec['mr']}", font=mr_ft, fill=(220, 210, 245), anchor='lm')
+        boxes.append((f"MR {spec['mr']}", (tx + 18, ty + 2, tx + 26 + mr_ft.getlength(f"MR {spec['mr']}"), ty + 32)))
         cx = tx + tab.width - 22
         d.text((cx, ty + 17), f"{spec['cycles']}", font=mr_ft, fill=(220, 210, 245), anchor='rm')
         w = mr_ft.getlength(f"{spec['cycles']}")
         cycle_icon(d, cx - w - 20, ty + 9, 15, (220, 210, 245))
+        boxes.append((f"@ {spec['cycles']}", (cx - w - 24, ty + 2, cx + 4, ty + 32)))   # the cycle arrow as "@"
     else:
         d.text((W / 2, ty + 17), f"MR {spec['mr']}", font=mr_ft, fill=(220, 210, 245), anchor='mm')
+        mw = mr_ft.getlength(f"MR {spec['mr']}")
+        boxes.append((f"MR {spec['mr']}", (W / 2 - mw / 2 - 4, ty + 2, W / 2 + mw / 2 + 4, ty + 32)))
     backer = asset('RivenTopRightBacker', 1.35)
     bx, by = W - backer.width - 16, 22
     im.alpha_composite(backer, (bx, by))
@@ -243,8 +251,10 @@ def card(spec, weight='Medium'):
     tw = dft.getlength(f"{drain}")
     x0 = bx + backer.width / 2 - (tw + 24) / 2 + 4
     d.text((x0, by + backer.height / 2), f"{drain}", font=dft, fill=c, anchor='lm')
+    boxes.append((f"{drain}", (x0 - 3, by + 1, x0 + tw + 2, by + backer.height - 1)))
     if not paste_icon(im, 'pol-' + spec.get('polarity', 'madurai'), x0 + tw + 2, by + backer.height / 2 - 11, 22, c):
         polarity(d, x0 + tw + 4, by + 8, 14, c)
+    im.info['lines'] = boxes
     return im
 
 
