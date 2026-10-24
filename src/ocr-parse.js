@@ -67,7 +67,7 @@ function bestMatch(key) {
   let best = null, bestScore = Infinity;
   for (const n of NAMES) {
     // Allow trailing junk (icons, stray characters) by also comparing against the same-length prefix.
-    const d = Math.min(distance(key, n.key), distance(key.slice(0, n.key.length), n.key) + 1);
+    const d = Math.min(distance(key, n.key), distance(key.slice(0, n.key.length), n.key) + 0.5);
     const score = d / n.key.length;
     if (score < bestScore) { best = n.id; bestScore = score; }
   }
@@ -90,7 +90,20 @@ const VALUE_LINE = /^.{0,5}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\
 const LOCKED = /(^|\s)[0Oo8]\s*$/;
 
 /** A value alone on its line ("+84.3"), its name on the next ("% Electricity"). */
-const BARE_VALUE = /^.{0,5}?[+\-−–—‒x×]\s*\d+(?:[.,]\d+)?\s*%?$/;
+const BARE_VALUE = /^(?:.{0,5}?[+\-−–—‒x×]\s*\d+(?:[.,]\d+)?\s*%?|\d+(?:[.,]\d+)?\s*%)$/;   // unsigned: nothing else on the line
+
+/** The cycle counter in the bottom bar ("↻ 34" read as "O 34", "010", "O95"): the stats are over. */
+const CYCLES = /^[O0©@]\s*\d{1,3}(?:\D|$)/;
+
+/**
+ * Whether a line that looks like "value + words" is a stat. Junk from the title or artwork can
+ * look like one ("Efv-5 Jupiter Geli-", "Geli-1gnitox", "-3 : Kuva Bramma"): a stat has a "%", a
+ * decimal value, or a name we recognise (the name may wrap onto the next line). @param {string} l
+ */
+function isStatLine(l) {
+  const m = fixDigits(l).match(VALUE_LINE);
+  return !!m && /[a-z]{2}/i.test(m[3]) && (/%/.test(l) || /\d[.,]\d/.test(m[1]) || matchStat(m[3]) !== null);
+}
 
 /** A percentage stat whose sign was lost (e.g. "102.7% Finisher Damage", or a lock icon read as digits). */
 const UNSIGNED_LINE = /^.{0,5}?(\d+(?:[.,]\d+)?)\s*%\s*([a-z].*)$/i;
@@ -163,7 +176,7 @@ export function parseRivenText(text) {
     if (lines.length && BARE_VALUE.test(lines[lines.length - 1]) && !/^MR\s*\d/i.test(l)) lines[lines.length - 1] += ' ' + l;
     else lines.push(l);
   }
-  const firstStat = lines.findIndex(l => VALUE_LINE.test(l) && /[a-z]{3}/i.test(l));
+  const firstStat = lines.findIndex(l => /[a-z]{3}/i.test(l) && isStatLine(l));
   const header = firstStat < 0 ? lines : lines.slice(0, firstStat);
 
   // Drain sits above the name: a lone number from 10 to 18 (rank 0 to 8).
@@ -178,9 +191,17 @@ export function parseRivenText(text) {
   if (firstStat >= 0) {
     for (const raw of lines.slice(firstStat)) {
       if (/^.{0,3}?MR\s*\d/i.test(raw)) break;                // the "MR 12" bar ends the stats
+      // So does the cycle counter, once a riven's 4 stats are in; before that it's skipped (on wide
+      // screenshots OCR can read it before the last stat).
+      if (CYCLES.test(raw)) { if (stats.length >= 4) break; continue; }
       const l = fixDigits(raw);
+      if (l.startsWith('(') && stats.length) {               // "(x2 for Heavy Attacks)" belongs to the line above
+        stats[stats.length - 1].text += ' ' + l;
+        continue;
+      }
       const m = l.match(VALUE_LINE);
       const unsigned = !m && l.match(UNSIGNED_LINE);
+      if (m && /[a-z]{2}/i.test(m[3]) && !isStatLine(raw)) continue;   // junk shaped like a stat
       if (m && /[a-z]{2}/i.test(m[3])) {
         m[3] = m[3].replace(/[\W_]*MR\s*\d+.*$/i, '');        // the MR line merged onto the last stat
         let value = m[1].replace(/\s/g, '').replace(/[−–—‒]/, '-').replace(/^[x×]/i, 'x').replace(',', '.');
@@ -199,8 +220,12 @@ export function parseRivenText(text) {
   for (const s of stats) s.statId = matchStat(s.text);
 
   // Two cards side by side (a transmute or compare screen): two lines start with a weapon name.
-  const titles = (header.length ? header : lines).filter(l => findWeaponExact([l]));
-  const twoCards = titles.length >= 2 || new Set(stats.map(s => s.statId).filter(Boolean)).size < stats.filter(s => s.statId).length;
+  const titles = new Set((header.length ? header : lines).filter(l => {
+    const t = l.replace(/^(\S{1,2}\s+)+/, '').toLowerCase();
+    // A title is the weapon's name then the riven's own name ("Magnus Ampilis", "Mausolon 227?").
+    return WEAPONS.some(([n]) => t.startsWith(n.toLowerCase()) && /^[\s-]+\S{2}/.test(t.slice(n.length)));
+  }).map(l => norm(l.replace(/^(\S{1,2}\s+)+/, ''))));        // the same title read twice is one card
+  const twoCards = titles.size >= 2 || new Set(stats.map(s => s.statId).filter(Boolean)).size < stats.filter(s => s.statId).length;
   return { weapon: findWeapon(header.length ? header : lines, stats.slice(0, 4)), rank, stats: stats.slice(0, 4), header, twoCards };
 }
 

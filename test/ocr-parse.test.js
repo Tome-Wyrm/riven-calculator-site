@@ -115,3 +115,28 @@ test('two cards side by side are flagged (their lines interleave)', () => {
   assert.equal(parseRivenText('Mausolon Crita-\ntoxiata\nMausolon 227?\n+106.8% Damage\n+106.8% Damage\n+140.3% Toxin\nMR 10').twoCards, true);
   assert.equal(parseRivenText('Felarx Parcican\n+187% Multishot\n8+71.8% Ammo\nEfficiency\n-50.1% Critical Chance\nMR12').twoCards, false);
 });
+
+test('title junk shaped like a stat is skipped, brackets wrap, the cycle counter ends the stats', () => {
+  // EFV-5 Jupiter: "Efv-5 Jupiter Geli-" looks like "-5 Jupiter Geli-"
+  const e = parseRivenText('Efv-5 Jupiter Geli- ;\nIgnItox\n9\n+90.9% ¥ Heat\n+81.6% Toxin\n:\n+92.9% * Cold\nY\n+75.2% Weapon Recoll\nMR 10');
+  assert.equal(e.weapon?.name, 'EFV-5 Jupiter');
+  assert.deepEqual(e.stats.map(s => s.statId), ['heat', 'toxin', 'cold', 'recoil']);
+  // Kuva Twin Stubbas: "Geli-1gnitox" looks like "-1 gnitox"
+  const k = parseRivenText('Kuva Tl\nwin Stub\nbas\nGeli-1gnitox\n+80.5% Toxin\n+81.4% ® Heat\n+87.2% > Cold\n«X0.65 Damage to Infested ¥\nMR 16');
+  assert.deepEqual(k.stats.map(s => s.statId), ['toxin', 'heat', 'cold', 'infested']);
+  // Xoris: "(x2 for Heavy Attacks)" is part of the line above
+  const x = parseRivenText('Xoris or\n+29 Initial Combo\n+197% Melee Damage\n+209% Critical Chance\n(x2 for Heavy Attacks)\n-100.7% Finisher Pamage\nMR 12');
+  assert.deepEqual(x.stats.map(s => s.statId), ['initialCombo', 'damage', 'critChance', 'finisher']);
+  // Kuva Bramma: a bare value, its name on the next line, then the cycle counter ("O 34")
+  const b = parseRivenText('Kuva Bramma Acri-\nexitiata\n+180.3% Damage\n0 +143.7% Critical\nDamaaqe\n0 +291.2% Weak Point\nCritical Chance\nJ\n-117.8%\nAlmpact\nO 34 3\nRE');
+  assert.deepEqual(b.stats.map(s => [s.statId, !!s.locked]), [['damage', false], ['critDamage', true], ['weakpointCrit', true], ['impact', false]]);
+  // "-3" then ": Kuva Bramma Acti-": not a stat, and the weapon is still found
+  const c = parseRivenText('-3\n: Kuva Bramma Acti-\ngelicron\n+176.5% Critical Chance\n+107.4% Cold\n+143.7% Critical Damage\n0 -75.1% Multishot\nGo');
+  assert.equal(c.weapon?.name, 'Kuva Bramma');
+  assert.equal(c.stats.length, 4);
+  // Kompressa: an unsigned value alone on its line
+  const p = parseRivenText('Kompressa ToxI-\nianido\n+104.7% Toxin\n+98.9% Cold\n+101% W Heat\n135.4%\ntical Chance\nMR 9');
+  assert.deepEqual(p.stats.map(s => s.statId), ['toxin', 'cold', 'heat', 'critChance']);
+  // Furis: art text "bons" isn't the weapon Bo, so this isn't two cards
+  assert.equal(parseRivenText('bons\nFuris Pl\nag\na-ignicron\n+100.6% W Heat\n+110.1% Status Damage\nMR 8').twoCards, false);
+});

@@ -147,10 +147,21 @@ export function refineStats(stats, cls, positives, drainRank) {
       best = { ...attempt, rank };
     }
   }
+  // An old riven (rolled before dispositions were removed) fits no rank well; then the drain
+  // number, if it was read, is the better guide than the rank where a few values happen to fit.
+  const valued = known.filter(r => r.value).length;
+  if (best && drainRank !== null && best.rank !== drainRank && best.asRead < valued) {
+    const atDrain = tryRank(known, cls, shape, drainRank);
+    if (atDrain) best = { ...atDrain, rank: drainRank };
+  }
+  // Corrections lean on the other values fitting: on an old riven where most don't, a "fix" would
+  // just be a guess (x0.65 → x0.55), so out-of-range values are only flagged.
+  const trustFixes = best && best.asRead >= valued / 2;
   if (best) {
     for (const [r, fixed, options] of best.fixes) {
       if (options?.length) r.note = `"${r.value}" can't be right; it's probably ${options.join(' or ')}, so check it`;
       else if (options) r.note = `"${r.value}" is outside today's range (an old riven, or a misread)`;
+      else if (fixed !== r.value && !trustFixes) r.note = `"${r.value || r.magnitude}" is outside today's range (an old riven, or a misread)`;
       else if (fixed !== r.value) { r.note = `read as ${r.value || r.magnitude}, corrected to fit the range`; r.value = fixed; }
     }
     notes.push(...known.filter(r => r.note).map(r => `${STAT_BY_ID[/** @type {string} */ (r.statId)].name}: ${r.note}`));

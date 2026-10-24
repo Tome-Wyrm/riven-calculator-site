@@ -21,7 +21,7 @@ const state = {
   rows: /** @type {{statId: string, value: string, locked?: boolean}[]} */ ([]),
 };
 
-const signed = (/** @type {number} */ x) => `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(1)}`;
+const signed = (/** @type {number} */ x) => `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(4)}`;
 
 /** Score interval → "+9.1%" or "+8.9 to +9.2%" when the game's rounding leaves real doubt. */
 function scoreText(/** @type {number} */ lo, /** @type {number} */ hi) {
@@ -134,12 +134,13 @@ function results() {
       oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} is outside the range ${format(stat, r.at0)} to ${format(stat, r.at1)} (${shape}, rank ${rank})`);
       return el('tr', {}, [name, shownCell, rangeCell, el('td', { class: 'miss', colspan: '2' }, ['Outside the range: check the value or the rank'])]);
     }
-    // For the negative, a higher roll is a bigger penalty, so it's scored by mildness (as WFHelper does).
-    const mild = sign === '-';
-    const [sLo, sHi] = [rollScore(g.lo, mild), rollScore(g.hi, mild)].sort((x, y) => x - y);
-    if (!mild) scores.push((sLo + sHi) / 2);
+    // The curse is scored by size, like the positives: a bigger curse is better for splicing, since
+    // a curse can be a splice parent. It isn't counted in the average.
+    const curse = sign === '-';
+    const [sLo, sHi] = [rollScore(g.lo), rollScore(g.hi)].sort((x, y) => x - y);
+    if (!curse) scores.push((sLo + sHi) / 2);
     return el('tr', {}, [name, shownCell, rangeCell,
-      el('td', { class: mild ? 'neg' : 'pos' }, [scoreText(sLo, sHi)]),
+      el('td', { class: curse ? 'neg' : 'pos' }, [scoreText(sLo, sHi)]),
       el('td', { class: 'grade' }, [gradeText(sLo, sHi)])]);
   });
 
@@ -151,7 +152,7 @@ function results() {
     planButton(parsed, shape),
     ...(blanks ? [el('p', { class: 'note' }, [`${blanks} stat${blanks > 1 ? "s have" : " has"} no value yet: it still counts toward the shape (as whichever sign fits the other values), but isn't graded.`])] : []),
     el('p', { class: 'note' }, [
-      'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The negative is scored by how mild it is. ',
+      'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The curse is scored by its size (bigger is better for splicing) and is left out of the average. ',
       'Grades: S ≥ +9.5, A+ ≥ +7.5, A ≥ +5.5, A- ≥ +3.5, B+ ≥ +1.5, B ≥ −1.5, B- ≥ −3.5, C+ ≥ −5.5, C ≥ −7.5, C- ≥ −9.5, else F.']),
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
     ...(oddities.length ? [reportLink(oddities)] : []),

@@ -2,7 +2,7 @@
 // Goal calculator: "can a <class> riven roll <op> <target> <stat>, and how likely is it?"
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { evaluateGoal, format, quirks, weaponCanRoll } from '../engine.js';
+import { evaluateGoal, format, quirks, rollScore, weaponCanRoll } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow, recipeText } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
@@ -25,15 +25,18 @@ const state = {
 
 const pct = (/** @type {number} */ x) => `${(x * 100).toFixed(x > 0 && x < 0.01 ? 2 : 1)}%`;
 
+/** A roll on the grader's ±10% scale (−10% worst, +10% best): "+6.9200%". @param {number} u */
+const roll = u => { const x = rollScore(u); return `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(4)}%`; };
+
 /** "Roll ≥ 74%" style description of the u-interval that meets the goal. @param {ShapeResult} r */
 function rollNeeded(r) {
   if (!r.feasible || !r.uInterval) return '—';
-  if (state.op === 'near') return `≈ ${pct(r.closestU ?? 0)}`;
+  if (state.op === 'near') return roll(r.closestU ?? 0);
   const [a, b] = r.uInterval;
   if (a <= 0 && b >= 1) return 'Any';
-  if (b >= 1) return `≥ ${pct(a)}`;
-  if (a <= 0) return `≤ ${pct(b)}`;
-  return `${pct(a)} – ${pct(b)}`;
+  if (b >= 1) return `≥ ${roll(a)}`;
+  if (a <= 0) return `≤ ${roll(b)}`;
+  return `${roll(a)} to ${roll(b)}`;
 }
 
 /** @param {ShapeResult} r @param {import('../data/stats.js').Stat} stat */
@@ -54,7 +57,7 @@ function summary(res, stat) {
   if (!best) return `${CLASS_LABEL[state.cls]} rivens can't roll that ${name} goal on any shape.`;
   if (state.op === 'near') {
     return (best.delta ?? 0) < 0.05
-      ? `Best: ${best.shape}, which can hit ${format(stat, state.target)} exactly with a ${pct(best.closestU ?? 0)} roll.`
+      ? `Best: ${best.shape}, which can hit ${format(stat, state.target)} exactly with a ${roll(best.closestU ?? 0)} roll.`
       : `Nothing reaches ${format(stat, state.target)} exactly. Closest: ${best.shape} at ${format(stat, best.closest ?? 0)}.`;
   }
   const feasible = res.results.filter(r => r.feasible).map(r => r.shape);
@@ -101,7 +104,7 @@ function results() {
     el('td', {}, [r.possible ? pct(r.probability) : '—']),
   ]));
   const chanceHead = state.op === 'near' ? 'Chance (±1)' : 'Chance';
-  const head = el('thead', {}, [el('tr', {}, ['Shape', 'Range', 'Meets goal', 'Roll needed', chanceHead]
+  const head = el('thead', {}, [el('tr', {}, ['Shape', 'Range', 'Meets goal', 'Roll needed (±10%)', chanceHead]
     .map(h => el('th', { scope: 'col' }, [h])))]);
 
   const notes = [el('p', { class: 'summary' }, [summary(res, stat)])];
