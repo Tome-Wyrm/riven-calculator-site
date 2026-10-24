@@ -58,7 +58,24 @@ export function matchStat(text) {
     const r = bestMatch(norm(t));
     if (r && r.score < bestScore) ({ id: best, score: bestScore } = r);
   }
-  return bestScore <= 0.25 ? best : null;
+  if (bestScore <= 0.25) return best;
+  return byFirstWord(clean);
+}
+
+/**
+ * Last resort: a clean first word and a garbled rest ("Magazine Slllsli"). Among stats whose name
+ * starts with that word, the one whose name length is closest to what was read.
+ * @param {string} text @returns {string | null}
+ */
+function byFirstWord(text) {
+  const words = text.trim().split(/\s+/).map(norm);
+  const first = words.find(w => w.length >= 5);
+  if (!first) return null;
+  const from = norm(text.slice(text.toLowerCase().indexOf(first.slice(0, 3))));
+  const fits = NAMES.filter(n => n.key.startsWith(first));
+  if (!fits.length) return null;
+  fits.sort((a, b) => Math.abs(a.key.length - from.length) - Math.abs(b.key.length - from.length));
+  return fits[0].id;
 }
 
 /** @param {string} key normalised text @returns {{id: string, score: number} | null} */

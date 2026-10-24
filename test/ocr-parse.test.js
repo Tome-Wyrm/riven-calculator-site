@@ -140,3 +140,10 @@ test('title junk shaped like a stat is skipped, brackets wrap, the cycle counter
   // Furis: art text "bons" isn't the weapon Bo, so this isn't two cards
   assert.equal(parseRivenText('bons\nFuris Pl\nag\na-ignicron\n+100.6% W Heat\n+110.1% Status Damage\nMR 8').twoCards, false);
 });
+
+test('a clean first word is enough when the rest of a stat name is garbled (Felarx)', () => {
+  const r = parseRivenText('Felarx peal\nS\n+80.3% Reload Speed\n+67% Zoom\n»-28% Magazine Slllsli\nMR13\nO 20');
+  assert.deepEqual(r.stats.map(s => [s.statId, s.value]), [['reloadSpeed', '+80.3'], ['zoom', '+67'], ['magazine', '-28']]);
+  assert.equal(matchStat('Magazine Reloaded/s when Holsterd'), 'reloadWhileHolstered');
+  assert.equal(matchStat('Qwxyzzy Blorp'), null);
+});
