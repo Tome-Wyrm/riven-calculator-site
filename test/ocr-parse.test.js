@@ -96,3 +96,22 @@ test('a padlock read as "0" before the sign marks the stat locked (Sobek, Glaxio
   const g = parseRivenText('Glaxion Cori-ignitox\n+93.7% ® Heat\n0+106.2% & Corrosive\n+93.5% 2 Toxin\n0 -58.4% Zoom\nMR 13');
   assert.deepEqual(g.stats.map(s => !!s.locked), [false, true, false, true]);
 });
+
+test('padlocks read as "8", split value lines, art text, and an MR bar with junk before it', () => {
+  // Felarx: padlock as "8", glued or spaced
+  const f = parseRivenText('Felarx Parcican\n+187% Multishot\n8+71.8% Ammo\nEfficiency\n-\nvs 8 -50.1% Critical Chance\n~\nMR12');
+  assert.deepEqual(f.stats.map(s => [s.statId, !!s.locked]), [['multishot', false], ['ammoEfficiency', true], ['critChance', true]]);
+  // Aklato: "SEER" in the artwork, values on their own lines, a "%" read as "9"
+  const a = parseRivenText('SEER\npa\nAklato Hexa-acritio\n+84.3\n% Electricity\n+88.79\n» Status\nChance\n+88.2% Critical Damage\nMR 12');
+  assert.equal(a.weapon?.name, 'Aklato');
+  assert.deepEqual(a.stats.map(s => [s.statId, s.value]), [['electricity', '+84.3'], ['statusChance', '+88.7'], ['critDamage', '+88.2']]);
+  // Mausolon: "4'MR 9" ends the stats
+  const m = parseRivenText("Mausolon Parcip\n+161.4% ¥W Heat\n+68.1% Ammo Efficiency\n-53.7% Mlmpact\n4'MR 9\nO 29");
+  assert.deepEqual(m.stats.map(s => s.statId), ['heat', 'ammoEfficiency', 'impact']);
+});
+
+test('two cards side by side are flagged (their lines interleave)', () => {
+  assert.equal(parseRivenText('Afentis Ampi-\nMagnus Ampilis\nconcicak\n+102.6% Ammo\n+47.3% Ammo Maximum\nMaximum\n+84.1% Projectile Speed\n+87.7% Zoom\nMR 16').twoCards, true);
+  assert.equal(parseRivenText('Mausolon Crita-\ntoxiata\nMausolon 227?\n+106.8% Damage\n+106.8% Damage\n+140.3% Toxin\nMR 10').twoCards, true);
+  assert.equal(parseRivenText('Felarx Parcican\n+187% Multishot\n8+71.8% Ammo\nEfficiency\n-50.1% Critical Chance\nMR12').twoCards, false);
+});

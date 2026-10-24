@@ -110,6 +110,10 @@ async function readScreenshot(blob) {
     const found = rows.map(r => `${r.value} ${STAT_BY_ID[r.statId].name}`).join(', ');
     say([`Read ${parsed.weapon?.name ?? 'a riven'}${rank === null ? '' : `, rank ${rank}`}: ${found}. Check the values above.`],
       issues.length ? 'note warn' : 'note');
+    if (parsed.twoCards) {
+      status.append(el('p', { class: 'note warn' }, [
+        'This looks like two riven cards side by side, and their lines get mixed up. Crop to one card and try again.']));
+    }
     if (positives) {
       status.append(el('p', { class: 'note' }, [`The riven's name confirms the positives: ${positives.map(id => STAT_BY_ID[id].name).join(', ')}.`]));
     }

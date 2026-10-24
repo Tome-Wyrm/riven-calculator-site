@@ -82,11 +82,15 @@ function bestMatch(key) {
 const VALUE_LINE = /^.{0,5}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\s*(.*)$/i;
 
 /**
- * A locked stat has a padlock before its value, which OCR reads as a "0" (or "O") right before the
- * sign: "0 +103.6% Status Damage". (Sometimes as other digits, "214109.7%", which can't be told
- * from a misread value: those aren't marked.)
+ * A locked stat has a padlock before its value, which OCR reads as a "0", "O" or "8" just before
+ * the sign: "0 +103.6% Status Damage", "8+71.8% Ammo", "vs 8 -50.1%". (Sometimes as digits glued
+ * to the value, "214109.7%", which can't be told from a misread value: those aren't marked.)
+ * Tested on the junk read before a stat's value.
  */
-const LOCKED = /^[0Oo]\s*[+\-−–—‒x×]/;
+const LOCKED = /(^|\s)[0Oo8]\s*$/;
+
+/** A value alone on its line ("+84.3"), its name on the next ("% Electricity"). */
+const BARE_VALUE = /^.{0,5}?[+\-−–—‒x×]\s*\d+(?:[.,]\d+)?\s*%?$/;
 
 /** A percentage stat whose sign was lost (e.g. "102.7% Finisher Damage", or a lock icon read as digits). */
 const UNSIGNED_LINE = /^.{0,5}?(\d+(?:[.,]\d+)?)\s*%\s*([a-z].*)$/i;
@@ -104,13 +108,15 @@ const byLength = [...WEAPONS].sort((a, b) => b[0].length - a[0].length);
  * @param {string[]} lines @param {{statId: string | null, value: string}[]} stats
  */
 function findWeapon(lines, stats) {
-  const exact = findWeaponExact(lines) ?? findWeaponExact([lines.join('')]);
+  // The title is just above the stats, so look from the bottom up: words in the artwork ("SEER")
+  // come earlier.
+  const exact = findWeaponExact([...lines].reverse()) ?? findWeaponExact([lines.join('')]);
   if (exact) return exact;
   // Stray short tokens are dropped from the start of the line the name starts on, but not from
   // the lines after it: there a short token may be the end of the name ("Phiitaem" / "a Parci-").
   const fitting = CLASSES.filter(c => possibleRanks(stats, c).length);
   let best = null, bestScore = Infinity;
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = lines.length - 1; i >= 0; i--) {
     const first = norm(lines[i].replace(/^(\S{1,2}\s+)+/, ''));
     if (first.length < 3) continue;
     const text = first + lines.slice(i + 1).map(norm).join('');
@@ -146,11 +152,17 @@ function findWeaponExact(lines) {
  * @property {{statId: string | null, value: string, magnitude?: string, text: string, locked?: boolean}[]} stats
  *   statId null = unrecognised; value "" with a magnitude = the number was read but not its sign
  * @property {string[]} header   lines above the first stat (the riven's name is at the end)
+ * @property {boolean} twoCards  two riven titles were read: OCR mixes two cards' lines, so the
+ *   stats can't be trusted
  */
 
 /** @param {string} text OCR output @returns {OcrRiven} */
 export function parseRivenText(text) {
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const lines = [];
+  for (const l of text.split(/\r?\n/).map(x => x.trim()).filter(Boolean)) {
+    if (lines.length && BARE_VALUE.test(lines[lines.length - 1]) && !/^MR\s*\d/i.test(l)) lines[lines.length - 1] += ' ' + l;
+    else lines.push(l);
+  }
   const firstStat = lines.findIndex(l => VALUE_LINE.test(l) && /[a-z]{3}/i.test(l));
   const header = firstStat < 0 ? lines : lines.slice(0, firstStat);
 
@@ -165,14 +177,17 @@ export function parseRivenText(text) {
   const stats = [];
   if (firstStat >= 0) {
     for (const raw of lines.slice(firstStat)) {
-      if (/^[\W_]*MR\s*\d/i.test(raw)) break;
+      if (/^.{0,3}?MR\s*\d/i.test(raw)) break;                // the "MR 12" bar ends the stats
       const l = fixDigits(raw);
       const m = l.match(VALUE_LINE);
       const unsigned = !m && l.match(UNSIGNED_LINE);
       if (m && /[a-z]{2}/i.test(m[3])) {
         m[3] = m[3].replace(/[\W_]*MR\s*\d+.*$/i, '');        // the MR line merged onto the last stat
-        const value = m[1].replace(/\s/g, '').replace(/[−–—‒]/, '-').replace(/^[x×]/i, 'x').replace(',', '.');
-        stats.push({ statId: null, value, text: m[3], ...(LOCKED.test(raw) ? { locked: true } : {}) });
+        let value = m[1].replace(/\s/g, '').replace(/[−–—‒]/, '-').replace(/^[x×]/i, 'x').replace(',', '.');
+        // The game shows 1 decimal (2 for multipliers): more means a "%" read as a digit ("+88.79").
+        if (!value.startsWith('x')) value = value.replace(/(\.\d)\d+$/, '$1');
+        const junk = l.slice(0, l.indexOf(m[1]));
+        stats.push({ statId: null, value, text: m[3], ...(LOCKED.test(junk) ? { locked: true } : {}) });
       } else if (unsigned) {
         // Its own stat, but with the value left blank: the sign can't be trusted.
         stats.push({ statId: null, value: '', magnitude: unsigned[1].replace(',', '.'), text: unsigned[2] });
@@ -183,7 +198,10 @@ export function parseRivenText(text) {
   }
   for (const s of stats) s.statId = matchStat(s.text);
 
-  return { weapon: findWeapon(header.length ? header : lines, stats.slice(0, 4)), rank, stats: stats.slice(0, 4), header };
+  // Two cards side by side (a transmute or compare screen): two lines start with a weapon name.
+  const titles = (header.length ? header : lines).filter(l => findWeaponExact([l]));
+  const twoCards = titles.length >= 2 || new Set(stats.map(s => s.statId).filter(Boolean)).size < stats.filter(s => s.statId).length;
+  return { weapon: findWeapon(header.length ? header : lines, stats.slice(0, 4)), rank, stats: stats.slice(0, 4), header, twoCards };
 }
 
 /**
