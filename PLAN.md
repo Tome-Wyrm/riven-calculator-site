@@ -263,21 +263,29 @@ Answer "which traits do I splice, and how good must they be, to get spliced stat
       one splice (predict first, then compare, as we did for curses).
 - [ ] Odds of a target spliced value from fresh parents (max-of-two), reusing `probability(…, spliced)`
 
-### Phase 10 — Stat-pool odds and Kuva cost
-Built as the **Cycle planner** panel (`src/cycle.js`, `src/ui/cycle.js`, URL prefix `c.`).
-- [x] Trait pools per class and weapon (`n` IPS stats excluded, `?` kept); matches the wiki's counts
-      (24 rifle positives, 19 possible negatives, 24C3 = 2,024 three-positive draws)
-- [x] Chance one cycle gives the wanted positives, with the negative "don't care", "none", or
-      "one of these"; exact enumeration over every draw
-- [x] Kuva: the wiki's cycle table (900 … 3,500 from the 10th), from the riven's current cycle
-      count, doubled with a lock; expected cycles and Kuva, plus the 50% / 90% marks
-- [x] Locked-trait mode: shape fixed, the locked stat kept
-- [x] Spliced trait: kept, always positive, takes a positive slot and fixes the shape, but doesn't double
-      the cost; can be combined with a separate locked trait
-- **Assumption, not verified:** no published odds exist. It uses the community model (each shape
-  25% when unlocked; stats drawn evenly without repeats), stated on the page. Revisit if real data turns up.
-- [ ] Combine with roll-quality odds (Phase 11): "≥ X Crit Chance and ≥ Y Crit Damage, per cycle"
-- [ ] Feed the cycle count in from the grader/importer (the ↻ number on screenshots, `rerolls` in imports)
+### Phase 10 — Build planner (replaced the cycle planner)
+Pick the riven you want (up to 3 positives, an optional spliced stat, a negative, a shape) and get
+the cheapest route: what to cycle for, what to lock in each situation, when to splice, and the Kuva
+it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL prefix `p.`),
+`src/cycle.js` (pools and cycle costs).
+- [x] Model: a state is the stage (before/after the splice), which wanted traits the riven has, the
+      wanted negative, and the shape. Actions: cycle unlocked, or lock one wanted trait (keeps it and
+      the shape, double cost). Both splice parents on the target shape → splice (free): parents
+      consumed, a random positive replaces them, the spliced trait stays, the shape is frozen.
+- [x] Exact transition probabilities by counting (hypergeometric), policy iteration for the
+      cheapest action everywhere, expected Kuva and cycles exactly, 50% / 90% by stepping the
+      distribution forward. Tries each splice recipe and reports the alternatives.
+- [x] "Start from the riven I have": its stage, shape and which wanted traits it has → "your next move"
+- [x] Pools per class and weapon (`n` IPS stats excluded, `?` kept); match the wiki's counts
+      (24 rifle positives, 19 possible negatives)
+- [x] Checked on the Felarx Viral + Cold + Toxin + −Crit Chance example: lock an element before
+      splicing, lock −CC after; ~1.95M Kuva on average from a fresh riven, 1,771,000 (exactly
+      253 cycles) from a spliced riven that already has −CC
+- **Assumptions, not verified:** the community odds model (each shape 25% unlocked, stats drawn
+  evenly without repeats), the wiki's splice rules, and a flat 3,500 / 7,000 per cycle (exact once
+  a riven is past its 10th cycle). Revisit if real data turns up.
+- [ ] Combine with roll quality (Phase 11): "and Cold ≥ 100%"
+- [ ] "Plan from this riven" button in the grader / importer (fill the start state automatically)
 
 ### Phase 11 — Multi-stat goals
 - [ ] Several goal rows (stat + op + target) at once, e.g. ≥X Crit Chance **and** ≥Y Crit Damage

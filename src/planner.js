@@ -1,0 +1,335 @@
+// @ts-check
+// Build planner: the cheapest way (in expected Kuva) to cycle and splice a riven into a target,
+// e.g. "Felarx with Viral (spliced), Cold, Toxin and -Critical Chance".
+//
+// Model. A state is: the stage (before / after the splice), which of the traits we care about the
+// riven currently has, whether it has the wanted negative, and its shape. In each state you either
+// cycle unlocked, or lock one of the wanted traits you have (keeps it and the shape, costs double).
+// Reaching both splice parents on the target shape lets you splice (free): the parents are consumed,
+// a random trait of the same sign replaces them, the spliced trait stays and the shape is frozen.
+// Policy iteration finds the cheapest action in every state; the result is exact for the model.
+//
+// Assumptions (see src/cycle.js): each shape equally likely when unlocked, stats drawn evenly with
+// no repeats, and a flat cost per cycle (riven past its 10th cycle: 3,500, or 7,000 locked).
+
+import { SHAPES, STAT_BY_ID } from './data/stats.js';
+import { SHAPE_ORDER } from './engine.js';
+import { pools, cycleCost } from './cycle.js';
+
+/** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
+/** @typedef {import('./data/stats.js').Shape} Shape */
+
+export const FLAT_COST = cycleCost(99);          // 3,500
+const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
+  if (k < 0 || k > n) return 0;
+  let r = 1;
+  for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i;
+  return r;
+};
+
+/**
+ * @typedef {object} Target
+ * @property {WeaponClass} cls
+ * @property {string} [ipsCode]
+ * @property {string[]} positives    ordinary stats wanted as positives (not counting the spliced one)
+ * @property {string | null} spliced  spliced stat wanted, if any
+ * @property {string[]} [parents]     which recipe to splice it from (default: the cheapest)
+ * @property {string | null} negative wanted negative, or null for "don't care"
+ * @property {Shape} shape            the finished riven's shape
+ *
+ * @typedef {{stage: 'pre' | 'post', mask: number, neg: boolean, shape: Shape}} State
+ *   mask = bits over the stage's tracked positives
+ */
+
+/**
+ * Builds and solves the plan for one splice recipe (or none).
+ * @param {Target} t @param {string[] | null} parents
+ */
+function solveFor(t, parents) {
+  const { positive: posPool, negative: negPool } = pools(t.cls, t.ipsCode);
+  const S = t.spliced;
+  const targetNeg = t.negative;
+  // Tracked positives per stage. Before the splice: the parents first, then wanted positives that
+  // survive the splice. After: the wanted positives.
+  const preTracked = parents ? [...parents, ...t.positives.filter(id => !parents.includes(id))] : [];
+  const postTracked = [...t.positives];
+  const parentMask = parents ? 0b11 : 0;
+  const finalPos = SHAPES[t.shape].positives;
+  if (postTracked.length + (S ? 1 : 0) > finalPos) throw new Error(`A ${t.shape} riven has only ${finalPos} positives.`);
+  if (targetNeg && SHAPES[t.shape].negatives === 0) throw new Error(`A ${t.shape} riven has no negative.`);
+  for (const id of [...postTracked, ...(parents ?? [])]) if (!posPool.includes(id)) throw new Error(`${STAT_BY_ID[id].name} can't roll as a positive on this weapon.`);
+  if (targetNeg && !negPool.includes(targetNeg)) throw new Error(`${STAT_BY_ID[targetNeg].name} can't roll as a negative on this weapon.`);
+
+  /** @type {Map<string, State>} */
+  const states = new Map();
+  const key = (/** @type {State} */ s) => `${s.stage}|${s.mask}|${+s.neg}|${s.shape}`;
+  const add = (/** @type {State} */ s) => { const k = key(s); if (!states.has(k)) states.set(k, s); return k; };
+  const stages = /** @type {('pre' | 'post')[]} */ (parents ? ['pre', 'post'] : ['post']);
+  for (const stage of stages) {
+    const n = (stage === 'pre' ? preTracked : postTracked).length;
+    for (let mask = 0; mask < 1 << n; mask++) for (const neg of [false, true]) for (const shape of SHAPE_ORDER) {
+      if (neg && (!targetNeg || SHAPES[shape].negatives === 0)) continue;
+      if (stage === 'post' && S && shape !== t.shape) continue;   // splicing froze the shape
+      add({ stage, mask, neg, shape });
+    }
+  }
+
+  const tracked = (/** @type {State} */ s) => (s.stage === 'pre' ? preTracked : postTracked);
+  const isDone = (/** @type {State} */ s) => s.stage === 'post' && s.shape === t.shape
+    && s.mask === (1 << postTracked.length) - 1 && (!targetNeg || s.neg);
+  const canSplice = (/** @type {State} */ s) => s.stage === 'pre' && s.shape === t.shape && (s.mask & parentMask) === parentMask;
+
+  /**
+   * Outcome distribution of one cycle.
+   * @param {State} s @param {{lock: string | null}} action  lock = tracked id or 'NEG' or null
+   * @returns {Map<string, number>}
+   */
+  function cycle(s, action) {
+    const tr = tracked(s);
+    const out = new Map();
+    const lockPos = action.lock && action.lock !== 'NEG' ? action.lock : null;
+    const lockNeg = action.lock === 'NEG';
+    const fixedPos = [...(s.stage === 'post' && S ? [S] : []), ...(lockPos ? [lockPos] : [])];
+    const shapes = action.lock || (s.stage === 'post' && S) ? [s.shape] : SHAPE_ORDER;
+    for (const shape of shapes) {
+      const { positives: k, negatives: c } = SHAPES[shape];
+      const d = k - fixedPos.length;
+      if (d < 0) continue;
+      // A stat locked as the negative can't also be drawn as a positive.
+      const pool = posPool.filter(id => !fixedPos.includes(id) && !(lockNeg && id === targetNeg));
+      const T = tr.filter(id => pool.includes(id));
+      const X = targetNeg && pool.includes(targetNeg) && !tr.includes(targetNeg) ? 1 : 0;
+      const others = pool.filter(id => !T.includes(id) && id !== targetNeg);
+      const O1 = others.filter(id => negPool.includes(id)).length;
+      const O2 = others.length - O1;
+      const total = binom(pool.length, d);
+      const negFixedPos = fixedPos.filter(id => negPool.includes(id)).length;
+      for (let sub = 0; sub < 1 << T.length; sub++) {
+        const A = T.filter((_, i) => sub & (1 << i));
+        if (A.length > d) continue;
+        for (let x = 0; x <= X; x++) for (let j = 0; j <= O1; j++) {
+          const m = d - A.length - x - j;
+          if (m < 0 || m > O2) continue;
+          const p = (binom(O1, j) * binom(O2, m)) / total / shapes.length;
+          if (!p) continue;
+          let mask = 0;
+          for (const id of [...A, ...(lockPos ? [lockPos] : [])]) mask |= 1 << tr.indexOf(id);
+          /** @param {boolean} neg @param {number} q */
+          const put = (neg, q) => { const kk = key({ stage: s.stage, mask, neg, shape }); out.set(kk, (out.get(kk) ?? 0) + q); };
+          if (c === 0 || !targetNeg) { put(false, p); continue; }
+          if (lockNeg) { put(true, p); continue; }
+          // Negative drawn from the negative pool minus everything that's already a positive.
+          const taken = negFixedPos + A.filter(id => negPool.includes(id)).length + x + j;
+          const left = negPool.length - taken;
+          const pNeg = x === 0 ? 1 / left : 0;
+          put(true, p * pNeg);
+          put(false, p * (1 - pNeg));
+        }
+      }
+    }
+    return out;
+  }
+
+  /** Splicing: parents consumed, a random positive replaces them, shape frozen. @param {State} s */
+  function splice(s) {
+    const out = new Map();
+    let mask = 0;
+    const survivors = preTracked.filter((id, i) => i >= 2 && s.mask & (1 << i));
+    for (const id of survivors) mask |= 1 << postTracked.indexOf(id);
+    const pool = posPool.filter(id => id !== S && !survivors.includes(id));
+    for (const id of pool) {
+      const i = postTracked.indexOf(id);
+      const m = i >= 0 ? mask | (1 << i) : mask;
+      const kk = key({ stage: 'post', mask: m, neg: s.neg, shape: s.shape });
+      out.set(kk, (out.get(kk) ?? 0) + 1 / pool.length);
+    }
+    return out;
+  }
+
+  /** @param {State} s @returns {{lock: string | null, label: string}[]} */
+  function actions(s) {
+    if (canSplice(s)) return [{ lock: 'SPLICE', label: 'splice' }];
+    const acts = [{ lock: null, label: 'cycle' }];
+    tracked(s).forEach((id, i) => { if (s.mask & (1 << i)) acts.push({ lock: id, label: `lock ${id}` }); });
+    if (s.neg) acts.push({ lock: 'NEG', label: `lock ${targetNeg}` });
+    return acts;
+  }
+
+  // Transition tables per state and action.
+  const keys = [...states.keys()];
+  const index = new Map(keys.map((k, i) => [k, i]));
+  const table = keys.map(k => {
+    const s = /** @type {State} */ (states.get(k));
+    if (isDone(s)) return [];
+    return actions(s).map(a => ({
+      ...a,
+      cost: a.lock === 'SPLICE' ? 0 : a.lock ? 2 * FLAT_COST : FLAT_COST,
+      cycles: a.lock === 'SPLICE' ? 0 : 1,
+      next: [...(a.lock === 'SPLICE' ? splice(s) : cycle(s, a))].map(([kk, p]) => [/** @type {number} */ (index.get(kk)), p]),
+    }));
+  });
+
+  // Policy iteration: start unlocked (splice where possible), evaluate, improve, repeat.
+  let policy = table.map(acts => (acts.length ? 0 : -1));
+  /** @param {'cost' | 'cycles'} field */
+  const evaluate = field => {
+    const n = keys.length;
+    const A = Array.from({ length: n }, (_, i) => { const r = new Float64Array(n + 1); r[i] = 1; return r; });
+    table.forEach((acts, i) => {
+      if (policy[i] < 0) return;
+      const a = acts[policy[i]];
+      A[i][n] = a[field];
+      for (const [j, p] of a.next) A[i][j] -= p;
+    });
+    return gauss(A);
+  };
+  let V = evaluate('cost');
+  for (let iter = 0; iter < 50; iter++) {
+    let changed = false;
+    policy = table.map((acts, i) => {
+      if (!acts.length) return -1;
+      const value = (/** @type {any} */ a) => a.cost + a.next.reduce((/** @type {number} */ sum, /** @type {[number, number]} */ [j, p]) => sum + p * V[j], 0);
+      // Keep the current action unless another is clearly cheaper (avoids flip-flopping on ties).
+      let best = policy[i], bestV = value(acts[best]);
+      acts.forEach((a, ai) => {
+        const v = value(a);
+        if (v < bestV - 1e-9 * Math.max(1, bestV)) { bestV = v; best = ai; }
+      });
+      if (best !== policy[i]) changed = true;
+      return best;
+    });
+    V = evaluate('cost');
+    if (!changed) break;
+  }
+  const C = evaluate('cycles');
+  return { states, keys, index, table, policy, V, C, isDone, canSplice, cycle, preTracked, postTracked, stage0: stages[0] };
+}
+
+/** Solves A·x = b (augmented rows), partial pivoting. @param {Float64Array[]} A */
+function gauss(A) {
+  const n = A.length;
+  for (let col = 0; col < n; col++) {
+    let piv = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+    [A[col], A[piv]] = [A[piv], A[col]];
+    const d = A[col][col];
+    if (Math.abs(d) < 1e-15) throw new Error('That target can\'t be reached.');
+    for (let c = col; c <= n; c++) A[col][c] /= d;
+    for (let r = 0; r < n; r++) {
+      if (r === col || !A[r][col]) continue;
+      const f = A[r][col];
+      for (let c = col; c <= n; c++) A[r][c] -= f * A[col][c];
+    }
+  }
+  return A.map(row => row[n]);
+}
+
+/**
+ * @typedef {object} Step   one row of the plan
+ * @property {'pre' | 'post'} stage
+ * @property {string[]} have        wanted traits the riven has in this situation ('-x' for the negative)
+ * @property {Shape} shape
+ * @property {string} action        'cycle', 'splice', or the id to lock ('-x' for the negative)
+ * @property {number} kuva          expected Kuva from here to the finished riven
+ * @property {number} cycles        expected cycles from here
+ */
+
+/**
+ * Plans the cheapest route to a target riven.
+ * @param {Target} t
+ * @param {{stage: 'pre' | 'post', have: string[], shape: Shape} | null} [current]
+ *   the riven you have now ('-x' = has x as its negative); null = a fresh, random riven
+ */
+export function planBuild(t, current = null) {
+  const S = t.spliced;
+  const recipes = S ? (t.parents ? [t.parents] : /** @type {string[][]} */ (STAT_BY_ID[S].from)) : [null];
+  /** @type {any[]} */
+  const solved = [];
+  const errors = [];
+  for (const parents of recipes) {
+    try { solved.push({ parents, ...solveFor(t, parents) }); } catch (e) { errors.push(e instanceof Error ? e.message : String(e)); }
+  }
+  if (!solved.length) throw new Error(errors[0] ?? 'That target can\'t be reached.');
+
+  const start = (/** @type {any} */ sol) => {
+    if (current) {
+      const tr = current.stage === 'pre' ? sol.preTracked : sol.postTracked;
+      let mask = 0;
+      for (const id of current.have) if (!id.startsWith('-') && tr.includes(id)) mask |= 1 << tr.indexOf(id);
+      const neg = !!t.negative && current.have.includes(`-${t.negative}`) && SHAPES[current.shape].negatives > 0;
+      const stage = sol.parents ? current.stage : 'post';
+      return new Map([[`${stage}|${mask}|${+neg}|${current.shape}`, 1]]);
+    }
+    // A fresh riven: as if one unlocked cycle from nothing.
+    return sol.cycle({ stage: sol.stage0, mask: 0, neg: false, shape: SHAPE_ORDER[0] }, { lock: null });
+  };
+  const expected = (/** @type {any} */ sol, /** @type {number[]} */ vals) =>
+    [...start(sol)].reduce((sum, [k, p]) => sum + p * vals[sol.index.get(k)], 0);
+
+  for (const sol of solved) { sol.kuva = expected(sol, sol.V); sol.cyclesExp = expected(sol, sol.C); }
+  solved.sort((a, b) => a.kuva - b.kuva);
+  const best = solved[0];
+
+  // Cycle-count quantiles: step the probability distribution forward under the policy.
+  const dist = new Float64Array(best.keys.length);
+  for (const [k, p] of start(best)) dist[best.index.get(k)] += p;
+  const quantile = { median: 0, likely: 0 };
+  let done = 0, cycles = 0, cur = dist;
+  const doneIdx = best.keys.map((/** @type {string} */ k) => best.isDone(best.states.get(k)));
+  const absorb = () => cur.reduce((s, p, i) => s + (doneIdx[i] ? p : 0), 0);
+  done = absorb();
+  while (cycles < 200000 && done < 0.9) {
+    // Splices are free: apply them without counting a cycle.
+    for (let pass = 0; pass < 2; pass++) {
+      const next = new Float64Array(cur.length);
+      cur.forEach((p, i) => {
+        if (!p) return;
+        const a = best.table[i][best.policy[i]];
+        if (!a || a.lock !== 'SPLICE') { next[i] += p; return; }
+        for (const [j, q] of a.next) next[j] += p * q;
+      });
+      cur = next;
+    }
+    const next = new Float64Array(cur.length);
+    cur.forEach((p, i) => {
+      if (!p) return;
+      const a = best.table[i][best.policy[i]];
+      if (!a) { next[i] += p; return; }
+      for (const [j, q] of a.next) next[j] += p * q;
+    });
+    cur = next;
+    cycles++;
+    done = absorb();
+    if (!quantile.median && done >= 0.5) quantile.median = cycles;
+  }
+  quantile.likely = cycles;
+  const kuvaPerCycle = best.cyclesExp > 0 ? best.kuva / best.cyclesExp : FLAT_COST;
+
+  /** @type {Step[]} */
+  const steps = [];
+  best.keys.forEach((/** @type {string} */ k, /** @type {number} */ i) => {
+    const s = best.states.get(k);
+    if (best.isDone(s) || s.shape !== t.shape) return;
+    const tr = s.stage === 'pre' ? best.preTracked : best.postTracked;
+    const a = best.table[i][best.policy[i]];
+    steps.push({
+      stage: s.stage,
+      have: [...tr.filter((/** @type {string} */ _, /** @type {number} */ b) => s.mask & (1 << b)), ...(s.neg ? [`-${t.negative}`] : [])],
+      shape: s.shape,
+      action: a.lock === 'SPLICE' ? 'splice' : a.lock === 'NEG' ? `-${t.negative}` : a.lock ?? 'cycle',
+      kuva: best.V[i],
+      cycles: best.C[i],
+    });
+  });
+  steps.sort((a, b) => (a.stage === b.stage ? 0 : a.stage === 'pre' ? -1 : 1) || b.kuva - a.kuva);
+
+  return {
+    parents: best.parents,
+    alternatives: solved.slice(1).map(s => ({ parents: s.parents, kuva: s.kuva })),
+    expectedKuva: best.kuva,
+    expectedCycles: best.cyclesExp,
+    median: { cycles: quantile.median, kuva: quantile.median * kuvaPerCycle },
+    likely: { cycles: quantile.likely, kuva: quantile.likely * kuvaPerCycle },
+    steps,
+  };
+}
