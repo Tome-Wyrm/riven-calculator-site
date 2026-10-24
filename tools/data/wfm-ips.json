@@ -1,0 +1,1314 @@
+{
+ "kuva_bramma": {
+  "name": "Kuva Bramma",
+  "gameRef": "/Lotus/Weapons/Grineer/Bows/GrnBow/GrnBowWeapon",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "acceltra": {
+  "name": "Acceltra",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/SapientPrimary/SapientPrimaryWeapon",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "akarius": {
+  "name": "Akarius",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/SapientPistol/SapientPistol",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "kulstar": {
+  "name": "Kulstar",
+  "gameRef": "/Lotus/Weapons/Grineer/Pistols/GrnTorpedoPistol/GrnTorpedoPistol",
+  "rivenType": "pistol",
+  "listings": 64,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "heliocor": {
+  "name": "Heliocor",
+  "gameRef": "/Lotus/Weapons/Cephalon/Melee/Hammer/CephHammerWeapon",
+  "rivenType": "melee",
+  "listings": 82,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "nagantaka": {
+  "name": "Nagantaka",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/GarudaCrossbow/GarudaCrossbow",
+  "rivenType": "rifle",
+  "listings": 86,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "ocucor": {
+  "name": "Ocucor",
+  "gameRef": "/Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "falcor": {
+  "name": "Falcor",
+  "gameRef": "/Lotus/Weapons/Corpus/Melee/Glaive/CrpGlaive/CrpGlaive",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "paracesis": {
+  "name": "Paracesis",
+  "gameRef": "/Lotus/Weapons/Orokin/BallasSword/BallasSwordWeapon",
+  "rivenType": "melee",
+  "listings": 83,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "exergis": {
+  "name": "Exergis",
+  "gameRef": "/Lotus/Weapons/Corpus/LongGuns/CrpShapeBlast/CrpShapeBlastShotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "battacor": {
+  "name": "Battacor",
+  "gameRef": "/Lotus/Weapons/Corpus/LongGuns/CrpSentExperimentRifle/CrpSentExperimentRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "euphona_prime": {
+  "name": "Euphona Prime",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/AllNew1hSG/AllNew1hSG",
+  "rivenType": "shotgun",
+  "listings": 79,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "fusilai": {
+  "name": "Fusilai",
+  "gameRef": "/Lotus/Weapons/Tenno/ThrowingWeapons/GlassKunai/GlassKunaiWeapon",
+  "rivenType": "pistol",
+  "listings": 36,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {
+   "impact": true
+  }
+ },
+ "lato": {
+  "name": "Lato",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "magnus": {
+  "name": "Magnus",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/Magnum/Magnum",
+  "rivenType": "pistol",
+  "listings": 68,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "ack_and_brunt": {
+  "name": "Ack & Brunt",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrineerTylAxeAndBoar/RegorAxeShield",
+  "rivenType": "melee",
+  "listings": 75,
+  "impact": "+",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "puncture": true
+  }
+ },
+ "amphis": {
+  "name": "Amphis",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Staff/GrnStaff",
+  "rivenType": "melee",
+  "listings": 62,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "anku": {
+  "name": "Anku",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Scythe/ParisScythe/ParisScythe",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "arca_titron": {
+  "name": "Arca Titron",
+  "gameRef": "/Lotus/Weapons/Corpus/Melee/Hammer/CorpusHammerWeapon",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "puncture": true
+  }
+ },
+ "balla": {
+  "name": "Balla",
+  "gameRef": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipOne",
+  "rivenType": "zaw",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "-",
+  "slash": "-",
+  "searched": {}
+ },
+ "boltace": {
+  "name": "Boltace",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Tonfa/Boltonfa/Boltonfa",
+  "rivenType": "melee",
+  "listings": 62,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "broken_war": {
+  "name": "Broken War",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerTwo/StalkerTwoSmallSword",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "caustacyst": {
+  "name": "Caustacyst",
+  "gameRef": "/Lotus/Weapons/Infested/Melee/InfEmbolistScythe/InfestedScythe",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "cerata": {
+  "name": "Cerata",
+  "gameRef": "/Lotus/Weapons/Infested/Melee/Glaives/PunctureGlaive/PunctureGlaiveWeapon",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "hate": {
+  "name": "Hate",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Scythe/StalkerScytheWeapon",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "soma": {
+  "name": "Soma",
+  "gameRef": "/Lotus/Weapons/Tenno/Rifle/TennoAR",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {
+   "impact": true
+  }
+ },
+ "synapse": {
+  "name": "Synapse",
+  "gameRef": "/Lotus/Weapons/Infested/LongGuns/InfestedRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "tigris": {
+  "name": "Tigris",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/DoubleBarrelShotgun/TennoDoubleBarrelShotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "tonkor": {
+  "name": "Tonkor",
+  "gameRef": "/Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "torid": {
+  "name": "Torid",
+  "gameRef": "/Lotus/Weapons/ClanTech/Bio/BioWeapon",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "+",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "vectis": {
+  "name": "Vectis",
+  "gameRef": "/Lotus/Weapons/Tenno/Rifle/TennoSniperRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "+-",
+  "slash": "-",
+  "searched": {}
+ },
+ "veldt": {
+  "name": "Veldt",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/TnRevolverRifle/TnRevolverRifleGun",
+  "rivenType": "rifle",
+  "listings": 59,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "vulkar": {
+  "name": "Vulkar",
+  "gameRef": "/Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/GrnSniperRifle",
+  "rivenType": "rifle",
+  "listings": 81,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "zarr": {
+  "name": "Zarr",
+  "gameRef": "/Lotus/Weapons/Grineer/LongGuns/GrnCannon/GrnCannonWeapon",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "zenith": {
+  "name": "Zenith",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/LoginPrimary/SundialRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "",
+  "slash": "-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "zhuge": {
+  "name": "Zhuge",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/RepeatingCrossbow/RepeatingCrossbow",
+  "rivenType": "rifle",
+  "listings": 76,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "acrid": {
+  "name": "Acrid",
+  "gameRef": "/Lotus/Weapons/ClanTech/Bio/AcidDartPistol",
+  "rivenType": "pistol",
+  "listings": 52,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "afuris": {
+  "name": "Afuris",
+  "gameRef": "/Lotus/Weapons/Tenno/Akimbo/AkimboAutoPistols",
+  "rivenType": "pistol",
+  "listings": 83,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "akbolto": {
+  "name": "Akbolto",
+  "gameRef": "/Lotus/Weapons/Tenno/Akimbo/AkimboBolto",
+  "rivenType": "pistol",
+  "listings": 59,
+  "impact": "+",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "slash": true
+  }
+ },
+ "akbronco": {
+  "name": "Akbronco",
+  "gameRef": "/Lotus/Weapons/Tenno/Akimbo/AkimboShotGun",
+  "rivenType": "shotgun",
+  "listings": 43,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "akjagara": {
+  "name": "Akjagara",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/TigrisRedeemerSetPistol/TnoBladedPistols",
+  "rivenType": "pistol",
+  "listings": 86,
+  "impact": "",
+  "puncture": "",
+  "slash": "+",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "aklato": {
+  "name": "Aklato",
+  "gameRef": "/Lotus/Weapons/Tenno/Akimbo/AkimboPistol",
+  "rivenType": "pistol",
+  "listings": 55,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "arca_scisco": {
+  "name": "Arca Scisco",
+  "gameRef": "/Lotus/Weapons/Corpus/Pistols/SniperPistol/CrpScopeGun",
+  "rivenType": "pistol",
+  "listings": 75,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {
+   "impact": true
+  }
+ },
+ "cycron": {
+  "name": "Cycron",
+  "gameRef": "/Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "-",
+  "searched": {}
+ },
+ "detron": {
+  "name": "Detron",
+  "gameRef": "/Lotus/Weapons/Corpus/Pistols/CorpusHandShotgun/CorpusHandCannon",
+  "rivenType": "shotgun",
+  "listings": 92,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "embolist": {
+  "name": "Embolist",
+  "gameRef": "/Lotus/Weapons/Infested/Pistols/InfestedPistol",
+  "rivenType": "pistol",
+  "listings": 80,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "dual_kamas": {
+  "name": "Dual Kamas",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/DualKamas/DualKamas",
+  "rivenType": "melee",
+  "listings": 67,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "kuva_shildeg": {
+  "name": "Kuva Shildeg",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrnKuvaLichScythe/GrnKuvaLichScytheWeapon",
+  "rivenType": "melee",
+  "listings": 75,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "slash": true
+  }
+ },
+ "kuva_ayanga": {
+  "name": "Kuva Ayanga",
+  "gameRef": "/Lotus/Weapons/Grineer/HeavyWeapons/GrnHeavyGrenadeLauncher",
+  "rivenType": "rifle",
+  "listings": 92,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "vermisplicer": {
+  "name": "Vermisplicer",
+  "gameRef": "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart",
+  "rivenType": "kitgun",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "sporelacer": {
+  "name": "Sporelacer",
+  "gameRef": "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelEgg/InfModularBarrelEggPart",
+  "rivenType": "kitgun",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "argonak": {
+  "name": "Argonak",
+  "gameRef": "/Lotus/Weapons/Grineer/LongGuns/LaserAimRifle/LaserAimRifle",
+  "rivenType": "rifle",
+  "listings": 68,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "puncture": true
+  }
+ },
+ "castanas": {
+  "name": "Castanas",
+  "gameRef": "/Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs",
+  "rivenType": "pistol",
+  "listings": 50,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "cestra": {
+  "name": "Cestra",
+  "gameRef": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/CorpusMinigun",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "dual_toxocyst": {
+  "name": "Dual Toxocyst",
+  "gameRef": "/Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "",
+  "puncture": "-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "hystrix": {
+  "name": "Hystrix",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/QuillDartgun/QuillDartGunWeapon",
+  "rivenType": "pistol",
+  "listings": 68,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "fragor": {
+  "name": "Fragor",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Hammer/HammerWeapon",
+  "rivenType": "melee",
+  "listings": 99,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "galatine": {
+  "name": "Galatine",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Swords/GreatSword/TennoGreatSword",
+  "rivenType": "melee",
+  "listings": 80,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "gazal_machete": {
+  "name": "Gazal Machete",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/PersianMachete/DjinnMachete",
+  "rivenType": "melee",
+  "listings": 49,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "gram": {
+  "name": "Gram",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/GreatSword/GreatSword",
+  "rivenType": "melee",
+  "listings": 96,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "guandao": {
+  "name": "Guandao",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Polearms/TnGuandaoPolearm/TnGuandaoPolearmWeapon",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "gunsen": {
+  "name": "Gunsen",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Warfan/WarfanWeapon",
+  "rivenType": "melee",
+  "listings": 57,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "dual_skana": {
+  "name": "Dual Skana",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualShortSword",
+  "rivenType": "melee",
+  "listings": 59,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "jaw_sword": {
+  "name": "Jaw Sword",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Swords/JawSword/JawLongSword",
+  "rivenType": "melee",
+  "listings": 44,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "kesheg": {
+  "name": "Kesheg",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrineerHalberd/GrnHalberd",
+  "rivenType": "melee",
+  "listings": 48,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "puncture": true
+  }
+ },
+ "kestrel": {
+  "name": "Kestrel",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Glaives/Boomerang/BoomerangWeapon",
+  "rivenType": "melee",
+  "listings": 59,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "kronsh": {
+  "name": "Kronsh",
+  "gameRef": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipSix",
+  "rivenType": "zaw",
+  "listings": 85,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "ballistica": {
+  "name": "Ballistica",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "heat_dagger": {
+  "name": "Heat Dagger",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Dagger/Dagger",
+  "rivenType": "melee",
+  "listings": 48,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "jat_kittag": {
+  "name": "Jat Kittag",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrineerJetPoweredPolearm/GrineerJetPolearm",
+  "rivenType": "melee",
+  "listings": 74,
+  "impact": "+-",
+  "puncture": "+",
+  "slash": "",
+  "searched": {
+   "slash": true
+  }
+ },
+ "sonicor": {
+  "name": "Sonicor",
+  "gameRef": "/Lotus/Weapons/Corpus/Pistols/CrpAirPistol/CrpAirPistolArray",
+  "rivenType": "pistol",
+  "listings": 48,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "tombfinger": {
+  "name": "Tombfinger",
+  "gameRef": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart",
+  "rivenType": "kitgun",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "gaze": {
+  "name": "Gaze",
+  "gameRef": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart",
+  "rivenType": "kitgun",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "pupacyst": {
+  "name": "Pupacyst",
+  "gameRef": "/Lotus/Weapons/Infested/Melee/Staff/InfStaff/InfStaff",
+  "rivenType": "melee",
+  "listings": 39,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "-",
+  "searched": {}
+ },
+ "arca_plasmor": {
+  "name": "Arca Plasmor",
+  "gameRef": "/Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "galvacord": {
+  "name": "Galvacord",
+  "gameRef": "/Lotus/Weapons/Corpus/Melee/Whips/CrpShockGrip/CrpShockGripWhipWeapon",
+  "rivenType": "melee",
+  "listings": 34,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "bronco": {
+  "name": "Bronco",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistol/HandShotGun",
+  "rivenType": "shotgun",
+  "listings": 96,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "dual_cestra": {
+  "name": "Dual Cestra",
+  "gameRef": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/DualCorpusMinigun",
+  "rivenType": "pistol",
+  "listings": 65,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "furis": {
+  "name": "Furis",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistol/AutoPistol",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "",
+  "puncture": "-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "ankyros": {
+  "name": "Ankyros",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Gauntlet/Gauntlet",
+  "rivenType": "melee",
+  "listings": 84,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "atterax": {
+  "name": "Atterax",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrineerWhip/GrineerWhip",
+  "rivenType": "melee",
+  "listings": 44,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "bo": {
+  "name": "Bo",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Staff/Staff",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "cassowar": {
+  "name": "Cassowar",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Polearms/TnHalberdPolearm/TnHalberdPolearmWeapon",
+  "rivenType": "melee",
+  "listings": 45,
+  "impact": "",
+  "puncture": "+",
+  "slash": "+-",
+  "searched": {
+   "impact": true
+  }
+ },
+ "ceramic_dagger": {
+  "name": "Ceramic Dagger",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Dagger/CeramicDagger",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "+-",
+  "slash": "+",
+  "searched": {
+   "impact": true
+  }
+ },
+ "halikar": {
+  "name": "Halikar",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrnBoomerang/GrnBoomerang",
+  "rivenType": "melee",
+  "listings": 46,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "hirudo": {
+  "name": "Hirudo",
+  "gameRef": "/Lotus/Weapons/Infested/Melee/InfWFAccompanyingSparring/InfestedKogake",
+  "rivenType": "melee",
+  "listings": 95,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "mire": {
+  "name": "Mire",
+  "gameRef": "/Lotus/Weapons/Infested/Melee/Swords/Mire/MireSword",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+",
+  "searched": {}
+ },
+ "twin_krohkur": {
+  "name": "Twin Krohkur",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrnEgyptSwd/DualGrnEgyptSwdWeapon",
+  "rivenType": "melee",
+  "listings": 56,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "latron": {
+  "name": "Latron",
+  "gameRef": "/Lotus/Weapons/Tenno/Rifle/SemiAutoRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "+-",
+  "slash": "+",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "lenz": {
+  "name": "Lenz",
+  "gameRef": "/Lotus/Weapons/Corpus/Bow/Longbow/CrpBow",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "miter": {
+  "name": "Miter",
+  "gameRef": "/Lotus/Weapons/Grineer/LongGuns/GrineerSawbladeGun/SawBladeGun",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "mutalist_cernos": {
+  "name": "Mutalist Cernos",
+  "gameRef": "/Lotus/Weapons/Infested/Bow/InfCernosBow/InfCernos",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+",
+  "slash": "",
+  "searched": {
+   "slash": true
+  }
+ },
+ "mutalist_quanta": {
+  "name": "Mutalist Quanta",
+  "gameRef": "/Lotus/Weapons/Infested/LongGuns/InfCrpShockSwarm/InfCrpShockSwarmRifle",
+  "rivenType": "rifle",
+  "listings": 88,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "opticor": {
+  "name": "Opticor",
+  "gameRef": "/Lotus/Weapons/Corpus/LongGuns/CrpBFG/CrpBFG",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "panthera": {
+  "name": "Panthera",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/Miter/TnoMiter",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "+",
+  "slash": "+-",
+  "searched": {
+   "impact": true
+  }
+ },
+ "penta": {
+  "name": "Penta",
+  "gameRef": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher",
+  "rivenType": "rifle",
+  "listings": 82,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "phage": {
+  "name": "Phage",
+  "gameRef": "/Lotus/Weapons/Infested/LongGuns/Tentacluster/InfestedShotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "phantasma": {
+  "name": "Phantasma",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/RevenantShotgun/RevenantShotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "quanta": {
+  "name": "Quanta",
+  "gameRef": "/Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/CrpShockRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "rubico": {
+  "name": "Rubico",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/FiveShotSniper/FiveShotSniper",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "-",
+  "puncture": "+",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "simulor": {
+  "name": "Simulor",
+  "gameRef": "/Lotus/Weapons/Cephalon/Primary/CephPrimary/CephPrimary",
+  "rivenType": "rifle",
+  "listings": 83,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "snipetron": {
+  "name": "Snipetron",
+  "gameRef": "/Lotus/Weapons/Tenno/Rifle/SniperRifle",
+  "rivenType": "rifle",
+  "listings": 85,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "sobek": {
+  "name": "Sobek",
+  "gameRef": "/Lotus/Weapons/Tenno/Shotgun/DoubleBarrelShotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "stradavar": {
+  "name": "Stradavar",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/TennoTommyGun/TennoTommyGunRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "strun": {
+  "name": "Strun",
+  "gameRef": "/Lotus/Weapons/Tenno/Shotgun/Shotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "sybaris": {
+  "name": "Sybaris",
+  "gameRef": "/Lotus/Weapons/Tenno/LongGuns/TnoLeverAction/TnoLeverActionRifle",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ }
+}

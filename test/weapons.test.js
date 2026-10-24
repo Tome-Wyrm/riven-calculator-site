@@ -20,9 +20,11 @@ test('known weapons map to the right class', () => {
   };
   for (const [name, cls] of Object.entries(expect)) assert.equal(byName.get(name)?.[1], cls, name);
   assert.equal(byName.get('Paris')?.[2], 1, 'Paris is a bow');
-  // IPS eligibility, including weapons whose rivens rolled an IPS stat in game
-  const ips = { Simulor: 'nnn', Felarx: 'nyy', Soma: 'nyy', Obex: 'ynn', Cinta: 'nyn', Vinquibus: 'nyy' };
-  for (const [name, code] of Object.entries(ips)) assert.equal(byName.get(name)?.[3], code, `${name} IPS`);
+  // IPS eligibility: what our own rivens and screenshots proved can roll must never be ruled out.
+  const proven = { Obex: 0, Cinta: 1, Vinquibus: 1, 'Vinquibus (melee)': 1, Exergis: 1, Akarius: 1 };
+  for (const [name, i] of Object.entries(proven)) assert.equal(byName.get(name)?.[3][i], 'y', `${name} IPS`);
+  // Soma: thoroughly traded, and a full warframe.market search found no Impact riven.
+  assert.equal(byName.get('Soma')?.[3][0], 'n');
   for (const [name, , , code] of WEAPONS) assert.match(code, /^[yn?]{3}$/, name);
   for (const name of ['Sirocco', 'Arquebex']) assert.equal(byName.has(name), false, `${name} takes no riven`);
 });

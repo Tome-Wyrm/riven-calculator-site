@@ -167,13 +167,21 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
         `+++` riven shows +49.7% Fire Rate, inside the normal rifle range of 48.6–59.4%, so the
         effect is doubled but the text isn't. The range table already works this way.
 - [x] **IPS eligibility**: a 4th weapon field, one letter each for Impact/Puncture/Slash (`y` can roll,
-      `n` can't, `?` unsure). Generated from the WFCD damage breakdowns, using the >25% rule on both the
-      whole weapon and its primary attack; any disagreement or missing data becomes `?`. Hand overrides
-      come from in-game rivens.
-  - Picking a weapon hides `n` stats and marks `?` stats "may not roll"; class-only views show everything
-  - Checked against your rivens: Cinta, Vinquibus and Obex all rolled IPS stats their codes allow
-  - About 45 weapons have at least one `?`; 7 (the kitguns and Corufell Prime) have no damage data
-- [x] Tests: `quirks`, `weaponCanRoll`, and IPS codes for Simulor, Felarx, Soma, Obex, Cinta, Vinquibus
+      `n` can't, `?` may not roll). Picking a weapon hides `n` stats and marks `?` ones; class-only
+      views show everything.
+  - **Evidence first** (`tools/wfm-ips-scan.mjs` → `tools/data/wfm-ips.json`): per riven family, up
+    to 100 warframe.market listings, plus a full filtered search for each stat not seen. Listed → `y`;
+    none in the full search of a family with ≥ 20 listings → `n`. Re-run the scan, then
+    `tools/build-weapons.mjs`, to refresh. (It must go slowly: 1 request / 2.5 s still trips the
+    rate limit now and then.)
+  - **Rule as fallback**: the wiki's >25% rule on the weapon's **first attack**. Scored against the
+    first 102 scanned families it beat the whole-weapon and physical-share variants (259 agreements
+    vs 251 / 235 / 229), but it still said "can't" for 39 stats that are listed (Ocucor Impact at
+    0%, Simulor Impact with no physical damage at all: old rivens or exceptions). So when the rule
+    says no it only gives `?`, never `n`.
+  - Hand overrides fill in letters from rivens seen in game (Vinquibus (melee) Puncture).
+- [x] Tests: `quirks`, `weaponCanRoll`; IPS stats our own rivens proved are never ruled out
+- [ ] Re-run `tools/build-weapons.mjs` when the full scan finishes (102 of ~420 families so far)
 
 ### Phase 8 — Riven grader
 Back-solve the roll quality u for each stat on a riven you already own.
