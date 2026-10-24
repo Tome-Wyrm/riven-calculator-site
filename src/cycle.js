@@ -7,7 +7,9 @@
 //  - Stats are drawn uniformly without repeats: positives from the class's positive pool, then the
 //    negative from the negative pool minus whatever was drawn as a positive.
 //  - A locked trait keeps itself and fixes the shape; the other slots are drawn the same way.
-//  - Spliced stats are never drawn by cycling.
+//  - Spliced stats are never drawn by cycling. A spliced trait already on the riven stays (always
+//    positive) and fixes the shape too, but doesn't double the cost; a separate trait can still be
+//    locked alongside it.
 // Costs are from the wiki's cycle table; a locked trait doubles them.
 
 import { ORDINARY, SHAPES } from './data/stats.js';
@@ -51,7 +53,9 @@ function combinations(items, k) {
  * @property {string[]} want          positives that must all appear
  * @property {'any' | 'none' | string[]} negative   accepted outcomes for the negative slot:
  *   any (including no negative), none (only shapes without one), or one of these stats
- * @property {{statId: string, sign: '+' | '-', shape: Shape} | null} [lock]
+ * @property {{statId: string, sign: '+' | '-'} | null} [lock]   a locked ordinary trait
+ * @property {string | null} [spliced]   a spliced trait already on the riven
+ * @property {Shape} [shape]   the riven's shape; required with a lock or a spliced trait
  */
 
 /**
@@ -61,7 +65,10 @@ function combinations(items, k) {
 export function cycleChance(goal) {
   const { positive, negative } = pools(goal.cls, goal.ipsCode);
   const lock = goal.lock ?? null;
-  const shapes = lock ? [lock.shape] : SHAPE_ORDER;
+  const spliced = goal.spliced ?? null;
+  const fixedShape = lock || spliced ? goal.shape : null;
+  if ((lock || spliced) && !fixedShape) throw new Error('A locked or spliced riven needs its shape');
+  const shapes = fixedShape ? [fixedShape] : SHAPE_ORDER;
   const shapeWeight = 1 / shapes.length;
   /** @type {Record<string, number>} */
   const byShape = {};
@@ -69,11 +76,11 @@ export function cycleChance(goal) {
 
   for (const shape of shapes) {
     const { positives: k, negatives: c } = SHAPES[shape];
-    // A locked positive is already in place; the rest are drawn.
-    const fixedPos = lock?.sign === '+' ? [lock.statId] : [];
+    // Positives already in place (a locked positive, a spliced trait); the rest are drawn.
+    const fixedPos = [...(lock?.sign === '+' ? [lock.statId] : []), ...(spliced ? [spliced] : [])];
     const posPool = positive.filter(id => !fixedPos.includes(id) && !(lock?.sign === '-' && id === lock.statId));
     let p = 0;
-    const draws = combinations(posPool, k - fixedPos.length);
+    const draws = combinations(posPool, Math.max(0, k - fixedPos.length));
     for (const drawn of draws) {
       const pos = [...fixedPos, ...drawn];
       if (!goal.want.every(id => pos.includes(id))) continue;

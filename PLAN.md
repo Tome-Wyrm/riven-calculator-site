@@ -169,17 +169,20 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
 - [x] **IPS eligibility**: a 4th weapon field, one letter each for Impact/Puncture/Slash (`y` can roll,
       `n` can't, `?` may not roll). Picking a weapon hides `n` stats and marks `?` ones; class-only
       views show everything.
-  - **Evidence first** (`tools/wfm-ips-scan.mjs` → `tools/data/wfm-ips.json`): per riven family, up
-    to 100 warframe.market listings, plus a full filtered search for each stat not seen. Listed → `y`;
-    none in the full search of a family with ≥ 20 listings → `n`. Re-run the scan, then
-    `tools/build-weapons.mjs`, to refresh. (It must go slowly: 1 request / 2.5 s still trips the
-    rate limit now and then.)
-  - **Rule as fallback**: the wiki's >25% rule on the weapon's **first attack**. Scored against the
-    first 102 scanned families it beat the whole-weapon and physical-share variants (259 agreements
-    vs 251 / 235 / 229), but it still said "can't" for 39 stats that are listed (Ocucor Impact at
-    0%, Simulor Impact with no physical damage at all: old rivens or exceptions). So when the rule
-    says no it only gives `?`, never `n`.
-  - Hand overrides fill in letters from rivens seen in game (Vinquibus (melee) Puncture).
+  - **Sources, most trusted first** (`tools/build-weapons.mjs`):
+    1. Rivens seen in game (screenshots, player data): `IPS_OVERRIDES`, per family. Currently Obex
+       Impact; Cinta, Vinquibus, Vinquibus (melee) and Exergis Puncture.
+    2. The wiki's >25% rule on the weapon's **first attack**: a yes is a yes. Scored against the first
+       102 scanned families it beat the whole-weapon and physical-share variants (259 agreements vs
+       251 / 235 / 229), but it said "can't" for 39 stats that are listed, so a no is only `?`
+       unless the listings agree.
+    3. warframe.market listings (`tools/wfm-ips-scan.mjs` → `tools/data/wfm-ips.json`), lowest:
+       nothing in game verifies them. They only turn the rule's no into `n` (none in a full
+       filtered search of a family with ≥ 20 listings), or decide alone without damage data.
+       The scan must go slowly (1 request / 2.5 s still trips the rate limit now and then).
+  - **Reports:** when the grader finds an impossible value, or an IPS stat the data rules out, it
+    offers a pre-filled GitHub issue (`.github/ISSUE_TEMPLATE/riven-report.yml`) asking for a
+    screenshot. Confirmed reports become `IPS_OVERRIDES` entries.
 - [x] Tests: `quirks`, `weaponCanRoll`; IPS stats our own rivens proved are never ruled out
 - [ ] Re-run `tools/build-weapons.mjs` when the full scan finishes (102 of ~420 families so far)
 - [x] **Families checked against warframe.market's 420 riven weapons** (names + internal paths):
@@ -269,6 +272,8 @@ Built as the **Cycle planner** panel (`src/cycle.js`, `src/ui/cycle.js`, URL pre
 - [x] Kuva: the wiki's cycle table (900 … 3,500 from the 10th), from the riven's current cycle
       count, doubled with a lock; expected cycles and Kuva, plus the 50% / 90% marks
 - [x] Locked-trait mode: shape fixed, the locked stat kept
+- [x] Spliced trait: kept, always positive, takes a positive slot and fixes the shape, but doesn't double
+      the cost; can be combined with a separate locked trait
 - **Assumption, not verified:** no published odds exist. It uses the community model (each shape
   25% when unlocked; stats drawn evenly without repeats), stated on the page. Revisit if real data turns up.
 - [ ] Combine with roll-quality odds (Phase 11): "≥ X Crit Chance and ≥ Y Crit Damage, per cycle"

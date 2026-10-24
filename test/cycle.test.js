@@ -34,7 +34,7 @@ test('negative restricted to a list: the curse is drawn from what the positives 
 
 test('a locked trait fixes the shape and keeps itself', () => {
   const p = cycleChance({ cls: 'rifle', want: ['critChance', 'critDamage'], negative: 'any',
-    lock: { statId: 'critChance', sign: '+', shape: '+++-' } });
+    lock: { statId: 'critChance', sign: '+' }, shape: '+++-' });
   // CD must be one of the 2 drawn from the other 23
   near(p.total, 2 / 23);
 });
@@ -50,4 +50,14 @@ test('Kuva: costs follow the cycle table from the current reroll count', () => {
   assert.deepEqual(plan.median, { cycles: 1, kuva: 900 });
   // Already past 10 cycles: everything costs 3,500
   assert.equal(kuvaPlan(1, 31, false).expectedKuva, 3500);
+});
+
+test('a spliced trait stays, fixes the shape, and takes a positive slot', () => {
+  // ++- with spliced Weakpoint Damage: one positive left to draw from 24; want CC
+  const p = cycleChance({ cls: 'rifle', want: ['critChance'], negative: 'any', spliced: 'weakpointDamage', shape: '++-' });
+  near(p.total, 1 / 24);
+  // Spliced + a locked CC on +++-: the last positive is drawn from the other 23
+  const both = cycleChance({ cls: 'rifle', want: ['critChance', 'critDamage'], negative: 'any',
+    spliced: 'weakpointDamage', lock: { statId: 'critChance', sign: '+' }, shape: '+++-' });
+  near(both.total, 1 / 23);
 });

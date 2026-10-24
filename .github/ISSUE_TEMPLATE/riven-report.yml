@@ -1,0 +1,49 @@
+name: Riven that doesn't grade
+description: A real riven the site says is impossible, or grades wrongly. A screenshot is the most useful part.
+title: "[Riven] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Rivens seen in game are the best data the site has. If the grader filled this in for you, just add a screenshot below.
+  - type: input
+    id: weapon
+    attributes:
+      label: Weapon
+      placeholder: e.g. Soma
+    validations:
+      required: true
+  - type: input
+    id: rank
+    attributes:
+      label: Mod rank (0–8)
+      placeholder: e.g. 8
+  - type: textarea
+    id: stats
+    attributes:
+      label: Stats as shown on the riven
+      description: One per line, exactly as the game shows them.
+      placeholder: |
+        +267.2% Damage
+        +138.7% Electricity
+        -31.7% Ammo Maximum
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What the site said
+      placeholder: e.g. "+80.2% Heat is outside the range"
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag the image of the riven card in here. This is what lets us correct the data.
+    validations:
+      required: true
+  - type: input
+    id: when
+    attributes:
+      label: When was the screenshot taken? (roughly)
+      description: Rivens from before a balance change can show old values.

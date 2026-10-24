@@ -1,7 +1,7 @@
 // @ts-check
 // Cycle planner: the chance a Kuva cycle gives the stats you want, and the Kuva it's likely to cost.
 
-import { CLASSES, ORDINARY, SHAPES, STAT_BY_ID } from '../data/stats.js';
+import { CLASSES, ORDINARY, SHAPES, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { cycleChance, kuvaPlan, pools } from '../cycle.js';
@@ -20,7 +20,8 @@ const state = {
   negPick: /** @type {string[]} */ ([]),
   lockStat: NONE,
   lockSign: /** @type {'+' | '-'} */ ('+'),
-  lockShape: /** @type {Shape} */ ('++-'),
+  spliced: NONE,
+  shape: /** @type {Shape} */ ('++-'),   // used when a trait is locked or spliced
   rerolls: 0,
 };
 
@@ -49,6 +50,9 @@ function controls() {
     }))
     : null;
 
+  const splicedOptions = /** @type {[string, string][]} */ ([[NONE, 'None'],
+    ...SPLICED.filter(sp => sp.b[state.cls] !== undefined).map(sp => [sp.id, nameOf(sp.id)])]);
+  if (!splicedOptions.some(([id]) => id === state.spliced)) state.spliced = NONE;
   const lockOptions = /** @type {[string, string][]} */ ([[NONE, 'No lock'], ...ORDINARY.filter(s => s.b[state.cls] !== undefined).map(s => [s.id, nameOf(s.id)])]);
   const rerolls = /** @type {HTMLInputElement} */ (el('input', { type: 'number', min: '0', step: '1', value: String(state.rerolls), 'aria-label': 'Cycles done so far' }));
   rerolls.addEventListener('input', () => {
@@ -70,10 +74,14 @@ function controls() {
     ]),
     ...(negBoxes ? [negBoxes] : []),
     el('div', { class: 'controls' }, [
+      select('Spliced trait', splicedOptions, state.spliced, v => set({ spliced: v })),
       select('Locked trait', lockOptions, state.lockStat, v => set({ lockStat: v })),
       ...(state.lockStat
-        ? [segmented('Locked as', ['+', '-'], state.lockSign, v => set({ lockSign: /** @type {'+' | '-'} */ (v) }), v => (v === '+' ? 'Positive' : 'Negative')),
-          select('Shape', SHAPE_ORDER.map(s => /** @type {[string, string]} */ ([s, s])), state.lockShape, v => set({ lockShape: /** @type {Shape} */ (v) }))]
+        ? [segmented('Locked as', ['+', '-'], state.lockSign, v => set({ lockSign: /** @type {'+' | '-'} */ (v) }), v => (v === '+' ? 'Positive' : 'Negative'))]
+        : []),
+      // Locking or splicing freezes the riven's shape, so the shape has to be known.
+      ...(state.lockStat || state.spliced
+        ? [select('Shape', SHAPE_ORDER.map(s => /** @type {[string, string]} */ ([s, s])), state.shape, v => set({ shape: /** @type {Shape} */ (v) }))]
         : []),
       el('label', { class: 'field target' }, [el('span', {}, ['Cycles done']), rerolls]),
     ]),
@@ -82,22 +90,24 @@ function controls() {
 
 function results() {
   const want = state.want.filter(Boolean);
-  const lock = state.lockStat ? { statId: state.lockStat, sign: state.lockSign, shape: state.lockShape } : null;
+  const lock = state.lockStat ? { statId: state.lockStat, sign: state.lockSign } : null;
+  const spliced = state.spliced || null;
+  const shape = lock || spliced ? state.shape : undefined;
   const negative = state.negMode === 'pick' ? state.negPick : state.negMode;
   const problems = [];
   if (new Set(want).size !== want.length) problems.push('The same stat is wanted twice.');
   if (state.negMode === 'pick' && !state.negPick.length) problems.push('Tick at least one acceptable negative.');
-  if (lock) {
-    const slots = SHAPES[lock.shape].positives;
-    const wanted = new Set([...want, ...(lock.sign === '+' ? [lock.statId] : [])]);
-    if (wanted.size > slots) problems.push(`A ${lock.shape} riven only has ${slots} positives.`);
-    if (lock.sign === '-' && want.includes(lock.statId)) problems.push('A stat locked as the negative can\'t also be wanted as a positive.');
-    if (lock.sign === '-' && SHAPES[lock.shape].negatives === 0) problems.push(`A ${lock.shape} riven has no negative to lock.`);
+  if (shape) {
+    const slots = SHAPES[shape].positives;
+    const taken = new Set([...want, ...(lock?.sign === '+' ? [lock.statId] : []), ...(spliced ? [spliced] : [])]);
+    if (taken.size > slots) problems.push(`A ${shape} riven only has ${slots} positives${spliced ? ', one of them the spliced trait' : ''}.`);
+    if (lock?.sign === '-' && want.includes(lock.statId)) problems.push('A stat locked as the negative can\'t also be wanted as a positive.');
+    if (lock?.sign === '-' && SHAPES[shape].negatives === 0) problems.push(`A ${shape} riven has no negative to lock.`);
   }
   if (!want.length) problems.push('Pick at least one stat you want.');
   if (problems.length) return el('div', {}, problems.map(p => el('p', { class: 'note warn' }, [p])));
 
-  const odds = cycleChance({ cls: state.cls, ipsCode: ipsOf(state.weapon), want, negative, lock });
+  const odds = cycleChance({ cls: state.cls, ipsCode: ipsOf(state.weapon), want, negative, lock, spliced, shape });
   const plan = kuvaPlan(odds.total, state.rerolls, !!lock);
   const rows = Object.entries(odds.byShape).map(([shape, p]) => el('tr', {}, [el('th', { scope: 'row' }, [shape]), el('td', {}, [pct(p)])]));
   const summary = plan
@@ -128,7 +138,8 @@ function renderResults() {
   saveState('c', {
     weapon: state.weapon, cls: state.cls, want: state.want.filter(Boolean).join(','),
     neg: state.negMode === 'pick' ? state.negPick.join(',') : state.negMode,
-    lock: state.lockStat ? `${state.lockStat}:${state.lockSign}:${state.lockShape}` : '', rerolls: state.rerolls,
+    lock: state.lockStat ? `${state.lockStat}:${state.lockSign}` : '', spliced: state.spliced,
+    shape: state.lockStat || state.spliced ? state.shape : '', rerolls: state.rerolls,
   });
 }
 
@@ -145,6 +156,8 @@ function restore() {
     want: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
     neg: v => v,
     lock: v => v,
+    spliced: v => v,
+    shape: oneOf(SHAPE_ORDER),
     rerolls: num(0, 100000),
   });
   if (saved.weapon !== undefined) {
@@ -155,11 +168,11 @@ function restore() {
   if (saved.neg === 'any' || saved.neg === 'none') state.negMode = saved.neg;
   else if (saved.neg) { state.negMode = 'pick'; state.negPick = saved.neg.split(',').filter(id => STAT_BY_ID[id]); }
   if (saved.lock) {
-    const [id, sign, shape] = saved.lock.split(':');
-    if (STAT_BY_ID[id] && (sign === '+' || sign === '-') && SHAPE_ORDER.includes(/** @type {Shape} */ (shape))) {
-      Object.assign(state, { lockStat: id, lockSign: sign, lockShape: shape });
-    }
+    const [id, sign] = saved.lock.split(':');
+    if (STAT_BY_ID[id] && (sign === '+' || sign === '-')) Object.assign(state, { lockStat: id, lockSign: sign });
   }
+  if (saved.spliced && STAT_BY_ID[saved.spliced]?.spliced) state.spliced = saved.spliced;
+  if (saved.shape) state.shape = saved.shape;
   if (saved.rerolls !== undefined) state.rerolls = Math.round(saved.rerolls);
 }
 

@@ -28,13 +28,14 @@ function rivenClass(w) {
 }
 
 // IPS eligibility, one letter each for Impact, Puncture, Slash: y = can roll, n = can't,
-// ? = may not roll. Evidence first, then the rule:
-//  - warframe.market listings (tools/data/wfm-ips.json, from tools/wfm-ips-scan.mjs): a listing
-//    with the stat proves y; none in a full filtered search of a well-traded weapon (>= 20
-//    listings) means n. Applies to the whole riven family.
-//  - Otherwise the wiki's rule on the weapon's first attack: more than 25% of that type → y.
-//    When the rule says no it's only '?': checked against listings, it said "can't" for 39 stats
-//    that were in fact listed (e.g. Ocucor Impact at 0%), so it isn't trusted to hide a stat.
+// ? = may not roll. Sources, most trusted first:
+//  1. Rivens seen in game (screenshots, player data): IPS_OVERRIDES below.
+//  2. The wiki's rule on the weapon's first attack: more than 25% of that type → y. When it says
+//     no, that's only '?' unless the listings agree: checked against listings it said "can't" for
+//     39 stats that were listed (e.g. Ocucor Impact at 0%).
+//  3. warframe.market listings (tools/data/wfm-ips.json, from tools/wfm-ips-scan.mjs), which nothing
+//     in game verifies: they only settle a stat the rule says no to (none in a full filtered search
+//     of a family with >= 20 listings → n), or decide alone when there's no damage data.
 const PHYSICAL = ['impact', 'puncture', 'slash'];
 const MIN_LISTINGS_FOR_NO = 20;
 
@@ -62,19 +63,29 @@ for (const line of (await readFile(new URL('./data/internal_names.csv', import.m
 /** @param {any} w WFCD item (or null) @param {string} name */
 function ips(w, name) {
   const rule = w ? shares(w.attacks?.[0]?.damage) ?? shares(w.damage) : null;
+  const family = familyOf.get(name) ?? name;
   // warframe.market names zaws and kitguns without our "(Zaw)" / "(Kitgun)" labels.
-  const ev = evidence.get((familyOf.get(name) ?? name).replace(/ \((Zaw|Kitgun)\)$/, '').toLowerCase());
+  const ev = evidence.get(family.replace(/ \((Zaw|Kitgun)\)$/, '').toLowerCase());
+  const seen = IPS_OVERRIDES[/** @type {keyof typeof IPS_OVERRIDES} */ (family)] ?? '???';
   return PHYSICAL.map((t, i) => {
+    if (seen[i] !== '?') return seen[i];
+    const listedNo = !ev?.[t] && ev?.searched?.[t] && ev.listings >= MIN_LISTINGS_FOR_NO;
+    if (rule) {
+      if (rule[i] > 0.25) return 'y';
+      return listedNo ? 'n' : '?';
+    }
     if (ev?.[t]) return 'y';
-    if (ev?.searched?.[t] && ev.listings >= MIN_LISTINGS_FOR_NO) return 'n';
-    if (!rule) return '?';
-    return rule[i] > 0.25 ? 'y' : '?';
+    return listedNo ? 'n' : '?';
   }).join('');
 }
 
-// Hand overrides, from rivens seen in game. Unknown letters stay '?'.
+// Rivens seen in game, by riven family. Each letter overrides everything else; '?' = no information.
 const IPS_OVERRIDES = {
-  'Vinquibus (melee)': '?y?',                              // rolled +Puncture
+  Obex: 'y??',                    // screenshot + player data: -77.8% Impact
+  Cinta: '?y?',                   // screenshot + player data: +138.4% Puncture
+  Vinquibus: '?y?',               // screenshot + player data: +130.1% Puncture
+  'Vinquibus (melee)': '?y?',     // screenshot + player data: +129.7% Puncture
+  Exergis: '?y?',                 // screenshot: -105.9% Puncture
 };
 
 /** @type {[string, string, number, string][]} */
@@ -112,12 +123,6 @@ for (const w of robotic) {
   const cls = ROBOTIC_CLASS[/** @type {keyof typeof ROBOTIC_CLASS} */ (base)];
   if (cls) rows.push([w.name, cls, 0, ips(w, w.name)]);
   else console.warn(`Skipped robotic weapon with no class: ${w.name}`);
-}
-
-// Overrides only fill in letters; '?' in an override leaves the computed letter alone.
-for (const r of rows) {
-  const o = IPS_OVERRIDES[/** @type {keyof typeof IPS_OVERRIDES} */ (r[0])];
-  if (o) r[3] = [...r[3]].map((c, i) => (o[i] === '?' ? c : o[i])).join('');
 }
 
 const unique = [...new Map(rows.map(r => [r[0], r])).values()].sort((a, b) => a[0].localeCompare(b[0]));

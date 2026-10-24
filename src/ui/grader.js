@@ -3,7 +3,7 @@
 // ±10% scale, with a letter grade.
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { canRoll, fittingShapes, format, gradeRoll, inferSign, letterGrade, range, rollScore, shapeFor } from '../engine.js';
+import { canRoll, fittingShapes, weaponCanRoll, format, gradeRoll, inferSign, letterGrade, range, rollScore, shapeFor } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
@@ -112,16 +112,23 @@ function results() {
 
   /** @type {number[]} */
   const scores = [];
+  /** @type {string[]} things worth reporting: impossible values, IPS stats the data rules out */
+  const oddities = [];
   const rows = parsed.map(({ stat, shown, sign }) => {
+    if (state.weapon && weaponCanRoll(stat, ipsOf(state.weapon)) !== 'y' && ['impact', 'puncture', 'slash'].includes(stat.id)) {
+      oddities.push(`${statName(stat, cls)} on ${state.weapon}: the data says it ${weaponCanRoll(stat, ipsOf(state.weapon)) === 'n' ? "can't" : 'may not'} roll`);
+    }
     const name = el('th', { scope: 'row' }, [statName(stat, cls)]);
     const shownCell = el('td', {}, [format(stat, /** @type {number} */ (shown))]);
     if (!canRoll(stat, cls, shape, sign)) {
+      oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} can't be ${sign === '+' ? 'positive' : 'negative'} on a ${shape} riven`);
       return el('tr', {}, [name, shownCell, el('td', { class: 'miss', colspan: '3' }, [`Can't be ${sign === '+' ? 'positive' : 'negative'} on a ${shape} riven`])]);
     }
     const r = range(stat, cls, shape, sign, rank);
     const g = gradeRoll(stat, cls, shape, sign, /** @type {number} */ (shown), rank);
     const rangeCell = el('td', {}, [`${format(stat, r.at0)} to ${format(stat, r.at1)}`]);
     if (!g.possible) {
+      oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} is outside the range ${format(stat, r.at0)} to ${format(stat, r.at1)} (${shape}, rank ${rank})`);
       return el('tr', {}, [name, shownCell, rangeCell, el('td', { class: 'miss', colspan: '2' }, ['Outside the range: check the value or the rank'])]);
     }
     // For the negative, a higher roll is a bigger penalty, so it's scored by mildness (as WFHelper does).
@@ -143,7 +150,35 @@ function results() {
       'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The negative is scored by how mild it is. ',
       'Grades: S ≥ +9.5, A+ ≥ +7.5, A ≥ +5.5, A- ≥ +3.5, B+ ≥ +1.5, B ≥ −1.5, B- ≥ −3.5, C+ ≥ −5.5, C ≥ −7.5, C- ≥ −9.5, else F.']),
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
+    ...(oddities.length ? [reportLink(oddities)] : []),
   ]);
+}
+
+const ISSUES_URL = 'https://github.com/Tome-Wyrm/riven-calculator-site/issues/new';
+
+/**
+ * "Is this riven real?" A link to a pre-filled GitHub issue (form: .github/ISSUE_TEMPLATE/riven-report.yml).
+ * A real riven the site can't explain is the best way to correct its data.
+ * @param {string[]} oddities
+ */
+function reportLink(oddities) {
+  // In the game's own format ("+267.2%", "x0.58"), whatever was typed.
+  const stats = state.rows.filter(r => parseShown(r.value) !== null).map(r => {
+    const stat = STAT_BY_ID[r.statId];
+    return `${format(stat, /** @type {number} */ (parseShown(r.value)))} ${statName(stat, state.cls)}`;
+  }).join('\n');
+  const params = new URLSearchParams({
+    template: 'riven-report.yml',
+    title: `[Riven] ${state.weapon || CLASS_LABEL[state.cls]}: ${oddities[0]}`.slice(0, 120),
+    weapon: state.weapon || CLASS_LABEL[state.cls],
+    rank: String(state.rank),
+    stats,
+    problem: oddities.join('\n'),
+  });
+  const a = el('a', { href: `${ISSUES_URL}?${params}`, target: '_blank', rel: 'noopener' }, ['report it on GitHub']);
+  return el('p', { class: 'note warn' }, [
+    "If these are the real values from the game, the site's data may be wrong: please ", a,
+    ' with a screenshot of the riven. (Old rivens from before a balance change can also show values that no longer roll.)']);
 }
 
 /** @type {HTMLElement} */

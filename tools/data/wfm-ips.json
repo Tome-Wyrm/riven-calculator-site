@@ -1310,5 +1310,195 @@
   "puncture": "+-",
   "slash": "+-",
   "searched": {}
+ },
+ "tetra": {
+  "name": "Tetra",
+  "gameRef": "/Lotus/Weapons/Corpus/LongGuns/CorpusUMP/CorpusUMP",
+  "rivenType": "rifle",
+  "listings": 100,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "gammacor": {
+  "name": "Gammacor",
+  "gameRef": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "nukor": {
+  "name": "Nukor",
+  "gameRef": "/Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "pandero": {
+  "name": "Pandero",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/TnBardPistol/TnBardPistolGun",
+  "rivenType": "pistol",
+  "listings": 78,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "pox": {
+  "name": "Pox",
+  "gameRef": "/Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars",
+  "rivenType": "pistol",
+  "listings": 81,
+  "impact": "",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "pyrana": {
+  "name": "Pyrana",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistols/SawnOffShotgun/TennoHandShotgun",
+  "rivenType": "shotgun",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "sicarus": {
+  "name": "Sicarus",
+  "gameRef": "/Lotus/Weapons/Tenno/Pistol/BurstPistol",
+  "rivenType": "pistol",
+  "listings": 100,
+  "impact": "+-",
+  "puncture": "",
+  "slash": "",
+  "searched": {
+   "puncture": true,
+   "slash": true
+  }
+ },
+ "spira": {
+  "name": "Spira",
+  "gameRef": "/Lotus/Weapons/Tenno/ThrowingWeapons/LiDagger/LiDagger",
+  "rivenType": "pistol",
+  "listings": 59,
+  "impact": "",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "dehtat": {
+  "name": "Dehtat",
+  "gameRef": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFive",
+  "rivenType": "zaw",
+  "listings": 57,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "destreza": {
+  "name": "Destreza",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Swords/TnoRapier/TnoRapier",
+  "rivenType": "melee",
+  "listings": 100,
+  "impact": "+",
+  "puncture": "+-",
+  "slash": "",
+  "searched": {
+   "impact": true,
+   "slash": true
+  }
+ },
+ "dex_dakra": {
+  "name": "Dex Dakra",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Swords/DexTheSecond/DexTheSecond",
+  "rivenType": "melee",
+  "listings": 57,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "dokrahm": {
+  "name": "Dokrahm",
+  "gameRef": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipEleven",
+  "rivenType": "zaw",
+  "listings": 89,
+  "impact": "+-",
+  "puncture": "+-",
+  "slash": "+-",
+  "searched": {}
+ },
+ "dragon_nikana": {
+  "name": "Dragon Nikana",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/LowKatana",
+  "rivenType": "melee",
+  "listings": 90,
+  "impact": "",
+  "puncture": "+",
+  "slash": "+-",
+  "searched": {
+   "impact": true
+  }
+ },
+ "dual_cleavers": {
+  "name": "Dual Cleavers",
+  "gameRef": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/DualCleaverWeapon",
+  "rivenType": "melee",
+  "listings": 53,
+  "impact": "",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "impact": true,
+   "puncture": true
+  }
+ },
+ "dual_ether": {
+  "name": "Dual Ether",
+  "gameRef": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualEtherSword",
+  "rivenType": "melee",
+  "listings": 49,
+  "impact": "+",
+  "puncture": "",
+  "slash": "+-",
+  "searched": {
+   "puncture": true
+  }
  }
 }
