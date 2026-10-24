@@ -221,6 +221,8 @@ function clampInterval(a, b) {
 export function inferSign(stat, cls, target) {
   if (stat.polarity === 'posOnly') return '+';
   if (stat.polarity === 'negOnly') return '-';
+  // A stat this class can't roll (a misread, or the wrong class): go by the number's own sign.
+  if (stat.b[cls] === undefined) return target < (stat.unit === 'mult' ? 1 : 0) ? '-' : '+';
   const plus = displayValue(stat, cls, '++', '+', 0.5);
   const zero = stat.unit === 'mult' ? 1 : 0;
   return (target - zero >= 0) === (plus - zero >= 0) ? '+' : '-';

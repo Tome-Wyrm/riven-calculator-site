@@ -10,7 +10,7 @@
 //      and keep the one that fits.
 
 import { MAX_RANK, STATS, STAT_BY_ID } from './data/stats.js';
-import { gradeRoll, inferSign, shapeFor } from './engine.js';
+import { canRoll, gradeRoll, inferSign, shapeFor } from './engine.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('./data/stats.js').Shape} Shape */
@@ -188,6 +188,8 @@ export function refineStats(stats, cls, positives, drainRank) {
  * @param {any[]} rows @param {WeaponClass} cls @param {Shape | null} shapeHint @param {number} rank
  */
 function tryRank(rows, cls, shapeHint, rank) {
+  // A stat this class can't roll means the class (or the stat) is wrong: no reading fits.
+  if (rows.some(r => STAT_BY_ID[r.statId].b[cls] === undefined)) return null;
   const valued = rows.filter(r => r.value);
   const signOf = (/** @type {any} */ r, /** @type {string} */ v) => inferSign(STAT_BY_ID[r.statId], cls, Number(v.replace(/^x/i, '')));
   const pos = rows.filter(r => r.value && signOf(r, r.value) === '+').length + rows.filter(r => !r.value).length;
@@ -203,7 +205,9 @@ function tryRank(rows, cls, shapeHint, rank) {
     const [prefix, digits] = [m[1], m[2]];
     const fits = numberVariants(digits).filter(v => {
       const n = Number(`${prefix}${v.text}`.replace(/^x/i, ''));
-      return gradeRoll(stat, cls, shape, inferSign(stat, cls, n), n, rank).possible;
+      const sign = inferSign(stat, cls, n);
+      // A sign the shape can't have (a curse on a curse-less riven): not a fit, rather than a crash.
+      return canRoll(stat, cls, shape, sign) && gradeRoll(stat, cls, shape, sign, n, rank).possible;
     });
     if (fits[0]?.edits === 0) { asRead++; fixes.push([r, r.value]); continue; }
     const fewest = fits.filter(v => v.edits === fits[0]?.edits);

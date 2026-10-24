@@ -95,3 +95,12 @@ test('a prefix shared by two stats is settled by the stats on the card (Silva & 
   assert.deepEqual(decodeRivenName('Laciata', ['damage', 'parryAngle', 'statusDuration']), ['parryAngle', 'damage']);
   assert.deepEqual(decodeRivenName('Laciata', ['additionalCombo', 'damage']), ['additionalCombo', 'damage']);
 });
+
+test('a curse read on a riven whose name says it has none does not crash (found by the tuning harness)', () => {
+  assert.doesNotThrow(() => refineStats([{ statId: 'damage', value: '-120.5', text: '' }, { statId: 'multishot', value: '+90', text: '' }],
+    'pistol', ['damage', 'multishot'], 8));
+});
+
+test('a stat the class cannot roll does not crash (found by the tuning harness)', () => {
+  assert.doesNotThrow(() => refineStats([{ statId: 'magazine', value: '+40', text: '' }, { statId: 'damage', value: '+90', text: '' }], 'melee', null, 8));
+});

@@ -74,6 +74,16 @@ async function prepare(blob) {
 export async function readScreenshot(blob) {
   const worker = await getWorker();
   const { data } = await worker.recognize(await prepare(blob));
+  return interpretText(data.text);
+}
+
+/**
+ * Everything after text recognition: parse, use the riven's name, check values against the
+ * ranges. No DOM, so the tuning harness (tools/ocr-train/harness.mjs) runs it in Node.
+ * @param {string} text @returns {ScreenshotRead}
+ */
+export function interpretText(text) {
+  const data = { text };
   const parsed = parseRivenText(data.text);
   // A faction stat needs its multiplier ("x1.06"); the companion app shows "+0" instead. It
   // stays in with no value, so the riven's shape still counts it.
