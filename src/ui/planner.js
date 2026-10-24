@@ -16,12 +16,12 @@ import { loadState, saveState, pick, oneOf } from './state.js';
 
 const NONE = '';
 const state = {
-  weapon: 'Felarx',
-  cls: /** @type {WeaponClass} */ ('shotgun'),
-  spliced: 'viral',
+  weapon: '',
+  cls: /** @type {WeaponClass} */ ('rifle'),
+  spliced: NONE,
   recipe: NONE,                         // "a+b", or '' for the cheapest
-  want: ['cold', 'toxin', NONE],
-  negative: 'critChance',
+  want: [NONE, NONE, NONE],
+  negative: NONE,
   shape: /** @type {Shape} */ ('+++-'),
   from: /** @type {'fresh' | 'mine'} */ ('fresh'),
   stage: /** @type {'pre' | 'post'} */ ('pre'),

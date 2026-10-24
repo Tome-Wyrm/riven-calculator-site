@@ -15,15 +15,10 @@ import { loadIntoPlanner } from './planner.js';
 const MAX_ROWS = 4;
 
 const state = {
-  weapon: 'Soma',
+  weapon: '',
   cls: /** @type {WeaponClass} */ ('rifle'),
   rank: MAX_RANK,
-  // The Soma riven from the verified screenshots, as a worked example.
-  rows: [
-    { statId: 'damage', value: '267.2' },
-    { statId: 'electricity', value: '138.7' },
-    { statId: 'ammoMax', value: '-31.7' },
-  ],
+  rows: /** @type {{statId: string, value: string}[]} */ ([]),
 };
 
 const signed = (/** @type {number} */ x) => `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(1)}`;

@@ -15,11 +15,11 @@ const OP_LABEL = { gte: 'At least', lte: 'At most', near: 'Closest to' };
 const UNIT_SUFFIX = { pct: '%', pctNeg: '%', mult: '×', sec: 's', m: 'm', flat: '' };
 
 const state = {
-  weapon: 'Felarx',
-  cls: /** @type {WeaponClass} */ ('shotgun'),
-  statId: 'ammoEfficiency',
+  weapon: '',
+  cls: /** @type {WeaponClass} */ ('rifle'),
+  statId: '',
   op: /** @type {Goal['op']} */ ('gte'),
-  target: 70,
+  target: /** @type {number | null} */ (null),
   rank: MAX_RANK,
 };
 
@@ -68,12 +68,12 @@ function controls() {
   const stat = STAT_BY_ID[state.statId];
 
   const input = /** @type {HTMLInputElement} */ (el('input', {
-    type: 'number', step: 'any', inputmode: 'decimal', value: String(state.target), 'aria-label': 'Target value',
+    type: 'number', step: 'any', inputmode: 'decimal', value: state.target === null ? '' : String(state.target), 'aria-label': 'Target value',
   }));
   // Update results without re-rendering the controls, so the input keeps focus while typing.
   input.addEventListener('input', () => {
     const n = Number(input.value);
-    if (input.value !== '' && Number.isFinite(n)) { state.target = n; renderResults(); }
+    if (input.value === '') { state.target = null; renderResults(); } else if (Number.isFinite(n)) { state.target = n; renderResults(); }
   });
   const ranks = Array.from({ length: MAX_RANK + 1 }, (_, r) => /** @type {[string, string]} */ ([String(r), String(r)]));
 
@@ -90,6 +90,7 @@ function controls() {
 }
 
 function results() {
+  if (state.target === null) return el('p', { class: 'note' }, ['Enter a target value.']);
   const stat = STAT_BY_ID[state.statId];
   const res = evaluateGoal({ stat, cls: state.cls, op: state.op, target: state.target, rank: state.rank });
   const rows = res.results.map(r => el('tr', r.best ? { class: 'best' } : {}, [
@@ -132,7 +133,7 @@ let resultsBox;
 
 function renderResults() {
   resultsBox.replaceChildren(results());
-  saveState('g', { weapon: state.weapon, cls: state.cls, stat: state.statId, op: state.op, t: state.target, rank: state.rank });
+  saveState('g', { weapon: state.weapon, cls: state.cls, stat: state.statId, op: state.op, t: state.target ?? '', rank: state.rank });
 }
 
 function render() {
