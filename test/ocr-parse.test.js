@@ -55,6 +55,19 @@ test('weapon names survive a stray space; class is guessed from stats when no we
   assert.equal(guessClass(['damage', 'zoom']), 'rifle');
 });
 
+test('fixes O-for-0, stray spaces and unsigned lines (from real screenshots)', () => {
+  // Phone photo of a monitor: "x0.58" read as "XO. 58"
+  assert.deepEqual(parseRivenText('Akarius Toxi-satido\n+111.2% & Toxin\n+145% Multishot\n+98.2% Cold\nXO. 58 Damage to Grineerg\nMR 11')
+    .stats.map(s => [s.statId, s.value]), [['toxin', '+111.2'], ['multishot', '+145'], ['cold', '+98.2'], ['grineer', 'x0.58']]);
+  // Four junk characters before the value
+  assert.equal(parseRivenText('Cortege Plaga-\n+112.3% Critical Chance\n7%. X0.59 Damage to Infestedg\nMR 10').stats[1].value, 'x0.59');
+  // Lost minus sign, and a lock icon read as digits: their own stats, values left blank
+  assert.deepEqual(parseRivenText('Arca Titron\n+108.6% Critical Damage\n0 +109.8% Status\nDamage\n+2.1 Range\n102.7% Finisher Damage\nMR12')
+    .stats.map(s => [s.statId, s.value]), [['critDamage', '+108.6'], ['statusDamage', '+109.8'], ['range', '+2.1'], ['finisher', '']]);
+  assert.deepEqual(parseRivenText('Laetum Plaga-\nconcican\n+123.4% Multishot\n214109.7% Status Damage\n+96.6% Projectile Speed\n-146% Critical Chance\nMR 13')
+    .stats.map(s => [s.statId, s.value]), [['multishot', '+123.4'], ['statusDamage', ''], ['projectileSpeed', '+96.6'], ['critChance', '-146']]);
+});
+
 test('matchStat rejects text that is not a stat', () => {
   assert.equal(matchStat('Visitio'), null);
   assert.equal(matchStat('MR'), null);

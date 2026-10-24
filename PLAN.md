@@ -212,8 +212,13 @@ Back-solve the roll quality u for each stat on a riven you already own.
     ranks at which every value is possible, preferring 8, then 0).
   - Companion app quirk: faction stats show as "+0". The row is kept blank, and both the grader and
     the rank logic try it as positive and as negative (`fittingShapes`). On the example it's the negative.
-  - Real-image check on 8 screenshots (Soma, Lacera ×2, Obex, Vinquibus ×2, Cinta, companion-app
-    Soma): all weapons, ranks and values read correctly. The images live in `test/fixtures/local/`
+  - Real-image check on 21 screenshots (in-game cards, the mod screen, the cycle screen with two
+    cards, phone photos of a monitor, the companion app): all values and ranks read; one weapon
+    name missed (split across lines), and two values left blank where OCR lost the sign.
+    Fixes along the way: O-for-0 and stray spaces in numbers, up to 5 junk characters before a
+    value, unsigned lines kept as their own stat with a blank value.
+  - They also caught an IPS data error: an Exergis riven with Puncture, which our data says it
+    can't roll. The grader now keeps such a stat (marked "not expected") instead of swapping it. The images live in `test/fixtures/local/`
     (git-ignored); the parser tests use their transcribed text.
   - [ ] Possible upgrade: WFHelper uses a YOLO text detector + PaddleOCR recogniser (ONNX), with a
         stat-band crop and retries. Much heavier (tens of MB of models), but more robust on full

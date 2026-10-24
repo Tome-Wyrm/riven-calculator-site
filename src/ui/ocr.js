@@ -90,6 +90,8 @@ async function readScreenshot(blob) {
       ...(parsed.weapon ? [] : ['the weapon (pick it above)']),
       ...(rank === null ? ['the rank (assumed 8)'] : []),
       ...parsed.stats.filter(s => !s.statId).map(s => `the stat "${s.value} ${s.text}"`),
+      ...parsed.stats.filter(s => s.statId && s.value === '')
+        .map(s => `the value of ${STAT_BY_ID[/** @type {string} */ (s.statId)].name} (its sign was lost; type it in)`),
       ...noMultiplier.map(s => `${STAT_BY_ID[/** @type {string} */ (s.statId)].name}, which shows "${s.value}" instead of a multiplier `
         + '(the companion app does this; type its x value from the game into that row)'),
     ];

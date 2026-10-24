@@ -76,10 +76,16 @@ function bestMatch(key) {
 
 /**
  * A stat line has a value then a name: "+267.2%", "-31.7%", "x0.58", "+10.8s", "+2.6m", "+32.8".
- * OCR often puts a stray character or two before the value (from the card's artwork), so the
- * value may start after up to 3 junk characters.
+ * OCR often puts a few stray characters before the value (from the artwork or a lock icon), so
+ * the value may start after up to 5 junk characters.
  */
-const VALUE_LINE = /^.{0,3}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\s*(.*)$/i;
+const VALUE_LINE = /^.{0,5}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\s*(.*)$/i;
+
+/** A percentage stat whose sign was lost (e.g. "102.7% Finisher Damage", or a lock icon read as digits). */
+const UNSIGNED_LINE = /^.{0,5}?\d+(?:[.,]\d+)?\s*%\s*([a-z].*)$/i;
+
+/** Common OCR slips inside numbers: "XO. 58" → "X0.58". @param {string} l */
+const fixDigits = l => l.replace(/([x×+\-−–—‒])\s*[oO](?=\s*[.,\d])/gi, '$10').replace(/(\d)\s*([.,])\s*(\d)/g, '$1$2$3');
 
 /**
  * The weapon named at the start of the riven's title, longest match first ("Vinquibus (melee)"
@@ -120,13 +126,18 @@ export function parseRivenText(text) {
   /** @type {OcrRiven['stats']} */
   const stats = [];
   if (firstStat >= 0) {
-    for (const l of lines.slice(firstStat)) {
-      if (/^[\W_]*MR\s*\d/i.test(l)) break;
+    for (const raw of lines.slice(firstStat)) {
+      if (/^[\W_]*MR\s*\d/i.test(raw)) break;
+      const l = fixDigits(raw);
       const m = l.match(VALUE_LINE);
+      const unsigned = !m && l.match(UNSIGNED_LINE);
       if (m && /[a-z]{2}/i.test(m[3])) {
         m[3] = m[3].replace(/[\W_]*MR\s*\d+.*$/i, '');        // the MR line merged onto the last stat
-        const value = m[1].replace(/\s/g, '').replace(/[−–—‒]/, '-').replace(/[×]/i, 'x').replace(',', '.');
+        const value = m[1].replace(/\s/g, '').replace(/[−–—‒]/, '-').replace(/^[x×]/i, 'x').replace(',', '.');
         stats.push({ statId: null, value, text: m[3] });
+      } else if (unsigned) {
+        // Its own stat, but with the value left blank: the sign can't be trusted.
+        stats.push({ statId: null, value: '', text: unsigned[1] });
       } else if (stats.length) {
         stats[stats.length - 1].text += ' ' + l;             // a wrapped stat name
       }

@@ -52,7 +52,13 @@ function controls() {
 function statRows() {
   const options = statOptions([...ORDINARY, ...SPLICED], state.cls, ipsOf(state.weapon));
   const rows = state.rows.map((row, i) => {
-    if (!options.some(([id]) => id === row.statId)) row.statId = options[0][0];
+    if (!options.some(([id]) => id === row.statId)) {
+      // A stat the class can roll but our IPS data says this weapon can't: keep it (the riven is
+      // better evidence than the data) and say so, rather than silently swapping it out.
+      const stat = STAT_BY_ID[row.statId];
+      if (stat?.b[state.cls] !== undefined) options.push([row.statId, `${statName(stat, state.cls)} (not expected on ${state.weapon})`]);
+      else row.statId = options[0][0];
+    }
     const input = /** @type {HTMLInputElement} */ (el('input', {
       type: 'text', inputmode: 'decimal', value: row.value, placeholder: 'e.g. +267.2', 'aria-label': `Stat ${i + 1} value`,
     }));
