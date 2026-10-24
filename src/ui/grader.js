@@ -134,11 +134,11 @@ function results() {
       oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} is outside the range ${format(stat, r.at0)} to ${format(stat, r.at1)} (${shape}, rank ${rank})`);
       return el('tr', {}, [name, shownCell, rangeCell, el('td', { class: 'miss', colspan: '2' }, ['Outside the range: check the value or the rank'])]);
     }
-    // The curse is scored by size, like the positives: a bigger curse is better for splicing, since
-    // a curse can be a splice parent. It isn't counted in the average.
+    // The curse is scored by size, like the positives: a curse can be a splice parent, and a big
+    // one makes a big spliced stat. So it counts in the average too.
     const curse = sign === '-';
     const [sLo, sHi] = [rollScore(g.lo), rollScore(g.hi)].sort((x, y) => x - y);
-    if (!curse) scores.push((sLo + sHi) / 2);
+    scores.push((sLo + sHi) / 2);
     return el('tr', {}, [name, shownCell, rangeCell,
       el('td', { class: curse ? 'neg' : 'pos' }, [scoreText(sLo, sHi)]),
       el('td', { class: 'grade' }, [gradeText(sLo, sHi)])]);
@@ -148,11 +148,11 @@ function results() {
     .map(h => el('th', { scope: 'col' }, [h])))]);
   const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   return el('div', {}, [
-    el('p', { class: 'summary' }, [`Shape ${shape}` + (avg === null ? '' : ` · average positive roll ${signed(avg)}% (${letterGrade(avg)})`)]),
+    el('p', { class: 'summary' }, [`Shape ${shape}` + (avg === null ? '' : ` · average roll ${signed(avg)}% (${letterGrade(avg)})`)]),
     planButton(parsed, shape),
     ...(blanks ? [el('p', { class: 'note' }, [`${blanks} stat${blanks > 1 ? "s have" : " has"} no value yet: it still counts toward the shape (as whichever sign fits the other values), but isn't graded.`])] : []),
     el('p', { class: 'note' }, [
-      'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The curse is scored by its size (bigger is better for splicing) and is left out of the average. ',
+      'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The curse is scored by its size, like the positives (a big curse splices into a big stat). ',
       'Grades: S ≥ +9.5, A+ ≥ +7.5, A ≥ +5.5, A- ≥ +3.5, B+ ≥ +1.5, B ≥ −1.5, B- ≥ −3.5, C+ ≥ −5.5, C ≥ −7.5, C- ≥ −9.5, else F.']),
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
     ...(oddities.length ? [reportLink(oddities)] : []),
