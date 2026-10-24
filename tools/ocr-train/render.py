@@ -17,14 +17,14 @@ ASSETS = os.path.join(HERE, 'assets')
 FONTS = os.path.join(HERE, 'fonts', 'roboto')
 ROOT = os.path.dirname(os.path.dirname(HERE))
 
-W, H = 300, 424                      # the card itself, in the proportions of a real one
+W, H = 300, 379                      # the card itself: RivenBackground.png's own size and proportions
 TEXT = (190, 168, 236)               # lavender riven text
 PURPLE = (187, 136, 232)             # drain number and polarity (warframemaker's card colour)
 LOCKED = (214, 211, 220)             # a locked stat's line is light grey (its icon keeps its colour)
 MATCHED = (120, 225, 95)             # drain and polarity when the polarity matches the slot
 ICONS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'icons')
 PANEL = (24, 22, 30)
-BOTTOM = 350                         # baseline of the last text line
+BOTTOM = H - 86                         # baseline of the last text line
 
 
 def asset(name, scale=1.0):
@@ -170,7 +170,7 @@ def padlock(d, x, y, s, colour):
 def card(spec, weight='Medium'):
     # The background holds the text panel's texture and the bottom frame, at the very bottom.
     im = background()
-    im.paste(art((W - 24, 250)), (12, 22))
+    im.paste(art((W - 24, 210)), (12, 22))
     title_ft, stat_ft = font(weight, 25), font(weight, 20)
 
     # Text, laid out bottom-up from just above the tab, as the game does.
@@ -183,8 +183,8 @@ def card(spec, weight='Medium'):
     pitch = lambda ft: 28 if ft is title_ft else 23
     top = BOTTOM - sum(pitch(ft) for _, ft, _ in lines) + 6
     # More text pushes the picture up: the background's panel shows from just above the title.
-    panel_top = min(top - 10, 262)
-    panel = background().crop((0, panel_top, W, panel_top + 60))
+    panel_top = min(top - 10, 222)
+    panel = background().crop((0, panel_top, W, H - 70))
     im.alpha_composite(panel, (0, panel_top))
 
     text = Image.new('RGBA', (W, H), (0, 0, 0, 0))
@@ -219,19 +219,8 @@ def card(spec, weight='Medium'):
     # Frame parts: top (with the riven symbol), bottom, side lights, the drain backer, the tab.
     top_f = asset('RivenFrameTop', W / 281)
     im.alpha_composite(top_f, (0, 0))
-    # Rank pips on the line at the very bottom: one lit per rank, the rest dim.
-    line = asset('RankCompleteLine').resize((round(W * 0.85), 8))
-    im.alpha_composite(line, ((W - line.width) // 2, H - 15))
-    pip = asset('RankSlotActive').resize((12, 12))
-    dim = pip.copy()
-    dim.putalpha(dim.getchannel('A').point(lambda a: a * 0.3))
-    for i in range(8):
-        im.alpha_composite(pip if i < spec.get('rank', 8) else dim, (round(W / 2 - 8 * 14 / 2 + i * 14 + 1), H - 17))
-    side = asset('RivenSideLight', 1.0).resize((10, 200))
-    im.alpha_composite(side, (2, 140))
-    im.alpha_composite(side.transpose(Image.FLIP_LEFT_RIGHT), (W - 12, 140))
     tab = asset('RivenLowerTab', 1.25)
-    tx, ty = (W - tab.width) // 2, H - 47
+    tx, ty = (W - tab.width) // 2, H - 64
     im.alpha_composite(tab, (tx, ty))
     d = ImageDraw.Draw(im)
     mr_ft = font('Bold', 18)
