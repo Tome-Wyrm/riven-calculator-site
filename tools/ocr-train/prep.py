@@ -1,36 +1,27 @@
-"""Preprocessing for the tuning harness, the same steps the site does in the browser (src/ocr-read.js
-prepare): scale up, then greyscale and invert. Options let the harness try other settings.
+"""Decodes images to raw RGBA for the tuning harness, which then preprocesses them with the site's
+own code (src/ocr-prep.js). Pillow only decodes, applying an embedded colour profile (as the
+browser does) so both see the same pixels.
 
-    python tools/ocr-train/prep.py out_dir width=2400 maxscale=4 invert=1 contrast=1.0 crop=0 file1 file2 ...
+    python tools/ocr-train/prep.py out_dir file1 file2 ...
 
-Writes <out_dir>/<n>.png for the n-th input file.
+Writes <out_dir>/<n>.rgba (width and height as two little-endian uint32s, then the pixels).
 """
-import os, sys
-from PIL import Image, ImageEnhance, ImageOps
-
-
-def prep(path, width=2400, maxscale=4.0, invert=1, contrast=1.0, crop=0.0):
-    im = Image.open(path).convert('RGB')
-    if crop:
-        # Keep the lower part of the card, where the text is.
-        im = im.crop((0, round(im.height * crop), im.width, im.height))
-    scale = max(1.0, min(maxscale, width / im.width))
-    im = im.resize((round(im.width * scale), round(im.height * scale)), Image.LANCZOS)
-    g = im.convert('L')
-    if contrast != 1.0:
-        g = ImageEnhance.Contrast(g).enhance(contrast)
-    return ImageOps.invert(g) if invert else g
-
+import io, os, struct, sys
+from PIL import Image, ImageCms
 
 if __name__ == '__main__':
-    out = sys.argv[1]
-    opts, files = {}, []
-    for a in sys.argv[2:]:
-        if '=' in a and not os.path.exists(a):
-            k, v = a.split('=', 1)
-            opts[k] = float(v)
-        else:
-            files.append(a)
+    out, files = sys.argv[1], sys.argv[2:]
     os.makedirs(out, exist_ok=True)
     for n, f in enumerate(files):
-        prep(f, **opts).save(os.path.join(out, f'{n}.png'))
+        im = Image.open(f)
+        icc = im.info.get('icc_profile')
+        if icc:
+            try:
+                src = ImageCms.ImageCmsProfile(io.BytesIO(icc))
+                im = ImageCms.profileToProfile(im.convert('RGB'), src, ImageCms.createProfile('sRGB'), outputMode='RGB')
+            except Exception:
+                pass
+        im = im.convert('RGBA')
+        with open(os.path.join(out, f'{n}.rgba'), 'wb') as fh:
+            fh.write(struct.pack('<II', im.width, im.height))
+            fh.write(im.tobytes())

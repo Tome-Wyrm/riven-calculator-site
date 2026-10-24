@@ -35,6 +35,10 @@ function getWorker() {
  * Riven text is pale lavender on a dark purple card. Scale up and invert to greyscale dark text on
  * light. (A hard black/white threshold was tried and lost decimal points; Tesseract's own
  * binarisation does better on the inverted greyscale.)
+ *
+ * The tuning harness (tools/ocr-train) can't reproduce this resampling exactly; its closest
+ * match, src/ocr-prep.js with the Mitchell filter, reads a few screenshots worse (97 of 115
+ * against 103), so the site keeps the canvas.
  * @param {Blob} blob @returns {Promise<HTMLCanvasElement>}
  */
 async function prepare(blob) {

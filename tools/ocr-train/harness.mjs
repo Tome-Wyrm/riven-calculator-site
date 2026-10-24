@@ -3,11 +3,11 @@
 //
 //   node tools/ocr-train/harness.mjs real                         the real screenshots (expected.json)
 //   node tools/ocr-train/harness.mjs tools/ocr-train/out/fuzzed   synthetic cards (each n.png + n.json)
-//   ... --limit 50  --workers 4  --psm 11  --width 2400 --maxscale 4 --invert 1 --contrast 1 --crop 0
+//   ... --limit 50  --workers 4  --psm 11  --width 2400 --maxscale 4 --invert 1 --contrast 1
 //   ... --show 10   (print the first 10 misses)
 //
-// Preprocessing happens in prep.py (Pillow), mirroring the browser's prepare(); its options are
-// passed through, so settings can be compared without touching the site.
+// Images are decoded by prep.py (Pillow) and preprocessed by src/ocr-prep.js, the same code the
+// site runs in the browser, so a setting that helps here helps on the site.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -15,6 +15,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createScheduler, createWorker } from 'tesseract.js';
 import { interpretText } from '../../src/ocr-read.js';
+import { prepPixels, toPGM } from '../../src/ocr-prep.js';
 
 const HERE = import.meta.dirname;
 const ROOT = path.resolve(HERE, '../..');
@@ -25,7 +26,14 @@ const limit = Number(opt('limit', Infinity));
 const workers = Number(opt('workers', Math.max(1, Math.min(6, os.cpus().length - 1))));
 const psm = String(opt('psm', '11'));
 const show = Number(opt('show', 0));
-const prepOpts = ['width', 'maxscale', 'invert', 'contrast', 'crop'].filter(k => opt(k) !== undefined).map(k => `${k}=${opt(k)}`);
+/** @type {import('../../src/ocr-prep.js').PrepOptions} */
+const prep = {};
+if (opt('width') !== undefined) prep.width = Number(opt('width'));
+if (opt('maxscale') !== undefined) prep.maxScale = Number(opt('maxscale'));
+if (opt('contrast') !== undefined) prep.contrast = Number(opt('contrast'));
+if (opt('invert') !== undefined) prep.invert = opt('invert') !== '0';
+if (opt('cubic') !== undefined) prep.cubic = ['mitchell', 'lanczos'].includes(opt('cubic')) ? opt('cubic') : opt('cubic') !== '0';
+const prepOpts = Object.entries(prep).map(([k, v]) => `${k}=${v}`);
 
 /** @typedef {{weapon: string | null, rank: number | null, stats: string[], locked: string[]}} Answer */
 
@@ -58,7 +66,7 @@ const norm = (/** @type {string} */ s) => s.replace(/^\+/, '');
 async function main() {
   const all = cases().slice(0, limit);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-prep-'));
-  execFileSync('python', [path.join(HERE, 'prep.py'), tmp, ...prepOpts, ...all.map(c => c[0])], { stdio: 'inherit' });
+  execFileSync('python', [path.join(HERE, 'prep.py'), tmp, ...all.map(c => c[0])], { stdio: 'inherit' });
 
   const scheduler = createScheduler();
   for (let i = 0; i < workers; i++) {
@@ -68,7 +76,10 @@ async function main() {
   }
   const t0 = Date.now();
   const results = await Promise.all(all.map(async ([file, want], n) => {
-    const { data } = await scheduler.addJob('recognize', path.join(tmp, `${n}.png`));
+    const raw = fs.readFileSync(path.join(tmp, `${n}.rgba`));
+    const [w, h] = [raw.readUInt32LE(0), raw.readUInt32LE(4)];
+    const img = prepPixels(new Uint8Array(raw.buffer, raw.byteOffset + 8, w * h * 4), w, h, prep);
+    const { data } = await scheduler.addJob('recognize', Buffer.from(toPGM(img)));
     const r = interpretText(data.text);
     return { file, want, got: { weapon: r.weapon?.name ?? null, rank: r.rank, stats: r.rows.map(s => `${s.value} ${s.statId}`), locked: r.rows.filter(s => s.locked).map(s => s.statId) } };
   }));
