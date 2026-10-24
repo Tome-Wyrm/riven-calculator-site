@@ -62,7 +62,8 @@ for (const line of (await readFile(new URL('./data/internal_names.csv', import.m
 /** @param {any} w WFCD item (or null) @param {string} name */
 function ips(w, name) {
   const rule = w ? shares(w.attacks?.[0]?.damage) ?? shares(w.damage) : null;
-  const ev = evidence.get((familyOf.get(name) ?? name).toLowerCase());
+  // warframe.market names zaws and kitguns without our "(Zaw)" / "(Kitgun)" labels.
+  const ev = evidence.get((familyOf.get(name) ?? name).replace(/ \((Zaw|Kitgun)\)$/, '').toLowerCase());
   return PHYSICAL.map((t, i) => {
     if (ev?.[t]) return 'y';
     if (ev?.searched?.[t] && ev.listings >= MIN_LISTINGS_FOR_NO) return 'n';

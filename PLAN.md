@@ -182,6 +182,11 @@ and the [wiki patch history](https://wiki.warframe.com/w/Riven_Mods/Patch_Histor
   - Hand overrides fill in letters from rivens seen in game (Vinquibus (melee) Puncture).
 - [x] Tests: `quirks`, `weaponCanRoll`; IPS stats our own rivens proved are never ruled out
 - [ ] Re-run `tools/build-weapons.mjs` when the full scan finishes (102 of ~420 families so far)
+- [x] **Families checked against warframe.market's 420 riven weapons** (names + internal paths):
+      Mutalist Quanta is its own family (not Quanta, as the wiki also says); zaw rows renamed to
+      "X (Zaw)" to match the weapon list; warframe.market's alternate Plague Keewar/Kripath paths
+      added. Only naming differences remain: our "(Kitgun)" labels, and warframe.market's own path
+      for Vinquibus (Melee) (ours comes from a real riven's data).
 
 ### Phase 8 — Riven grader
 Back-solve the roll quality u for each stat on a riven you already own.
