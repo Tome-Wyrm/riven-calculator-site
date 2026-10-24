@@ -3,7 +3,9 @@
     python tools/ocr-train/render.py tools/ocr-train/out/specs.jsonl tools/ocr-train/out/cards
 
 Each card is <n>.png plus <n>.json (its spec, the answer). Frame parts are the wiki's riven mod
-assets (tools/ocr-train/assets, git-ignored); text is Roboto. Art behind the title is a random crop
+assets, plus RivenBackground.png (the panel and bottom frame) from warframemaker.com, all in
+tools/ocr-train/assets (git-ignored); text is Roboto. Positions follow warframemaker's layout,
+stretched to the taller in-game riven card. Art behind the title is a random crop
 of the real screenshots in test/fixtures/local (or noise if there are none). This draws clean
 cards; fuzz.py adds the blur, scaling and compression real screenshots have.
 """
@@ -17,6 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 
 W, H = 300, 424                      # the card itself, in the proportions of a real one
 TEXT = (190, 168, 236)               # lavender riven text
+PURPLE = (187, 136, 232)             # drain number and polarity (warframemaker's card colour)
 LOCKED = (214, 211, 220)             # a locked stat's line is light grey (its icon keeps its colour)
 MATCHED = (120, 225, 95)             # drain and polarity when the polarity matches the slot
 ICONS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'icons')
@@ -27,6 +30,22 @@ BOTTOM = 350                         # baseline of the last text line
 def asset(name, scale=1.0):
     im = Image.open(os.path.join(ASSETS, name + '.png')).convert('RGBA')
     return im.resize((round(im.width * scale), round(im.height * scale)), Image.LANCZOS) if scale != 1 else im
+
+
+_BG = {}
+
+
+def background():
+    """RivenBackground.png at card size, its teal-slate panel tinted to the in-game near-black purple."""
+    if 'im' not in _BG:
+        bg = asset('RivenBackground').resize((W, H), Image.LANCZOS)
+        rgb, alpha = bg.convert('RGB'), bg.getchannel('A')
+        tint = Image.blend(rgb, Image.new('RGB', bg.size, PANEL), 0.55)
+        # Only the flat panel (dark, unsaturated pixels); the purple frame keeps its colours.
+        dark = rgb.convert('L').point(lambda v: 255 if v < 70 else 0)
+        rgb = Image.composite(tint, rgb, dark)
+        _BG['im'] = Image.merge('RGBA', (*rgb.split(), alpha))
+    return _BG['im'].copy()
 
 
 def font(weight, size):
@@ -82,9 +101,9 @@ def wrap(text, ft, width):
 
 
 def cycle_icon(d, x, y, s, colour):
-    """The circular arrow before the cycle count."""
-    d.arc((x, y, x + s, y + s), 40, 320, fill=colour, width=2)
-    d.polygon([(x + s * 0.85, y - 1), (x + s * 1.05, y + s * 0.35), (x + s * 0.6, y + s * 0.3)], fill=colour)
+    """The circular arrow before the cycle count: open at the upper left, the head there."""
+    d.arc((x, y, x + s, y + s), 230, 510, fill=colour, width=2)
+    d.polygon([(x - 1, y + s * 0.05), (x + s * 0.42, y + s * 0.02), (x + s * 0.08, y + s * 0.45)], fill=colour)
 
 
 def polarity(d, x, y, s, colour):
@@ -149,7 +168,8 @@ def padlock(d, x, y, s, colour):
 
 
 def card(spec, weight='Medium'):
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    # The background holds the text panel's texture and the bottom frame, at the very bottom.
+    im = background()
     im.paste(art((W - 24, 250)), (12, 22))
     title_ft, stat_ft = font(weight, 25), font(weight, 20)
 
@@ -162,8 +182,10 @@ def card(spec, weight='Medium'):
             lines.append((t, stat_ft, (s['locked'] and i == 0, s.get('icon') if i == 0 else None)))
     pitch = lambda ft: 28 if ft is title_ft else 23
     top = BOTTOM - sum(pitch(ft) for _, ft, _ in lines) + 6
+    # More text pushes the picture up: the background's panel shows from just above the title.
     panel_top = min(top - 10, 262)
-    im.paste(hex_panel((W - 24, H - panel_top - 40)), (12, panel_top))
+    panel = background().crop((0, panel_top, W, panel_top + 60))
+    im.alpha_composite(panel, (0, panel_top))
 
     text = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(text)
@@ -197,13 +219,19 @@ def card(spec, weight='Medium'):
     # Frame parts: top (with the riven symbol), bottom, side lights, the drain backer, the tab.
     top_f = asset('RivenFrameTop', W / 281)
     im.alpha_composite(top_f, (0, 0))
-    bot = asset('RivenFrameBottom', W / 292)
-    im.alpha_composite(bot, (0, H - bot.height))
+    # Rank pips on the line at the very bottom: one lit per rank, the rest dim.
+    line = asset('RankCompleteLine').resize((round(W * 0.85), 8))
+    im.alpha_composite(line, ((W - line.width) // 2, H - 15))
+    pip = asset('RankSlotActive').resize((12, 12))
+    dim = pip.copy()
+    dim.putalpha(dim.getchannel('A').point(lambda a: a * 0.3))
+    for i in range(8):
+        im.alpha_composite(pip if i < spec.get('rank', 8) else dim, (round(W / 2 - 8 * 14 / 2 + i * 14 + 1), H - 17))
     side = asset('RivenSideLight', 1.0).resize((10, 200))
     im.alpha_composite(side, (2, 140))
     im.alpha_composite(side.transpose(Image.FLIP_LEFT_RIGHT), (W - 12, 140))
     tab = asset('RivenLowerTab', 1.25)
-    tx, ty = (W - tab.width) // 2, H - 50
+    tx, ty = (W - tab.width) // 2, H - 47
     im.alpha_composite(tab, (tx, ty))
     d = ImageDraw.Draw(im)
     mr_ft = font('Bold', 18)
@@ -220,7 +248,7 @@ def card(spec, weight='Medium'):
     im.alpha_composite(backer, (bx, by))
     matched = spec.get('matched')
     drain = round((spec["drain"] + 0.01) / 2) if matched else spec["drain"]   # halved, rounding up (confirmed in game: 17 shows 9)
-    c = MATCHED if matched else (225, 215, 245)
+    c = MATCHED if matched else PURPLE
     # Digits then the polarity symbol, about as tall as the digits, right after them.
     dft = font('Bold', 20)
     tw = dft.getlength(f"{drain}")
