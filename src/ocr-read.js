@@ -83,7 +83,7 @@ export async function readScreenshot(blob) {
   // Second pass: the riven's name says which stats are positive (and recovers lost signs and
   // garbled names); impossible values are corrected to the reading that fits the range.
   // A partly hidden name can decode to too few positives: only trust it if it fits the stat count.
-  const decoded = findPositivesInHeader(parsed.header);
+  const decoded = findPositivesInHeader(parsed.header, stats.map(s => s.statId).filter(Boolean));
   const positives = nameFitsStats(decoded, stats.filter(s => s.statId).length) ? decoded : null;
   const cls = parsed.weapon?.cls ?? guessClass(stats);
   const refined = refineStats(stats, cls, positives, parsed.rank);

@@ -23,9 +23,10 @@ const SUFFIXES = STATS.filter(s => s.suffix).map(s => ({ id: s.id, text: lower(/
  * The positive stats a riven name spells, e.g. "Toxi-vexipha" → [toxin, electricity, heat].
  * Hyphens, spaces and case are ignored (OCR mangles them). Null if it doesn't decode to 2 or 3
  * distinct stats, or decodes more than one way.
- * @param {string} name @returns {string[] | null}
+ * @param {string} name @param {string[] | null} [present] stats read off the card, to choose between readings
+ * @returns {string[] | null}
  */
-export function decodeRivenName(name) {
+export function decodeRivenName(name, present = null) {
   const s = lower(name).replace(/[^a-z]/g, '');
   /** @type {string[][]} */
   const found = [];
@@ -41,20 +42,25 @@ export function decodeRivenName(name) {
     }
   };
   walk(0, []);
-  const keys = [...new Set(found.map(f => [...f].sort().join()))];
-  return keys.length === 1 ? found[0] : null;
+  // Some prefixes are shared ("Laci": Additional Combo Count Chance and Parry Angle); the stats
+  // read off the card pick between the readings.
+  const fits = present ? found.filter(f => f.every(id => present.includes(id))) : found;
+  const options = fits.length ? fits : found;
+  const keys = [...new Set(options.map(f => [...f].sort().join()))];
+  return keys.length === 1 ? options[0] : null;
 }
 
 /**
  * Looks for a riven name at the end of the card's header text (the title can wrap, and OCR may
  * split it or add junk): tries the last 3, 2, then 1 words, longest first.
- * @param {string[]} headerLines @returns {string[] | null}
+ * @param {string[]} headerLines @param {string[] | null} [present] stats read off the card
+ * @returns {string[] | null}
  */
-export function findPositivesInHeader(headerLines) {
+export function findPositivesInHeader(headerLines, present = null) {
   const words = headerLines.join(' ').split(/[\s\-–—]+/).map(w => w.replace(/[^a-z]/gi, '')).filter(w => w.length >= 2);
   for (let k = 3; k >= 1; k--) {
     if (words.length < k) continue;
-    const ids = decodeRivenName(words.slice(-k).join(''));
+    const ids = decodeRivenName(words.slice(-k).join(''), present);
     if (ids) return ids;
   }
   return null;

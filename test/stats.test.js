@@ -12,7 +12,9 @@ test('stat counts match the wiki (32 ordinary, 18 spliced)', () => {
 test('ids and prefix/suffix pairs are unique', () => {
   assert.equal(new Set(STATS.map(s => s.id)).size, STATS.length);
   const named = STATS.filter(s => s.prefix);
-  assert.equal(new Set(named.map(s => s.prefix)).size, named.length);
+  // Prefixes can be shared (seen in game: "Laci" is both Additional Combo Count Chance and Parry
+  // Angle); the prefix + suffix pair still tells every stat apart.
+  assert.equal(new Set(named.map(s => `${s.prefix}|${s.suffix}`)).size, named.length);
   assert.equal(new Set(named.map(s => s.suffix)).size, named.length);
 });
 

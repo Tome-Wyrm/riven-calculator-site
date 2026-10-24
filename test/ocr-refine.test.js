@@ -16,7 +16,8 @@ test('riven names decode to their positive stats (names from real screenshots)',
     'Arma-zetitio': ['magazine', 'recoil', 'electricity'],
     'toxi zetidra': ['toxin', 'recoil', 'fireRate'],   // OCR dropped the hyphen
   };
-  for (const [name, ids] of Object.entries(cases)) assert.deepEqual(decodeRivenName(name), ids, name);
+  // "Laci" is also Parry Angle's prefix, so Lacicak needs the card's stats to choose.
+  for (const [name, ids] of Object.entries(cases)) assert.deepEqual(decodeRivenName(name, name === 'Lacicak' ? ids : null), ids, name);
   assert.equal(decodeRivenName('Soma'), null);
   assert.equal(decodeRivenName('Visitiox'), null);
 });
@@ -86,4 +87,11 @@ test('a partly hidden name that decodes to too few positives is not trusted', ()
   assert.equal(nameFitsStats(['toxin', 'multishot'], 4), false);
   assert.equal(nameFitsStats(['ammoEfficiency', 'toxin', 'multishot'], 4), true);
   assert.equal(nameFitsStats(['toxin', 'multishot'], 3), true);
+});
+
+test('a prefix shared by two stats is settled by the stats on the card (Silva & Aegis Laciata)', () => {
+  // "Laci": Additional Combo Count Chance, and also Parry Angle (a spliced stat)
+  assert.equal(decodeRivenName('Laciata'), null);
+  assert.deepEqual(decodeRivenName('Laciata', ['damage', 'parryAngle', 'statusDuration']), ['parryAngle', 'damage']);
+  assert.deepEqual(decodeRivenName('Laciata', ['additionalCombo', 'damage']), ['additionalCombo', 'damage']);
 });

@@ -143,7 +143,7 @@ export const SPLICED = [
   spliced('ammoEfficiency',      'Ammo Efficiency',              'Parci', 'Pia',  RANGED(-0.005),      'pctNeg', [['magazine', 'reloadSpeed'], ['recoil', 'ammoMax']]),
   spliced('heavyWindup',         'Heavy Attack Wind Up Speed',   'Veri',  'Lus',  MELEE_ONLY(0.0133),  'pct',    [['heavyEfficiency', 'comboDuration']]),
   spliced('meleeDamageOnHeavy',  'Melee Damage On Heavy Attack', 'Robi',  'Ndo',  MELEE_ONLY(0.0133),  'pct',    [['heavyEfficiency', 'additionalCombo']]),
-  spliced('parryAngle',          'Parry Angle',                  'Defi',  'So',   MELEE_ONLY(0.009),   'pct',    [['fireRate', 'range']]),
+  spliced('parryAngle',          'Parry Angle',                  'Laci',  'So',   MELEE_ONLY(0.009),   'pct',    [['fireRate', 'range']]),
   spliced('reloadWhileHolstered','Reload While Holstered',       'Auxi',  'Rro',  [0.01, 0.01, 0.01, _, _], 'pct', [['ammoMax', 'reloadSpeed'], ['ammoMax', 'magazine']]),
   spliced('slamDamage',          'Slam Attack Damage',           'Proci', 'Lam',  MELEE_ONLY(0.0133),  'pct',    [['damage', 'fireRate']]),
   spliced('statusDamage',        'Status Damage',                'Plaga', 'Mna',  ALL5(0.01),          'pct',    [['damage', 'statusChance']]),
