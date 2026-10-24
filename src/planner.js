@@ -273,13 +273,13 @@ export function planBuild(t, current = null) {
   // Cycle-count quantiles: step the probability distribution forward under the policy.
   const dist = new Float64Array(best.keys.length);
   for (const [k, p] of start(best)) dist[best.index.get(k)] += p;
-  const quantile = { median: 0, likely: 0 };
+  const quantile = { median: -1, likely: 0 };
   let done = 0, cycles = 0, cur = dist;
   const doneIdx = best.keys.map((/** @type {string} */ k) => best.isDone(best.states.get(k)));
   const absorb = () => cur.reduce((s, p, i) => s + (doneIdx[i] ? p : 0), 0);
-  done = absorb();
-  while (cycles < 200000 && done < 0.9) {
-    // Splices are free: apply them without counting a cycle.
+  // Splices are free: apply them without counting a cycle (a riven that can splice into the
+  // target right away needs 0 cycles).
+  const splice = () => {
     for (let pass = 0; pass < 2; pass++) {
       const next = new Float64Array(cur.length);
       cur.forEach((p, i) => {
@@ -290,6 +290,11 @@ export function planBuild(t, current = null) {
       });
       cur = next;
     }
+  };
+  splice();
+  done = absorb();
+  if (done >= 0.5) quantile.median = 0;
+  while (cycles < 200000 && done < 0.9) {
     const next = new Float64Array(cur.length);
     cur.forEach((p, i) => {
       if (!p) return;
@@ -299,8 +304,9 @@ export function planBuild(t, current = null) {
     });
     cur = next;
     cycles++;
+    splice();
     done = absorb();
-    if (!quantile.median && done >= 0.5) quantile.median = cycles;
+    if (quantile.median < 0 && done >= 0.5) quantile.median = cycles;
   }
   quantile.likely = cycles;
   const kuvaPerCycle = best.cyclesExp > 0 ? best.kuva / best.cyclesExp : FLAT_COST;

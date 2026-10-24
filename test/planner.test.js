@@ -39,3 +39,11 @@ test('impossible targets are refused with a reason', () => {
   assert.throws(() => planBuild({ ...VIRAL, shape: '++-' }), /only 2 positives/);
   assert.throws(() => planBuild({ ...VIRAL, negative: 'cold' }), /can't roll as a negative/);
 });
+
+test('a riven that already has both parents splices straight into the target: 0 cycles', () => {
+  const plan = planBuild({ cls: 'shotgun', ipsCode: '?y?', positives: ['critDamage'], spliced: 'viral', negative: 'recoil', shape: '+++-' },
+    { stage: 'pre', have: ['critDamage', 'cold', 'toxin', '-recoil'], shape: '+++-' });
+  assert.equal(plan.expectedCycles, 0);
+  assert.equal(plan.median.cycles, 0);
+  assert.equal(plan.likely.cycles, 0);
+});

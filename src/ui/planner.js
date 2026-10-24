@@ -24,10 +24,35 @@ const state = {
   negative: NONE,
   shape: /** @type {Shape} */ ('+++-'),
   from: /** @type {'fresh' | 'mine'} */ ('fresh'),
-  stage: /** @type {'pre' | 'post'} */ ('pre'),
-  have: /** @type {string[]} */ ([]),
-  myShape: /** @type {Shape} */ ('+++-'),
+  // The riven you have now: its positives (spliced ones included) and its negative.
+  myPos: [NONE, NONE, NONE],
+  myNeg: NONE,
 };
+
+/**
+ * The riven you have, as the planner needs it: its shape (null if it isn't a real riven), whether
+ * the target's spliced stat is already on it, and every stat on it ("-id" for the negative).
+ * @returns {{shape: Shape | null, stage: 'pre' | 'post', have: string[]}}
+ */
+function current() {
+  const pos = state.myPos.filter(Boolean);
+  const shape = pos.length >= 2 && new Set(pos).size === pos.length
+    ? /** @type {Shape} */ ('+'.repeat(pos.length) + (state.myNeg ? '-' : '')) : null;
+  return {
+    shape,
+    stage: state.spliced && pos.includes(state.spliced) ? 'post' : 'pre',
+    have: [...pos, ...(state.myNeg ? [`-${state.myNeg}`] : [])],
+  };
+}
+
+/** Splices the riven you have could do right now: "Cold + Toxin → Viral". @param {string[]} positive */
+function splicesNow(positive) {
+  const pos = state.myPos.filter(Boolean);
+  if (pos.some(id => STAT_BY_ID[id].spliced)) return [];     // one splice per riven
+  return SPLICED.filter(s => s.b[state.cls] !== undefined).flatMap(s => /** @type {string[][]} */ (s.from)
+    .filter(r => r.every(id => pos.includes(id) && positive.includes(id)))
+    .map(r => `${r.map(name).join(' + ')} → ${name(s.id)}`));
+}
 
 const kuva = (/** @type {number} */ n) => `${Math.round(n).toLocaleString('en-US')} Kuva`;
 const cyc = (/** @type {number} */ n) => `${n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString('en-US')} cycles`;
@@ -75,7 +100,7 @@ function controls() {
     el('div', { class: 'controls' }, [
       select('Negative', negOptions, state.negative, v => set({ negative: v })),
       select('Shape', (shapes.length ? shapes : SHAPE_ORDER).map(s => /** @type {[string, string]} */ ([s, s])), state.shape,
-        v => set({ shape: /** @type {Shape} */ (v), myShape: /** @type {Shape} */ (v) })),
+        v => set({ shape: /** @type {Shape} */ (v) })),
     ]),
     el('div', { class: 'controls' }, [
       segmented('Start from', ['fresh', 'mine'], state.from, v => set({ from: /** @type {any} */ (v) }),
@@ -84,23 +109,21 @@ function controls() {
   ];
 
   if (state.from === 'mine') {
-    // What the riven has now, among the traits that matter.
-    const parents = state.recipe ? state.recipe.split('+') : recipes[0] ?? [];
-    const tracked = state.stage === 'pre' && state.spliced
-      ? [...new Set([...parents, ...state.want.filter(Boolean)])]
-      : state.want.filter(Boolean);
-    const opts = [...tracked, ...(state.negative ? [`-${state.negative}`] : [])];
-    state.have = state.have.filter(id => opts.includes(id));
+    // The riven you have now, stat by stat (spliced stats included, for a riven that already has one).
+    const myPosOptions = /** @type {[string, string][]} */ ([...posOptions, ...splicedList.map(s => [s.id, name(s.id)])]);
+    state.myPos = state.myPos.map(id => (myPosOptions.some(([v]) => v === id) ? id : NONE));
+    if (!negative.includes(state.myNeg)) state.myNeg = NONE;
+    rows.push(el('h3', { class: 'plan-stage' }, ['Your riven now']));
     rows.push(el('div', { class: 'controls' }, [
-      ...(state.spliced ? [segmented('Stage', ['pre', 'post'], state.stage, v => set({ stage: /** @type {any} */ (v), have: [] }),
-        v => (v === 'pre' ? 'Not spliced yet' : `Already has ${name(state.spliced)}`))] : []),
-      select('Its shape', SHAPE_ORDER.map(s => /** @type {[string, string]} */ ([s, s])), state.myShape, v => set({ myShape: /** @type {Shape} */ (v) })),
+      ...state.myPos.map((id, i) => select(`Its positive ${i + 1}`, myPosOptions, id, v => {
+        const myPos = [...state.myPos];
+        myPos[i] = v;
+        set({ myPos });
+      })),
+      select('Its negative', [[NONE, 'None'], ...negOptions.slice(1)], state.myNeg, v => set({ myNeg: v })),
     ]));
-    rows.push(el('div', { class: 'checks' }, [el('span', { class: 'field' }, ['It has:']), ...opts.map(id => {
-      const box = /** @type {HTMLInputElement} */ (el('input', { type: 'checkbox', ...(state.have.includes(id) ? { checked: '' } : {}) }));
-      box.addEventListener('change', () => set({ have: box.checked ? [...state.have, id] : state.have.filter(x => x !== id) }));
-      return el('label', { class: 'check' }, [box, name(id)]);
-    })]));
+    const now = splicesNow(positive);
+    if (now.length) rows.push(el('p', { class: 'note next' }, [`It can splice now: ${now.join('; ')}.`]));
   }
   return el('div', {}, rows);
 }
@@ -118,6 +141,8 @@ function results() {
   if (new Set(want).size !== want.length) problems.push('The same positive is picked twice.');
   if (!want.length && !state.spliced) problems.push('Pick at least one stat you want.');
   if (!validShapes().length) problems.push('No riven shape can hold all of that.');
+  const mineNow = state.from === 'mine' ? current() : null;
+  if (mineNow && !mineNow.shape) problems.push('Enter your riven: at least 2 different positives.');
   if (problems.length) return el('div', {}, problems.map(p => el('p', { class: 'note warn' }, [p])));
 
   let plan;
@@ -125,19 +150,26 @@ function results() {
     plan = planBuild({
       cls: state.cls, ipsCode: ipsOf(state.weapon), positives: want, spliced: state.spliced || null,
       parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape: state.shape,
-    }, state.from === 'mine' ? { stage: state.spliced ? state.stage : 'post', have: state.have, shape: state.myShape } : null);
+    }, mineNow && mineNow.shape ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape } : null);
   } catch (e) {
     return el('p', { class: 'note warn' }, [e instanceof Error ? e.message : String(e)]);
   }
 
   const parents = plan.parents ?? [];
-  const mine = state.from === 'mine'
-    ? plan.steps.find(s => s.stage === (state.spliced ? state.stage : 'post') && s.shape === state.myShape
-      && [...s.have].sort().join() === [...state.have].sort().join())
-    : null;
+  // The table row your riven is on: the stats it has among those the plan tracks at its stage.
+  let mine = null;
+  if (mineNow?.shape) {
+    const stage = state.spliced ? mineNow.stage : 'post';
+    const steps = plan.steps.filter(s => s.stage === stage && s.shape === mineNow.shape);
+    const tracked = new Set(steps.flatMap(s => s.have));
+    const key = mineNow.have.filter(id => tracked.has(id)).sort().join();
+    mine = steps.find(s => [...s.have].sort().join() === key) ?? null;
+  }
   const out = [
     el('p', { class: 'summary' }, [
-      `${state.from === 'mine' ? 'From your riven' : 'From a fresh riven'}: about ${kuva(plan.expectedKuva)} (${cyc(plan.expectedCycles)}) on average.`]),
+      plan.expectedCycles < 0.005
+        ? 'From your riven: no Kuva needed.'
+        : `${state.from === 'mine' ? 'From your riven' : 'From a fresh riven'}: about ${kuva(plan.expectedKuva)} (${cyc(plan.expectedCycles)}) on average.`]),
     el('p', { class: 'note' }, [
       `Half of runs finish within ${cyc(plan.median.cycles)} (about ${kuva(plan.median.kuva)}); `
       + `9 in 10 within ${cyc(plan.likely.cycles)} (about ${kuva(plan.likely.kuva)}).`
@@ -146,7 +178,7 @@ function results() {
   if (state.from === 'mine') {
     out.push(el('p', { class: 'note next' }, [mine
       ? `Your next move: ${actionText(mine.action, parents)}.`
-      : `Your riven isn't the ${state.shape} shape the target needs${state.spliced && state.stage === 'post' ? ', and a spliced riven\'s shape can\'t change' : ''}: cycle it unlocked until it is.`]));
+      : `Your riven isn't the ${state.shape} shape the target needs${state.spliced && mineNow?.stage === 'post' ? ', and a spliced riven\'s shape can\'t change' : ''}: cycle it unlocked until it is.`]));
   }
 
   /** @param {'pre' | 'post'} stage @param {string} title */
@@ -189,7 +221,7 @@ function renderResults() {
   saveState('p', {
     weapon: state.weapon, cls: state.cls, spliced: state.spliced, recipe: state.recipe,
     want: state.want.filter(Boolean).join(','), neg: state.negative, shape: state.shape,
-    ...(state.from === 'mine' ? { from: 'mine', stage: state.stage, have: state.have.join(','), my: state.myShape } : {}),
+    ...(state.from === 'mine' ? { from: 'mine', mp: state.myPos.filter(Boolean).join(','), mn: state.myNeg } : {}),
   });
 }
 
@@ -211,9 +243,8 @@ function restore() {
     neg: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
     shape: oneOf(SHAPE_ORDER),
     from: oneOf(/** @type {const} */ (['fresh', 'mine'])),
-    stage: oneOf(/** @type {const} */ (['pre', 'post'])),
-    have: v => v.split(',').filter(Boolean),
-    my: oneOf(SHAPE_ORDER),
+    mp: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
+    mn: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
   });
   if (saved.weapon !== undefined) {
     state.weapon = saved.weapon;
@@ -225,9 +256,8 @@ function restore() {
   if (saved.neg !== undefined) state.negative = saved.neg;
   if (saved.shape) state.shape = saved.shape;
   state.from = saved.from ?? 'fresh';
-  if (saved.stage) state.stage = saved.stage;
-  if (saved.have) state.have = saved.have;
-  if (saved.my) state.myShape = saved.my;
+  if (saved.mp) state.myPos = [...saved.mp, NONE, NONE, NONE].slice(0, 3);
+  if (saved.mn !== undefined) state.myNeg = saved.mn;
 }
 
 /** @param {HTMLElement} container */
@@ -238,18 +268,16 @@ export function mountPlanner(container) {
 }
 
 /**
- * Starts the plan from a riven the user has (from the grader): its weapon, shape and which of the
- * target's stats it already has. The target itself is kept.
+ * Starts the plan from a riven the user has (from the grader): its weapon and stats. The target
+ * itself is kept.
  * @param {{weapon: string, cls: WeaponClass, positives: string[], negative: string | null, shape: Shape}} riven
  */
 export function loadIntoPlanner(riven) {
   if (riven.weapon || riven.cls !== state.cls) { state.weapon = riven.weapon; state.cls = riven.cls; }
-  const spliced = state.spliced && riven.positives.includes(state.spliced);
   Object.assign(state, {
     from: 'mine',
-    stage: spliced ? 'post' : 'pre',
-    myShape: riven.shape,
-    have: [...riven.positives, ...(riven.negative ? [`-${riven.negative}`] : [])],
+    myPos: [...riven.positives, NONE, NONE, NONE].slice(0, 3),
+    myNeg: riven.negative ?? NONE,
   });
   render();
   const details = /** @type {HTMLDetailsElement | null} */ (root.closest('details'));
