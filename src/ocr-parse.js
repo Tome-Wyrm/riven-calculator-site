@@ -84,15 +84,44 @@ const VALUE_LINE = /^.{0,5}?([+\-−–—‒x×]\s*\d+(?:[.,]\d+)?)\s*(%|s|m)?\
 /** A percentage stat whose sign was lost (e.g. "102.7% Finisher Damage", or a lock icon read as digits). */
 const UNSIGNED_LINE = /^.{0,5}?(\d+(?:[.,]\d+)?)\s*%\s*([a-z].*)$/i;
 
-/** Common OCR slips inside numbers: "XO. 58" → "X0.58". @param {string} l */
-const fixDigits = l => l.replace(/([x×+\-−–—‒])\s*[oO](?=\s*[.,\d])/gi, '$10').replace(/(\d)\s*([.,])\s*(\d)/g, '$1$2$3');
+/** Common OCR slips inside numbers: "XO. 58" → "X0.58", "+99 4%" → "+99.4%". @param {string} l */
+const fixDigits = l => l.replace(/(\d) (\d)\s*%/, '$1.$2%').replace(/([x×+\-−–—‒])\s*[oO](?=\s*[.,\d])/gi, '$10').replace(/(\d)\s*([.,])\s*(\d)/g, '$1$2$3');
+
+const byLength = [...WEAPONS].sort((a, b) => b[0].length - a[0].length);
 
 /**
  * The weapon named at the start of the riven's title, longest match first ("Vinquibus (melee)"
- * before "Vinquibus"). @param {string[]} lines
+ * before "Vinquibus"). Failing an exact match, the closest name to the start of a line (lines
+ * joined, as long titles wrap: "Phant" / "Asma"), allowing about one misread letter in three
+ * ("Phiitaem" → Phantasma), among weapons whose class the read values fit.
+ * @param {string[]} lines @param {{statId: string | null, value: string}[]} stats
  */
-function findWeapon(lines) {
-  const byLength = [...WEAPONS].sort((a, b) => b[0].length - a[0].length);
+function findWeapon(lines, stats) {
+  const exact = findWeaponExact(lines) ?? findWeaponExact([lines.join('')]);
+  if (exact) return exact;
+  // Stray short tokens are dropped from the start of the line the name starts on, but not from
+  // the lines after it: there a short token may be the end of the name ("Phiitaem" / "a Parci-").
+  const fitting = CLASSES.filter(c => possibleRanks(stats, c).length);
+  let best = null, bestScore = Infinity;
+  for (let i = 0; i < lines.length; i++) {
+    const first = norm(lines[i].replace(/^(\S{1,2}\s+)+/, ''));
+    if (first.length < 3) continue;
+    const text = first + lines.slice(i + 1).map(norm).join('');
+    for (const [name, cls] of byLength) {
+      const key = norm(name);
+      // Short names would match any word with one slip ("acritor" → Acrid): exact matches only.
+      if (key.length < 6 || (fitting.length && !fitting.includes(cls))) continue;
+      // The read may be a letter or two shorter or longer than the name.
+      const score = Math.min(...[-2, -1, 0, 1, 2].map(d => distance(text.slice(0, key.length + d), key))) / key.length;
+      // About one slip in three letters for long names, one in four for short ones ("titron" ≠ Detron).
+      if (score <= (key.length >= 8 ? 0.34 : 0.25) && score < bestScore) { best = { name, cls }; bestScore = score; }
+    }
+  }
+  return best;
+}
+
+/** @param {string[]} lines */
+function findWeaponExact(lines) {
   for (const line of lines) {
     // Try the line as read, and without stray 1–2 character tokens OCR puts before the name.
     // (Spaces don't matter either way: "L acera" still normalises to "lacera".)
@@ -147,7 +176,7 @@ export function parseRivenText(text) {
   }
   for (const s of stats) s.statId = matchStat(s.text);
 
-  return { weapon: findWeapon(header.length ? header : lines), rank, stats: stats.slice(0, 4), header };
+  return { weapon: findWeapon(header.length ? header : lines, stats.slice(0, 4)), rank, stats: stats.slice(0, 4), header };
 }
 
 /**

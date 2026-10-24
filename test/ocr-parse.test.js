@@ -77,3 +77,14 @@ test('matchStat rejects text that is not a stat', () => {
   assert.equal(matchStat('Damage to Grineer'), 'grineer');
   assert.equal(matchStat('Attack Speed'), 'fireRate');
 });
+
+test('garbled or wrapped weapon names are matched fuzzily, among classes the values fit (Phantasma)', () => {
+  const stats = '+74.9% Toxin\n+99 4% Multishot\n+42.6% Ammo Efficiency\n-85.1% Puncture\nR15';
+  const a = parseRivenText(`TA 4\nPhiitaem\na Parci-\ntoxican\n${stats}`);
+  assert.equal(a.weapon?.name, 'Phantasma');
+  assert.equal(a.stats[1].value, '+99.4');
+  assert.equal(parseRivenText(`~\nPhant\nAsma\nai\ntoxican ©\n${stats}`).weapon?.name, 'Phantasma');
+  // "Arca" read as "pu" is too far gone: no weapon rather than a wrong one (Acrid from "acritor", Detron from "titron").
+  assert.equal(parseRivenText('pu Titr\non Plaga-\nacritor\n+108.6% Critical Damage\n+109.8% Status Damage\n+2.1 Range\nMR12').weapon, null);
+  assert.equal(parseRivenText('Zzqxw\n+108.6% Critical Damage\nMR12').weapon, null);
+});
