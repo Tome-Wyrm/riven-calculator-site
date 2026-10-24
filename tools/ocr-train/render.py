@@ -17,6 +17,9 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 
 W, H = 300, 424                      # the card itself, in the proportions of a real one
 TEXT = (190, 168, 236)               # lavender riven text
+LOCKED = (176, 172, 186)             # a locked stat's line is grey
+MATCHED = (120, 225, 95)             # drain and polarity when the polarity matches the slot
+ICONS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'icons')
 PANEL = (24, 22, 30)
 BOTTOM = 350                         # baseline of the last text line
 
@@ -104,7 +107,21 @@ ICON_COLOURS = {
 }
 
 
-def damage_icon(d, kind, x, y, s):
+def paste_icon(im, name, x, y, s, colour=None):
+    """Pastes one of the wiki's icons (assets/icons), recoloured if asked. False if it's missing."""
+    path = os.path.join(ICONS, name + '.png')
+    if not os.path.exists(path):
+        return False
+    icon = Image.open(path).convert('RGBA').resize((s, s), Image.LANCZOS)
+    if colour:
+        icon = Image.merge('RGBA', (*(Image.new('L', icon.size, c) for c in colour), icon.getchannel('A')))
+    im.alpha_composite(icon, (round(x), round(y)))
+    return True
+
+
+def damage_icon(d, kind, x, y, s, im=None):
+    if im is not None and paste_icon(im, kind, x, y - 1, s + 2):
+        return
     c = ICON_COLOURS[kind]
     if kind in ('heat', 'blast'):
         d.polygon([(x + s / 2, y), (x + s, y + s * 0.7), (x + s / 2, y + s), (x, y + s * 0.7)], fill=c)
@@ -148,26 +165,31 @@ def card(spec, weight='Medium'):
     text = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(text)
     y = top
+    icons_later = []                                     # drawn on the image after the text layer
     for t, ft, (locked, icon) in lines:
         y += pitch(ft)
+        colour = LOCKED if locked else TEXT
         # The icon sits between the value and the name: "+101% [flame] Heat".
         value, _, rest = t.partition(' ') if icon else (t, '', '')
         tw = ft.getlength(t) + (16 if locked else 0) + (18 if icon else 0)
         x = (W - tw) / 2
         if locked:
-            padlock(d, x, y - 15, 13, TEXT)
+            padlock(d, x, y - 15, 13, colour)
             x += 16
         if icon:
-            d.text((x, y), value + ' ', font=ft, fill=TEXT, anchor='ls')
+            d.text((x, y), value + ' ', font=ft, fill=colour, anchor='ls')
             x += ft.getlength(value + ' ')
-            damage_icon(d, icon, x, y - 15, 15)
+            icons_later.append((icon, x, y - 15))
             x += 18
-            d.text((x, y), rest, font=ft, fill=TEXT, anchor='ls')
+            d.text((x, y), rest, font=ft, fill=colour, anchor='ls')
         else:
-            d.text((x, y), t, font=ft, fill=TEXT, anchor='ls')
+            d.text((x, y), t, font=ft, fill=colour, anchor='ls')
     glow = text.filter(ImageFilter.GaussianBlur(2))
     im.alpha_composite(glow)
     im.alpha_composite(text)
+    td = ImageDraw.Draw(im)
+    for icon, x, y in icons_later:
+        damage_icon(td, icon, x, y, 15, im)
 
     # Frame parts: top (with the riven symbol), bottom, side lights, the drain backer, the tab.
     top_f = asset('RivenFrameTop', W / 281)
@@ -193,8 +215,12 @@ def card(spec, weight='Medium'):
     backer = asset('RivenTopRightBacker', 1.35)
     bx, by = W - backer.width - 14, 30
     im.alpha_composite(backer, (bx, by))
-    d.text((bx + 10, by + backer.height / 2), f"{spec['drain']}", font=font('Bold', 20), fill=(225, 215, 245), anchor='lm')
-    polarity(d, bx + backer.width - 18, by + 8, 11, (225, 215, 245))
+    matched = spec.get('matched')
+    drain = round((spec['drain'] + 0.01) / 2) if matched else spec['drain']   # halved, rounding up
+    c = MATCHED if matched else (225, 215, 245)
+    d.text((bx + 10, by + backer.height / 2), f"{drain}", font=font('Bold', 20), fill=c, anchor='lm')
+    if not paste_icon(im, 'pol-' + spec.get('polarity', 'madurai'), bx + backer.width - 22, by + 4, 17, c):
+        polarity(d, bx + backer.width - 18, by + 8, 11, c)
     return im
 
 

@@ -28,6 +28,7 @@ for (const [file, a] of Object.entries(expected)) {
   console.log(JSON.stringify({
     file, weapon, cls, rank: a.rank ?? 8,
     title: `${weapon.replace(/\s*\((Zaw|Kitgun)\)$/, '')} ${named.length ? rivenName(named.slice(0, 3)) : 'Visitio'}`,
-    drain: 10 + (a.rank ?? 8), mr: 16, cycles: 0, stats,
+    drain: 10 + (a.rank ?? 8), polarity: ['madurai', 'naramon', 'vazarin'][file.length % 3], matched: false,
+    mr: 16, cycles: 0, stats,
   }));
 }

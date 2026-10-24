@@ -85,6 +85,8 @@ for (let n = 0; n < count; n++) {
   out.push({
     // "(Zaw)" and "(Kitgun)" are our labels; the game does show "Vinquibus (melee)".
     weapon, cls, shape, rank, title: `${weapon.replace(/\s*\((Zaw|Kitgun)\)$/, '')} ${name}`,
+    // Polarity, and whether it matches the slot: then the drain shows halved, in green.
+    polarity: pick(['madurai', 'naramon', 'vazarin']), matched: rand() < 0.25,
     drain: 10 + rank, mr: 8 + Math.floor(rand() * 9), cycles: rand() < 0.2 ? 0 : 1 + Math.floor(rand() * 120),
     stats,
   });
