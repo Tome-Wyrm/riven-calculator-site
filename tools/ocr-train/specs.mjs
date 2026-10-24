@@ -26,6 +26,10 @@ const shuffle = (/** @type {any[]} */ a) => { for (let i = a.length - 1; i > 0; 
 /** A number as the game shows it: up to `dp` decimals, trailing zeros dropped (60%, x0.6). */
 const num = (/** @type {number} */ x, dp = 1) => String(Number(Math.abs(x).toFixed(dp)));
 
+// Stats with a damage-type icon before their name.
+export const ICONS = new Set(['heat', 'cold', 'toxin', 'electricity', 'corrosive', 'viral', 'radiation', 'magnetic',
+  'gas', 'blast', 'impact', 'puncture', 'slash']);
+
 // Where the game's wording differs from our stat names.
 const GAME_NAMES = {
   weakpointDamage: 'Weak Point Damage',
@@ -34,10 +38,10 @@ const GAME_NAMES = {
 };
 
 /** One stat line as the game shows it. */
-function line(stat, cls, isBow, v) {
+export function line(stat, cls, isBow, v) {
   const name = GAME_NAMES[stat.id] ?? ((cls === 'melee' && stat.meleeName) || stat.name);
   const extra = stat.id === 'critChance' && cls === 'melee' ? ' (x2 for Heavy Attacks)'
-    : stat.id === 'fireRate' && isBow ? ' (x2 for Bows)' : '';
+    : stat.id === 'fireRate' && cls !== 'melee' ? ' (x2 for Bows)' : '';   // on every gun, seen in game
   if (stat.unit === 'mult') return `x${num(v, 2)} ${name}${extra}`;
   const sign = v < 0 ? '-' : '+';
   const unit = stat.unit === 'sec' ? 's' : stat.unit === 'pct' || stat.unit === 'pctNeg' ? '%' : '';
@@ -45,7 +49,7 @@ function line(stat, cls, isBow, v) {
 }
 
 /** The riven's name from its positives: 1–2 prefixes then the last one's suffix ("Toxi-vexipha"). */
-function rivenName(ids) {
+export function rivenName(ids) {
   const st = ids.map(id => STAT_BY_ID[id]);
   const suffix = st[st.length - 1].suffix.toLowerCase();
   // One named positive (the rest spliced): its own prefix and suffix.
@@ -54,6 +58,7 @@ function rivenName(ids) {
   return word[0].toUpperCase() + word.slice(1);
 }
 
+function main() {
 const out = [];
 const rivenable = WEAPONS.filter(w => w[1]);
 for (let n = 0; n < count; n++) {
@@ -70,7 +75,7 @@ for (let n = 0; n < count; n++) {
   const stats = [...pos.map(id => ({ id, sign: '+' })), ...(neg ? [{ id: neg, sign: '-' }] : [])].map(s => {
     const stat = STAT_BY_ID[s.id];
     const v = displayValue(stat, cls, shape, s.sign, rand(), rank);
-    return { statId: s.id, sign: s.sign, text: line(stat, cls, isBow, v), locked: rand() < 0.12 };
+    return { statId: s.id, sign: s.sign, text: line(stat, cls, isBow, v), icon: ICONS.has(s.id) ? s.id : null, locked: rand() < 0.12 };
   });
   // Name: the positives in a random order; a spliced stat's name parts aren't all known, so a
   // riven with one gets a name from the ordinary positives only (as if the name was rolled
@@ -85,3 +90,6 @@ for (let n = 0; n < count; n++) {
   });
 }
 for (const o of out) console.log(JSON.stringify(o));
+}
+
+if (import.meta.main) main();

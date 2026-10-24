@@ -95,6 +95,33 @@ def polarity(d, x, y, s, colour):
         d.line((x, y + s // 2, x + s, y + s // 2), fill=colour, width=2); d.line((x + s - 4, y + s // 2 - 4, x + s, y + s // 2), fill=colour, width=2)
 
 
+# Damage-type icons: rough stand-ins in each type's colour and shape (enough for OCR to see a
+# coloured glyph between the value and the name, as on real cards).
+ICON_COLOURS = {
+    'heat': (240, 130, 40), 'cold': (120, 190, 240), 'toxin': (90, 200, 60), 'electricity': (190, 150, 255),
+    'corrosive': (170, 200, 50), 'viral': (60, 200, 170), 'radiation': (230, 210, 60), 'magnetic': (80, 120, 230),
+    'gas': (120, 200, 120), 'blast': (240, 160, 60), 'impact': (90, 200, 210), 'puncture': (230, 200, 90), 'slash': (220, 70, 60),
+}
+
+
+def damage_icon(d, kind, x, y, s):
+    c = ICON_COLOURS[kind]
+    if kind in ('heat', 'blast'):
+        d.polygon([(x + s / 2, y), (x + s, y + s * 0.7), (x + s / 2, y + s), (x, y + s * 0.7)], fill=c)
+    elif kind == 'cold':
+        for a, b in [((x, y + s / 2), (x + s, y + s / 2)), ((x + s * 0.2, y + s * 0.15), (x + s * 0.8, y + s * 0.85)), ((x + s * 0.8, y + s * 0.15), (x + s * 0.2, y + s * 0.85))]:
+            d.line((a, b), fill=c, width=2)
+    elif kind == 'electricity':
+        d.polygon([(x + s * 0.6, y), (x + s * 0.2, y + s * 0.55), (x + s * 0.5, y + s * 0.55), (x + s * 0.35, y + s), (x + s * 0.8, y + s * 0.4), (x + s * 0.5, y + s * 0.4)], fill=c)
+    elif kind in ('impact', 'puncture', 'slash'):
+        d.line((x, y + s, x + s, y), fill=c, width=3)
+        d.polygon([(x + s * 0.55, y), (x + s, y), (x + s, y + s * 0.45)], fill=c)
+    else:
+        d.ellipse((x, y, x + s, y + s), fill=c)
+        d.ellipse((x + s * 0.25, y + s * 0.3, x + s * 0.45, y + s * 0.5), fill=PANEL)
+        d.ellipse((x + s * 0.55, y + s * 0.3, x + s * 0.75, y + s * 0.5), fill=PANEL)
+
+
 def padlock(d, x, y, s, colour):
     """A small padlock, drawn before a locked stat."""
     d.rounded_rectangle((x, y + s * 0.45, x + s * 0.8, y + s), radius=1, fill=colour)
@@ -109,10 +136,10 @@ def card(spec, weight='Medium'):
     # Text, laid out bottom-up from just above the tab, as the game does.
     lines = []                                            # (text, font, locked)
     for t in wrap(spec['title'], title_ft, W - 72):
-        lines.append((t, title_ft, False))
+        lines.append((t, title_ft, (False, None)))
     for s in spec['stats']:
         for i, t in enumerate(wrap(s['text'], stat_ft, W - 72)):
-            lines.append((t, stat_ft, s['locked'] and i == 0))
+            lines.append((t, stat_ft, (s['locked'] and i == 0, s.get('icon') if i == 0 else None)))
     pitch = lambda ft: 28 if ft is title_ft else 23
     top = BOTTOM - sum(pitch(ft) for _, ft, _ in lines) + 6
     panel_top = min(top - 10, 262)
@@ -121,14 +148,23 @@ def card(spec, weight='Medium'):
     text = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(text)
     y = top
-    for t, ft, locked in lines:
+    for t, ft, (locked, icon) in lines:
         y += pitch(ft)
-        tw = ft.getlength(t) + (16 if locked else 0)
+        # The icon sits between the value and the name: "+101% [flame] Heat".
+        value, _, rest = t.partition(' ') if icon else (t, '', '')
+        tw = ft.getlength(t) + (16 if locked else 0) + (18 if icon else 0)
         x = (W - tw) / 2
         if locked:
             padlock(d, x, y - 15, 13, TEXT)
             x += 16
-        d.text((x, y), t, font=ft, fill=TEXT, anchor='ls')
+        if icon:
+            d.text((x, y), value + ' ', font=ft, fill=TEXT, anchor='ls')
+            x += ft.getlength(value + ' ')
+            damage_icon(d, icon, x, y - 15, 15)
+            x += 18
+            d.text((x, y), rest, font=ft, fill=TEXT, anchor='ls')
+        else:
+            d.text((x, y), t, font=ft, fill=TEXT, anchor='ls')
     glow = text.filter(ImageFilter.GaussianBlur(2))
     im.alpha_composite(glow)
     im.alpha_composite(text)
@@ -178,7 +214,7 @@ if __name__ == '__main__':
     with open(src) as f:
         for n, raw in enumerate(f):
             spec = json.loads(raw)
-            scene(card(spec, random.choice(['Regular', 'Medium', 'Medium', 'Bold']))).save(os.path.join(out, f'{n}.png'))
+            scene(card(spec, random.choice(['Regular', 'Regular', 'Regular', 'Medium']))).save(os.path.join(out, f'{n}.png'))
             with open(os.path.join(out, f'{n}.json'), 'w') as j:
                 json.dump(spec, j)
     print('rendered', n + 1)
