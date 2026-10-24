@@ -261,13 +261,18 @@ Answer "which traits do I splice, and how good must they be, to get spliced stat
 - [ ] Odds of a target spliced value from fresh parents (max-of-two), reusing `probability(…, spliced)`
 
 ### Phase 10 — Stat-pool odds and Kuva cost
-- [ ] Trait pool per class (and per weapon once IPS exists): which stats can appear as buffs vs curses
-- [ ] Odds that one cycle gives a wanted set of stats (draws without replacement, buffs then curse).
-      Unknowns to research: whether trait picks are uniform, and the shape distribution when nothing is locked.
-- [ ] Kuva cost: the cycle-cost table (900 → 3,500 cap; doubled with a locked trait) starting from the
-      riven's current `rerolls`, so the expected cost runs from where you are now
-- [ ] Locked-trait mode: shape fixed, one stat kept, odds for the remaining slots
-- [ ] Expected cycles and Kuva to hit a goal = combine with the roll-quality odds from the calculator
+Built as the **Cycle planner** panel (`src/cycle.js`, `src/ui/cycle.js`, URL prefix `c.`).
+- [x] Trait pools per class and weapon (`n` IPS stats excluded, `?` kept); matches the wiki's counts
+      (24 rifle positives, 19 possible negatives, 24C3 = 2,024 three-positive draws)
+- [x] Chance one cycle gives the wanted positives, with the negative "don't care", "none", or
+      "one of these"; exact enumeration over every draw
+- [x] Kuva: the wiki's cycle table (900 … 3,500 from the 10th), from the riven's current cycle
+      count, doubled with a lock; expected cycles and Kuva, plus the 50% / 90% marks
+- [x] Locked-trait mode: shape fixed, the locked stat kept
+- **Assumption, not verified:** no published odds exist. It uses the community model (each shape
+  25% when unlocked; stats drawn evenly without repeats), stated on the page. Revisit if real data turns up.
+- [ ] Combine with roll-quality odds (Phase 11): "≥ X Crit Chance and ≥ Y Crit Damage, per cycle"
+- [ ] Feed the cycle count in from the grader/importer (the ↻ number on screenshots, `rerolls` in imports)
 
 ### Phase 11 — Multi-stat goals
 - [ ] Several goal rows (stat + op + target) at once, e.g. ≥X Crit Chance **and** ≥Y Crit Damage
