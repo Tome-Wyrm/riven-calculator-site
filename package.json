@@ -6,5 +6,8 @@
   "scripts": {
     "test": "node --test",
     "serve": "python -m http.server 8000"
+  },
+  "devDependencies": {
+    "tesseract.js": "^5.1.1"
   }
 }

@@ -5,3 +5,6 @@ Thumbs.db
 *.log
 test/fixtures/local/
 .env
+tools/ocr-train/assets/
+tools/ocr-train/fonts/
+tools/ocr-train/out/
