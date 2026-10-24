@@ -257,6 +257,11 @@ export function loadIntoGrader(riven) {
   root.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+/** What the grader shows now (after any corrections), for test data. */
+export function graderSnapshot() {
+  return { weapon: state.weapon, cls: state.cls, rank: state.rank, rows: state.rows.map(r => ({ ...r })) };
+}
+
 /** @param {HTMLElement} container */
 export function mountGrader(container) {
   root = container;

@@ -8,7 +8,8 @@
 import { readScreenshot } from '../ocr-read.js';
 import { STAT_BY_ID } from '../data/stats.js';
 import { el } from './dom.js';
-import { loadIntoGrader } from './grader.js';
+import { graderSnapshot, loadIntoGrader } from './grader.js';
+import { offerShare } from './share.js';
 
 /** @type {HTMLElement} */
 let status;
@@ -45,6 +46,18 @@ async function showScreenshot(blob) {
     if (read.notes.length) status.append(el('p', { class: 'note' }, [`Fixed using the name and the stat ranges: ${read.notes.join('; ')}.`]));
     if (issues.length) status.append(el('p', { class: 'note warn' }, [`Couldn't read ${issues.join(', ')}.`]));
     status.append(raw);
+    offerShare({
+      kind: 'screenshot',
+      summary: `${read.weapon?.name ?? 'Unknown weapon'}, rank ${rank ?? '?'}: ${found}`,
+      image: blob,
+      // Built when sent, so corrections made in the grader go too.
+      data: () => ({
+        read: { weapon: read.weapon?.name ?? null, rank, rows, twoCards: read.twoCards, notes: read.notes, issues },
+        corrected: graderSnapshot(),
+        ocrText: read.text,
+        page: location.origin + location.pathname,
+      }),
+    });
   } catch (e) {
     say([e instanceof Error ? e.message : String(e)], 'note warn');
   }

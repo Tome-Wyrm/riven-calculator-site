@@ -267,3 +267,19 @@ table.ranges {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+/* "Send as test data" card */
+.share-card {
+  position: fixed; right: 16px; bottom: 16px; z-index: 10; width: min(340px, calc(100vw - 32px));
+  background: var(--surface); color: var(--text); border: 1px solid var(--accent); border-radius: var(--radius);
+  padding: 12px 14px; box-shadow: 0 6px 24px rgb(0 0 0 / 0.25); font-size: 0.9rem;
+}
+.share-card p { margin: 6px 0; }
+.share-card .sub { color: var(--muted); font-size: 0.8rem; }
+.share-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.share-card .primary {
+  font: inherit; color: #fff; background: var(--accent); border: 0; border-radius: var(--radius); padding: 6px 12px; cursor: pointer;
+}
+.share-card .primary:disabled { opacity: 0.6; cursor: default; }
+.link-button { font: inherit; background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; }

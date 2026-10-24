@@ -8,6 +8,7 @@ import { displayValue, format, letterGrade, rollScore, shapeFor } from '../engin
 import { extractRivens, readInventoryFile, unwrapInventory } from '../import.js';
 import { el, statName } from './dom.js';
 import { loadIntoGrader } from './grader.js';
+import { offerShare } from './share.js';
 
 /** @typedef {import('../import.js').ImportedRiven} ImportedRiven */
 /** @typedef {import('../import.js').ImportedStat} ImportedStat */
@@ -76,6 +77,19 @@ function showRivens(rivens, veiled) {
   if (unknown) notes.push(el('p', { class: 'note warn' }, [`${unknown} riven(s) have a weapon or stat this site doesn't recognise yet.`]));
   const head = el('thead', {}, [el('tr', {}, ['Riven', 'Stats', 'Average', ''].map(h => el('th', { scope: 'col' }, [h])))]);
   out.replaceChildren(...notes, el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges imports' }, [head, el('tbody', {}, rows)])]));
+  // Only the rivens read (weapon, rank, cycles, exact rolls), never the inventory itself.
+  offerShare({
+    kind: 'import',
+    summary: `${rivens.length} riven${rivens.length === 1 ? '' : 's'}: ${rivens.slice(0, 5).map(r => r.weapon).join(', ')}${rivens.length > 5 ? ', …' : ''}`,
+    data: () => ({
+      rivens: rivens.map(r => ({
+        weapon: r.weapon, cls: r.cls, rank: r.rank, rerolls: r.rerolls, mr: r.mr,
+        stats: r.stats.map(s => ({ tag: s.tag, statId: s.statId, sign: s.sign, u: s.u })),
+        ...(r.pending ? { pending: r.pending.map(s => ({ tag: s.tag, statId: s.statId, sign: s.sign, u: s.u })) } : {}),
+      })),
+      page: location.origin + location.pathname,
+    }),
+  });
 }
 
 /** @param {any} inventory */
