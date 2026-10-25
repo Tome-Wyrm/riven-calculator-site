@@ -19,6 +19,15 @@ const state = {
   cls: /** @type {WeaponClass} */ ('rifle'),
   rank: MAX_RANK,
   rows: /** @type {{statId: string, value: string, locked?: boolean}[]} */ ([]),
+  // How the curse is scored: by size (a big curse splices into a big stat) or by mildness (a
+  // small curse hurts less).
+  curse: /** @type {'size' | 'mild'} */ ('size'),
+};
+
+const CURSE_LABEL = { size: 'Bigger is better', mild: 'Smaller is better' };
+const CURSE_TIP = {
+  size: 'A bigger curse scores higher: it splices into a bigger stat',
+  mild: 'A smaller curse scores higher: it hurts the weapon less',
 };
 
 const signed = (/** @type {number} */ x) => `${x < 0 ? '-' : '+'}${Math.abs(x).toFixed(4)}`;
@@ -42,6 +51,9 @@ function controls() {
     segmented('Weapon class', CLASSES, state.cls, v => set({ cls: /** @type {WeaponClass} */ (v), weapon: '' }),
       v => CLASS_LABEL[/** @type {WeaponClass} */ (v)]),
     select('Rank', ranks, String(state.rank), v => set({ rank: Number(v) })),
+    el('div', { class: 'field' }, [el('span', {}, ['Curse grading']),
+      segmented('Curse grading', ['size', 'mild'], state.curse, v => set({ curse: /** @type {'size' | 'mild'} */ (v) }),
+        v => CURSE_LABEL[/** @type {'size' | 'mild'} */ (v)], v => CURSE_TIP[/** @type {'size' | 'mild'} */ (v)])]),
   ]);
 }
 
@@ -137,10 +149,12 @@ function results() {
       oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} is outside the range ${format(stat, r.at0)} to ${format(stat, r.at1)} (${shape}, rank ${rank})`);
       return el('tr', {}, [name, shownCell, rangeCell, el('td', { class: 'miss', colspan: '2' }, ['Outside the range: check the value or the rank'])]);
     }
-    // The curse is scored by size, like the positives: a curse can be a splice parent, and a big
-    // one makes a big spliced stat. So it counts in the average too.
+    // By default the curse is scored by size, like the positives: a curse can be a splice parent,
+    // and a big one makes a big spliced stat. Flipped, a mild curse scores high. Either way it
+    // counts in the average.
     const curse = sign === '-';
-    const [sLo, sHi] = [rollScore(g.lo), rollScore(g.hi)].sort((x, y) => x - y);
+    const flip = curse && state.curse === 'mild';
+    const [sLo, sHi] = [rollScore(flip ? 1 - g.hi : g.lo), rollScore(flip ? 1 - g.lo : g.hi)].sort((x, y) => x - y);
     scores.push((sLo + sHi) / 2);
     return el('tr', {}, [name, shownCell, rangeCell,
       el('td', { class: curse ? 'neg' : 'pos' }, [scoreText(sLo, sHi)]),
@@ -155,7 +169,10 @@ function results() {
     planButton(parsed, shape),
     ...(blanks ? [el('p', { class: 'note' }, [`${blanks} stat${blanks > 1 ? "s have" : " has"} no value yet: it still counts toward the shape (as whichever sign fits the other values), but isn't graded.`])] : []),
     el('p', { class: 'note' }, [
-      'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). The curse is scored by its size, like the positives (a big curse splices into a big stat). ',
+      'Roll: how far each stat landed from average, from −10% (worst) to +10% (best). ',
+      state.curse === 'size'
+        ? 'The curse is scored by its size, like the positives (a big curse splices into a big stat). '
+        : 'The curse is scored by how mild it is (a small curse hurts less). ',
       'Grades: S ≥ +9.5, A+ ≥ +7.5, A ≥ +5.5, A- ≥ +3.5, B+ ≥ +1.5, B ≥ −1.5, B- ≥ −3.5, C+ ≥ −5.5, C ≥ −7.5, C- ≥ −9.5, else F.']),
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
     ...(oddities.length ? [reportLink(oddities)] : []),
@@ -216,6 +233,7 @@ function renderResults() {
   saveState('v', {
     weapon: state.weapon, cls: state.cls, rank: state.rank,
     rows: state.rows.map(r => `${r.statId}:${r.value}${r.locked ? ':l' : ''}`).join(';'),
+    ...(state.curse === 'mild' ? { curse: 'mild' } : {}),
   });
 }
 
@@ -231,6 +249,7 @@ function restore() {
     weapon: v => WEAPONS.find(w => w[0] === v)?.[0],
     cls: oneOf(CLASSES),
     rank: num(0, MAX_RANK),
+    curse: oneOf(/** @type {const} */ (['size', 'mild'])),
     rows: v => {
       const rows = v.split(';').slice(0, MAX_ROWS).map(p => {
         const [statId, value = '', lock] = p.split(':');
@@ -248,6 +267,7 @@ function restore() {
   }
   if (saved.rank !== undefined) state.rank = Math.round(saved.rank);
   if (saved.rows) state.rows = saved.rows;
+  if (saved.curse) state.curse = saved.curse;
 }
 
 /**

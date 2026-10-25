@@ -72,11 +72,20 @@ function controls() {
 /** @param {string} title @param {Stat[]} stats */
 function section(title, stats) {
   const { cls, shape } = state;
-  const rows = stats
-    .filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsOf(state.weapon)) !== 'n')
-    .map(s => el('tr', {}, [el('th', { scope: 'row' }, s.spliced
-      ? [statName(s, cls), el('span', { class: 'sub' }, [recipeText(s, cls, STAT_BY_ID)])]
-      : [statName(s, cls)]), rangeCell(s, cls, shape, '+'), rangeCell(s, cls, shape, '-')]));
+  // Stats whose ranges show exactly the same (Heat / Cold / Electricity / Toxin, the faction stats…)
+  // share one row. Spliced stats keep their own rows for their recipes.
+  /** @type {{names: string[], cells: HTMLElement[], key: string}[]} */
+  const groups = [];
+  for (const s of stats.filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsOf(state.weapon)) !== 'n')) {
+    const cells = [rangeCell(s, cls, shape, '+'), rangeCell(s, cls, shape, '-')];
+    const key = s.spliced ? s.id : cells.map(c => `${c.className}|${c.textContent}`).join('/');
+    const same = groups.find(g => g.key === key);
+    if (same) { same.names.push(statName(s, cls)); continue; }
+    groups.push({ names: s.spliced ? [statName(s, cls), recipeText(s, cls, STAT_BY_ID)] : [statName(s, cls)], cells, key });
+  }
+  const rows = groups.map(g => el('tr', {}, [el('th', { scope: 'row' }, STAT_BY_ID[g.key]?.spliced
+    ? [g.names[0], el('span', { class: 'sub' }, [g.names[1]])]
+    : [g.names.join(' / ')]), ...g.cells]));
   if (rows.length === 0) return null;
   return el('tbody', {}, [el('tr', { class: 'group' }, [el('th', { colspan: '3', scope: 'colgroup' }, [title])]), ...rows]);
 }
@@ -109,7 +118,7 @@ function tableView() {
     section('Spliced faction damage', SPLICED.filter(isFaction)),
   ].filter(x => x !== null);
   const head = el('thead', {}, [el('tr', {}, [el('th', { scope: 'col' }, ['Stat']), el('th', { scope: 'col' }, ['Positive']), el('th', { scope: 'col' }, ['Negative'])])]);
-  return el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges' }, [head, ...sections])]);
+  return el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges compact' }, [head, ...sections])]);
 }
 
 function compareView() {
@@ -118,7 +127,7 @@ function compareView() {
   const rows = SHAPE_ORDER.map(shape =>
     el('tr', {}, [el('th', { scope: 'row' }, [shape]), rangeCell(stat, state.cls, shape, '+'), rangeCell(stat, state.cls, shape, '-')]));
   const head = el('thead', {}, [el('tr', {}, [el('th', { scope: 'col' }, ['Shape']), el('th', { scope: 'col' }, ['Positive']), el('th', { scope: 'col' }, ['Negative'])])]);
-  return el('div', {}, [...recipe, el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges' }, [head, el('tbody', {}, rows)])])]);
+  return el('div', {}, [...recipe, el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges compact' }, [head, el('tbody', {}, rows)])])]);
 }
 
 /** @type {HTMLElement} */

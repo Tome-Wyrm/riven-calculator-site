@@ -316,6 +316,8 @@ it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL 
 - [ ] Reject impossible combos (same stat twice, more stats than the shape has slots, spliced +
       its own parents)
 
+
+
 ---
 
 ## Verified in game (2026-10-23)
@@ -346,3 +348,20 @@ would show −78.0% and +130.0%). A Dax bow `+++-` riven at +138.4% Puncture con
 3. ~~Rank selector~~: kept (0–8).
 4. ~~Repo~~: `Tome-Wyrm/riven-calculator-site`, public, Pages from `main`.
 5. ~~OCR library delivery~~: CDN on demand (jsDelivr, pinned version).
+
+
+
+
+
+
+
+
+
+
+
+
+### User Added Tasks
+- [x] Make the curse grading flip a toggle button. (Grader: "Curse grading", bigger or smaller is better; saved in the link.)
+- [x] In the Stat Ranges section, collapse the Heat/Cold/Electric/Toxin and Impact/Slash/Puncture and Faction Damage and Other Stats (which also share the same values, like the previous). Rows whose ranges show exactly the same share one row; Puncture keeps its own, since its coefficient shows ~0.04 lower.
+- [x] In the Stat Ranges section, there does not need to be so much whitespace between Stat and Positive. In narrower browser windows, it overflows the side of the display port.
+- [x] In the Build Planner section, Spliced should have the same selectors as the positive stats, as should the negative. It should go LessThanOrEqualTo, EqualTo, GreaterThanOrEqualTo. They should also have hover tips that say "at most", "exactly", and "at least" respectively.

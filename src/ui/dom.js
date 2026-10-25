@@ -21,11 +21,12 @@ export function el(tag, attrs = {}, kids = []) {
 /** @param {Stat} stat @param {WeaponClass} cls */
 export const statName = (stat, cls) => (cls === 'melee' && stat.meleeName) || stat.name;
 
-/** @param {string} name @param {string[]} options @param {string} value @param {(v: string) => void} onChange @param {(v: string) => string} [label] */
-export function segmented(name, options, value, onChange, label = v => v) {
+/** @param {string} name @param {string[]} options @param {string} value @param {(v: string) => void} onChange @param {(v: string) => string} [label]
+ * @param {(v: string) => string} [tip]  hover text per option */
+export function segmented(name, options, value, onChange, label = v => v, tip) {
   return el('div', { class: 'segmented', role: 'radiogroup', 'aria-label': name },
     options.map(opt => {
-      const b = el('button', { type: 'button', role: 'radio', 'aria-checked': String(opt === value) }, [label(opt)]);
+      const b = el('button', { type: 'button', role: 'radio', 'aria-checked': String(opt === value), ...(tip ? { title: tip(opt) } : {}) }, [label(opt)]);
       b.addEventListener('click', () => onChange(opt));
       return b;
     }));

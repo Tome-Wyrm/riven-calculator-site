@@ -94,3 +94,23 @@ test('a goal for the spliced stat: only splice once a parent rolled well enough'
   assert.ok(planBuild({ ...base, goals: { viral: { op: 'gte', value: 105 } } }, { ...riven, goodParents: [] }).expectedCycles > 0);
   assert.throws(() => planBuild({ ...base, goals: { viral: { op: 'gte', value: 999 } } }), /can't reach/);
 });
+
+test('at most / exactly goals for the spliced stat need both parents low enough', () => {
+  const base = { cls: 'shotgun', ipsCode: '?y?', positives: ['critDamage'], spliced: 'viral', negative: null, shape: '+++-' };
+  const riven = { stage: /** @type {'pre'} */ ('pre'), have: ['critDamage', 'cold', 'toxin', '-recoil'], shape: /** @type {'+++-'} */ ('+++-') };
+  const atMost = { ...base, goals: { viral: { op: /** @type {'lte'} */ ('lte'), value: 100 } } };
+  assert.equal(planBuild(atMost, { ...riven, goodParents: ['cold', 'toxin'] }).expectedCycles, 0);
+  // One parent rolled too high: the spliced stat would keep that roll.
+  assert.ok(planBuild(atMost, { ...riven, goodParents: ['cold'], highParents: ['toxin'] }).expectedCycles > 0);
+  const exactly = { ...base, goals: { viral: { op: /** @type {'eq'} */ ('eq'), value: 95 } } };
+  assert.ok(planBuild(exactly).expectedKuva > planBuild(base).expectedKuva);
+  assert.throws(() => planBuild({ ...base, goals: { viral: { op: 'lte', value: 1 } } }), /can't reach/);
+});
+
+test('a value goal for the curse', () => {
+  const base = { cls: 'rifle', positives: ['critChance', 'critDamage'], spliced: null, negative: 'zoom', shape: '++-' };
+  const any = planBuild(base);
+  const small = planBuild({ ...base, negGoal: { op: 'lte', value: 35 } });
+  assert.ok(small.expectedKuva > any.expectedKuva, `${small.expectedKuva} vs ${any.expectedKuva}`);
+  assert.throws(() => planBuild({ ...base, negGoal: { op: 'gte', value: 999 } }), /can't be/);
+});
