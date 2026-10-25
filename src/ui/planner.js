@@ -398,17 +398,76 @@ function results() {
   const table = (stage, title) => {
     const steps = plan.steps.filter(s => s.stage === stage);
     if (!steps.length) return [];
-    const rows = steps.map(s => el('tr', mine === s ? { class: 'best' } : {}, [
-      el('th', { scope: 'row' }, [s.have.length
-        ? s.have.map(id => name(id) + (s.good.includes(id.replace(/^-/, '')) ? ' (good roll)' : s.high.includes(id.replace(/^-/, '')) ? ' (rolled too high)' : '')).join(', ')
-        : 'None of them']),
-      el('td', {}, [actionText(s.action, parents, s.have)]),
-      el('td', {}, [`${kuva(s.kuva)} · ${cyc(s.cycles)}`]),
+    // The table as a short rule list, read top-down (the first row that matches is the one): each
+    // row is the fewest traits that pick out situations sharing one move, so a dozen situations
+    // that all say "lock Magazine Capacity" become one "Has Magazine Capacity" row.
+    const situation = (/** @type {typeof steps[number]} */ s) => (s.have.length
+      ? s.have.map(id => name(id) + (s.good.includes(id.replace(/^-/, '')) ? ' (good roll)' : s.high.includes(id.replace(/^-/, '')) ? ' (rolled too high)' : '')).join(', ')
+      : 'None of them');
+    /** Traits a situation has: each stat, its roll note, and "a parent rolled well". @param {typeof steps[number]} s */
+    const traits = s => new Set([...s.have, ...s.have.flatMap(id => {
+      const bare = id.replace(/^-/, '');
+      return s.good.includes(bare) ? [`${id}:good`] : s.high.includes(bare) ? [`${id}:high`] : [];
+    }), ...(s.good.length ? ['anygood'] : [])]);
+    const traitText = (/** @type {string} */ t) => (t === 'anygood' ? 'a good roll on a parent'
+      : t.endsWith(':good') ? `${name(t.slice(0, -5))} (good roll)` : t.endsWith(':high') ? `${name(t.slice(0, -5))} (rolled too high)` : name(t));
+    const moveOf = (/** @type {typeof steps[number]} */ s) => actionText(s.action, parents, s.have);
+    const all = [...new Set(steps.flatMap(s => [...traits(s)]))];
+    /** @type {string[][]} */
+    const conditions = [[]];
+    for (let i = 0; i < all.length; i++) {
+      conditions.push([all[i]]);
+      for (let j = i + 1; j < all.length; j++) {
+        conditions.push([all[i], all[j]]);
+        for (let k = j + 1; k < all.length; k++) conditions.push([all[i], all[j], all[k]]);
+      }
+    }
+    // Skip "X and X (good roll)": the second says it all.
+    const base = (/** @type {string} */ t) => t.replace(/:(good|high)$/, '');
+    // ("A good roll on a parent" only alongside a stat, or it reads as a riddle.)
+    const usable = conditions.filter(c => new Set(c.map(base)).size === c.length && !(c.length === 1 && c[0] === 'anygood'));
+    const fits = (/** @type {string[] | null} */ c, /** @type {typeof steps[number]} */ s) => c !== null && c.every(x => traits(s).has(x));
+    let left = [...steps];
+    /** @type {{label: string, c: string[] | null, covered: typeof steps}[]} */
+    const rules = [];
+    while (left.length) {
+      let best = null;
+      for (const c of usable) {
+        const hit = left.filter(s => { const t = traits(s); return c.every(x => t.has(x)); });
+        if (!hit.length || hit.some(s => moveOf(s) !== moveOf(hit[0]))) continue;
+        if (!best || hit.length > best.hit.length || (hit.length === best.hit.length && c.length < best.c.length)) best = { c, hit };
+      }
+      // No short rule fits: the situation on its own.
+      if (!best) best = { c: null, hit: [left[0]] };
+      const label = best.c === null ? situation(left[0])
+        : best.c.length === 0 ? (rules.length ? 'Anything else' : 'Any of them')
+          : `Has ${best.c.map(traitText).join(' and ')}`;
+      rules.push({ label, c: best.c, covered: best.hit });
+      left = left.filter(s => !best.hit.includes(s));
+    }
+    // Drop a row when the rows after it would give every situation it covers the same move.
+    for (let i = rules.length - 2; i >= 0; i--) {
+      const later = rules.slice(i + 1);
+      const moves = rules[i].covered.map(s => later.find(r => fits(r.c, s)));
+      if (moves.every(r => r && moveOf(r.covered[0]) === moveOf(rules[i].covered[0]))) {
+        rules[i].covered.forEach((s, j) => /** @type {any} */ (moves[j]).covered.push(s));
+        rules.splice(i, 1);
+      }
+    }
+    const span = (/** @type {number[]} */ xs, /** @type {(n: number) => string} */ f) => {
+      const [lo, hi] = [Math.min(...xs), Math.max(...xs)];
+      return f(lo) === f(hi) ? f(lo) : `${f(lo).replace(/ \D+$/, '')}–${f(hi)}`;
+    };
+    const rows = rules.map(({ label, covered }) => el('tr', mine && covered.includes(mine) ? { class: 'best' } : {}, [
+      el('th', { scope: 'row' }, [el('div', {}, [label]),
+        ...(mine && covered.includes(mine) && covered.length > 1 ? [el('div', { class: 'sub mine' }, [`Yours: ${situation(mine)}`])] : [])]),
+      el('td', {}, [moveOf(covered[0])]),
+      el('td', {}, [`${span(covered.map(s => s.kuva), kuva)} · ${span(covered.map(s => s.cycles), cyc)}`]),
     ]));
     return [
       el('h3', { class: 'plan-stage' }, [title]),
       el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals plan' }, [
-        el('thead', {}, [el('tr', {}, ['If the riven has', 'Do this', 'Expected to finish'].map(h => el('th', { scope: 'col' }, [h])))]),
+        el('thead', {}, [el('tr', {}, ['If the riven has (first row that fits)', 'Do this', 'Expected to finish'].map(h => el('th', { scope: 'col' }, [h])))]),
         el('tbody', {}, rows)])]),
     ];
   };

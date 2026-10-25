@@ -293,3 +293,7 @@ table.ranges.compact { width: auto; max-width: 100%; }
 .ranges.compact th, .ranges.compact td { white-space: normal; }
 .ranges.compact tbody th { min-width: 7em; }
 .ranges.compact td { min-width: 6.5em; }
+
+/* Build planner: the situation your riven is in, within a merged row */
+.plan th .mine { font-weight: 700; }
+.plan tbody th div + div { margin-top: 2px; }
