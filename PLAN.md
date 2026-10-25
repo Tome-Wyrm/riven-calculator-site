@@ -265,6 +265,10 @@ Back-solve the roll quality u for each stat on a riven you already own.
         about 0.5x today's rank-8 ranges (an old riven, like the Akarius one), and the spliced
         Status Damage (+52.5%) came in at the same scale. The Mausolon splice (Critical Chance +
         -Zoom → Weak Point Critical Chance +291.7%) fits today's ranges.
+  - [x] "Keeps the better parent roll" confirmed (2026-10-25, a Hirudo +++- splice screen): Status
+        Chance +110.3% (u 0.944–0.949) + Melee Damage +202.2% (u 0.955–0.958) → Status Damage +110.5%
+        (u 0.954–0.959), i.e. Melee Damage's roll. The game also writes weapon names in title case on
+        rivens ("Efv-5 Jupiter"); weapon matching ignores case.
   - [x] First cycle log (2026-10-23): one Lacera riven, 48 unlocked cycles (screenshots x77–x124).
         - Shapes: ++ 13, ++- 12, +++ 13, +++- 10 (12 each expected; chi² 0.5, df 3): fits 25% each.
         - Rolls: all 141 values fit today's rank-8 ranges. Spread by fifths 27/20/35/21/38, mean
