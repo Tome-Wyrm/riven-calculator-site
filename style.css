@@ -65,7 +65,19 @@ main,
 }
 .donate:hover { filter: brightness(1.1); }
 /* Wide enough that the button sits clear of the column: no room needs reserving */
+.donate-dollar { display: none; }
 @media (min-width: 1520px) { .site-header { padding-right: var(--gap); } }
+/* Narrower: shrink to "☕ $", then to just the cup */
+@media (max-width: 1459px) {
+  .site-header { padding-right: calc(var(--gap) + 80px); }
+  .donate { padding: 6px 10px; font-size: 1.2rem; }
+  .donate-label { display: none; }
+  .donate-dollar { display: inline; }
+}
+@media (max-width: 699px) {
+  .site-header { padding-right: calc(var(--gap) + 48px); }
+  .donate-dollar { display: none; }
+}
 .site-header h1 { margin: 0; color: var(--accent); }
 .tagline { margin: 4px 0 0; color: var(--muted); }
 
@@ -271,9 +283,6 @@ table.ranges {
 
 @media (max-width: 600px) {
   .site-header h1 { font-size: 1.6rem; }
-  .site-header { padding-right: calc(var(--gap) + 48px); }
-  .donate { padding: 6px 10px; font-size: 1.2rem; }
-  .donate-label { display: none; }
   .panel { padding: 12px; }
   .controls { gap: 8px; }
   .field.weapon, .field.weapon input { width: 100%; }
