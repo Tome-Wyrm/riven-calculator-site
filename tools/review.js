@@ -12,7 +12,7 @@ const DIR = '../test/fixtures/local/';
 const KEY = 'riven-review-v1';
 
 /** @typedef {{file: string, weapon: string | null, rank: number | null, stats: string[], locked: string[], source?: string, problems?: string[]}} Item */
-/** @typedef {{verdict: 'ok' | 'reject' | 'twoCards', weapon?: string | null, rank?: number | null, stats?: string[], locked?: string[], obstructed?: boolean}} Review */
+/** @typedef {{verdict: 'ok' | 'reject' | 'twoCards' | 'splice', weapon?: string | null, rank?: number | null, stats?: string[], locked?: string[], obstructed?: boolean}} Review */
 
 /** @type {Item[]} */
 const queue = await (await fetch(DIR + 'review-queue.json', { cache: 'no-store' })).json();
@@ -81,7 +81,7 @@ function show() {
   $('shot').classList.remove('full');
   const reviewed = Object.keys(saved).length;
   $('status').replaceChildren(`${index + 1} / ${queue.length} · ${item.file}${item.source ? ` (${item.source})` : ''} · reviewed ${reviewed}`,
-    ...(prior ? [' · ', el('span', { class: 'done' }, [`this one: ${prior.verdict === 'ok' ? 'accepted' : prior.verdict === 'twoCards' ? 'two cards' : 'not usable'}`])] : []),
+    ...(prior ? [' · ', el('span', { class: 'done' }, [`this one: ${prior.verdict === 'ok' ? 'accepted' : prior.verdict === 'twoCards' ? 'two cards' : prior.verdict === 'splice' ? 'splice screen' : 'not usable'}`])] : []),
     ...(item.problems?.length ? [` · reader flagged: ${item.problems.join(', ')}`] : []));
 
   const weapon = el('input', { type: 'text', name: 'weapon', list: 'weapons', value: a.weapon ?? '', placeholder: 'weapon (blank if not shown)' });
@@ -109,6 +109,7 @@ function show() {
       btn('Accept ✓', 'accept', accept),
       btn('Not usable', '', () => decide('reject')),
       btn('Two cards', '', () => decide('twoCards')),
+      btn('Splice screen', '', () => decide('splice')),
       btn('← Back', '', () => go(-1)),
       btn('Skip →', '', () => go(1)),
       btn('Next unreviewed', '', () => { const n = queue.findIndex((q, i) => i > index && !saved[q.file]); if (n >= 0) { index = n; show(); } }),
@@ -124,7 +125,7 @@ function accept() {
   store();
   go(1);
 }
-/** @param {'reject' | 'twoCards'} verdict */
+/** @param {'reject' | 'twoCards' | 'splice'} verdict */
 function decide(verdict) {
   saved[queue[index].file] = { verdict };
   store();
@@ -145,7 +146,8 @@ function download() {
     if (!r) continue;
     out[item.file] = r.verdict === 'ok'
       ? { weapon: r.weapon, rank: r.rank, stats: r.stats, locked: r.locked, ...(r.obstructed ? { obstructed: true } : {}), source: item.source }
-      : r.verdict === 'twoCards' ? { twoCards: true, source: item.source } : { rejected: true, source: item.source };
+      : r.verdict === 'twoCards' ? { twoCards: true, source: item.source }
+        : r.verdict === 'splice' ? { spliceScreen: true, source: item.source } : { rejected: true, source: item.source };
   }
   const a = el('a', { href: URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' })), download: 'review-answers.json' });
   a.click();
@@ -158,6 +160,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.altKey) { e.preventDefault(); accept(); }
   else if (e.altKey && e.key.toLowerCase() === 'x') { e.preventDefault(); decide('reject'); }
   else if (e.altKey && e.key.toLowerCase() === 't') { e.preventDefault(); decide('twoCards'); }
+  else if (e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); decide('splice'); }
   else if (e.altKey && e.key.toLowerCase() === 'o') {
     e.preventDefault();
     const box = /** @type {HTMLInputElement} */ ($('form').querySelector('[name=obstructed]'));
