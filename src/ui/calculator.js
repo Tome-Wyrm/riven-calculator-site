@@ -66,7 +66,7 @@ function summary(res, stat) {
 
 function controls() {
   const set = (/** @type {Partial<typeof state>} */ patch) => { Object.assign(state, patch); render(); };
-  const stats = statOptions([...ORDINARY, ...SPLICED], state.cls, ipsOf(state.weapon));
+  const stats = statOptions([...ORDINARY, ...SPLICED], state.cls, ipsOf(state.weapon), false);
   if (!stats.some(([id]) => id === state.statId)) state.statId = stats[0][0];
   const stat = STAT_BY_ID[state.statId];
 

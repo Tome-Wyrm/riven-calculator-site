@@ -29,7 +29,8 @@ export const cycleCost = (n, locked = false) => CYCLE_COSTS[Math.min(n, CYCLE_CO
  * @param {WeaponClass} cls @param {string} [ipsCode]
  */
 export function pools(cls, ipsCode) {
-  const rollable = ORDINARY.filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsCode) !== 'n');
+  // Vintage stats ('v') are on older rivens only: a cycle never rolls them.
+  const rollable = ORDINARY.filter(s => s.b[cls] !== undefined && !['n', 'v'].includes(weaponCanRoll(s, ipsCode)));
   return {
     positive: rollable.filter(s => s.polarity !== 'negOnly').map(s => s.id),
     negative: rollable.filter(s => s.polarity !== 'posOnly').map(s => s.id),

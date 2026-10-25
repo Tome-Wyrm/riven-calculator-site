@@ -112,18 +112,20 @@ export function quirks(stat, cls, isBow) {
   return out;
 }
 
-const IPS_INDEX = { impact: 0, puncture: 1, slash: 2 };
+// Letters in a weapon's code (src/data/weapons.js): Impact, Puncture, Slash, then, for guns the
+// community sheet's Vintage tab covers, Zoom, Recoil, Ammo Maximum, Magazine, Projectile Speed.
+const IPS_INDEX = { impact: 0, puncture: 1, slash: 2, zoom: 3, recoil: 4, ammoMax: 5, magazine: 6, projectileSpeed: 7 };
 
 /**
  * Whether a weapon can roll a stat, from its IPS code (see weapons.js). Only Impact, Puncture and
  * Slash depend on the weapon; everything else is 'y'.
  * @param {Stat} stat @param {string} [ipsCode] e.g. 'nyy'; omitted when no weapon is picked
- * @returns {'y' | 'n' | '?'}
+ * @returns {'y' | 'n' | '?' | 'v'}  v = vintage: older rivens have it, new rolls never do
  */
 export function weaponCanRoll(stat, ipsCode) {
   const i = IPS_INDEX[/** @type {keyof typeof IPS_INDEX} */ (stat.id)];
-  if (i === undefined || !ipsCode) return 'y';
-  return /** @type {'y' | 'n' | '?'} */ (ipsCode[i]);
+  if (i === undefined || !ipsCode || !ipsCode[i]) return 'y';
+  return /** @type {'y' | 'n' | '?' | 'v'} */ (ipsCode[i]);
 }
 
 /**

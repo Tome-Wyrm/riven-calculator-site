@@ -29,6 +29,9 @@ test('known weapons map to the right class', () => {
   // log never rolled it); Akarius Puncture (rule no, listings said maybe, sheet no).
   assert.equal(byName.get('Lacera')?.[3][2], 'n');
   assert.equal(byName.get('Akarius')?.[3][1], 'n');
-  for (const [name, , , code] of WEAPONS) assert.match(code, /^[yn?]{3}$/, name);
+  for (const [name, , , code] of WEAPONS) assert.match(code, /^[yn?v]{3}([ynv?]{5})?$/, name);
+  // Vintage (community sheet): Stinger's Zoom only on older rivens, Sobek's Projectile Speed too.
+  assert.equal(byName.get('Stinger')?.[3][3], 'v');
+  assert.equal(byName.get('Sobek')?.[3][7], 'v');
   for (const name of ['Sirocco', 'Arquebex']) assert.equal(byName.has(name), false, `${name} takes no riven`);
 });

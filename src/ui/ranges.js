@@ -39,6 +39,9 @@ function rangeCell(stat, cls, shape, sign) {
   if (weaponCanRoll(stat, ipsOf(state.weapon)) === '?') {
     kids.push(el('span', { class: 'sub' }, [`May not roll on ${state.weapon}`]));
   }
+  if (weaponCanRoll(stat, ipsOf(state.weapon)) === 'v') {
+    kids.push(el('span', { class: 'sub vintage' }, [`Vintage on ${state.weapon}: older rivens only`]));
+  }
   for (const q of quirks(stat, cls, isBow(state.weapon))) {
     kids.push(el('span', { class: 'sub' }, [`${q.label}: ${format(stat, r.at0 * q.factor)} to ${format(stat, r.at1 * q.factor)}`]));
   }

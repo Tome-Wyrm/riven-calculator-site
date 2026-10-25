@@ -118,10 +118,13 @@ function results() {
   /** @type {string[]} things worth reporting: impossible values, IPS stats the data rules out */
   const oddities = [];
   const rows = parsed.map(({ stat, shown, sign }) => {
-    if (state.weapon && weaponCanRoll(stat, ipsOf(state.weapon)) !== 'y' && ['impact', 'puncture', 'slash'].includes(stat.id)) {
+    const can = state.weapon ? weaponCanRoll(stat, ipsOf(state.weapon)) : 'y';
+    if (can === 'n' || can === '?') {
       oddities.push(`${statName(stat, cls)} on ${state.weapon}: the data says it ${weaponCanRoll(stat, ipsOf(state.weapon)) === 'n' ? "can't" : 'may not'} roll`);
     }
-    const name = el('th', { scope: 'row' }, [statName(stat, cls)]);
+    // Vintage: fine to have, but a cycle won't give it back.
+    const name = el('th', { scope: 'row', ...(can === 'v' ? { class: 'vintage', title: 'Vintage: no longer rolls on this weapon' } : {}) },
+      [statName(stat, cls), ...(can === 'v' ? [el('span', { class: 'sub' }, ['Vintage: cycling won\u2019t bring it back'])] : [])]);
     const shownCell = el('td', {}, [format(stat, /** @type {number} */ (shown))]);
     if (!canRoll(stat, cls, shape, sign)) {
       oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} can't be ${sign === '+' ? 'positive' : 'negative'} on a ${shape} riven`);

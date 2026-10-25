@@ -28,7 +28,7 @@ function rivenClass(w) {
 }
 
 // IPS eligibility, one letter each for Impact, Puncture, Slash: y = can roll, n = can't,
-// ? = may not roll. Sources, most trusted first:
+// ? = may not roll, v = vintage (older rivens only). Sources, most trusted first:
 //  1. Rivens seen in game (screenshots, player data): IPS_OVERRIDES below.
 //  2. The community Rolls & Resources sheet's IPS tab (tools/data/ips-sheet.json, by riven family;
 //     zaws and kitguns without our labels; "Vinquibus" is the gun only). Agrees with every
@@ -60,6 +60,13 @@ try {
 /** The community sheet's IPS letters by weapon (family) name. */
 const sheet = new Map(Object.entries(JSON.parse(await readFile(new URL('./data/ips-sheet.json', import.meta.url), 'utf8')).ips));
 
+/**
+ * The sheet's Vintage tab by weapon (family) name: Impact, Puncture, Slash, Zoom, Recoil, Ammo
+ * Maximum, Magazine, Projectile Speed, each y (rolls), n (doesn't) or v (vintage: older rivens
+ * have it, new rolls never do).
+ */
+const vintage = new Map(Object.entries(JSON.parse(await readFile(new URL('./data/vintage-sheet.json', import.meta.url), 'utf8')).stats));
+
 /** Riven family of each weapon name, from the CSV. */
 const familyOf = new Map();
 for (const line of (await readFile(new URL('./data/internal_names.csv', import.meta.url), 'utf8')).trim().split(/\r?\n/).slice(1)) {
@@ -75,8 +82,12 @@ function ips(w, name) {
   const ev = evidence.get(family.replace(/ \((Zaw|Kitgun)\)$/, '').toLowerCase());
   const seen = IPS_OVERRIDES[/** @type {keyof typeof IPS_OVERRIDES} */ (family)] ?? '???';
   const listed = family.endsWith(' (melee)') ? undefined : sheet.get(family.replace(/ \((Zaw|Kitgun)\)$/, ''));
+  const old = family.endsWith(' (melee)') ? undefined : vintage.get(family.replace(/ \((Zaw|Kitgun)\)$/, ''));
+  // Five more letters (Zoom, Recoil, Ammo Maximum, Magazine, Projectile Speed) for guns the
+  // Vintage tab covers; other weapons keep three, and the site treats the rest as rollable.
   return PHYSICAL.map((t, i) => {
     if (seen[i] !== '?') return seen[i];
+    if (old?.[i] === 'v') return 'v';
     if (listed) return listed[i];
     const listedNo = !ev?.[t] && ev?.searched?.[t] && ev.listings >= MIN_LISTINGS_FOR_NO;
     if (rule) {
@@ -85,7 +96,7 @@ function ips(w, name) {
     }
     if (ev?.[t]) return 'y';
     return listedNo ? 'n' : '?';
-  }).join('');
+  }).join('') + (old ? old.slice(3) : '');
 }
 
 // Rivens seen in game, by riven family. Each letter overrides everything else; '?' = no information.

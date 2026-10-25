@@ -18,3 +18,11 @@ test('cycle costs follow the wiki table', () => {
   assert.equal(cycleCost(10), 3500);
   assert.equal(cycleCost(40, true), 7000);
 });
+
+test('vintage stats are never rolled by a cycle', async () => {
+  const { pools } = await import('../src/cycle.js');
+  const { WEAPONS } = await import('../src/data/weapons.js');
+  const sobek = WEAPONS.find(w => w[0] === 'Sobek');
+  assert.equal(pools('shotgun', sobek[3]).positive.includes('projectileSpeed'), false);
+  assert.equal(pools('shotgun', 'yyy').positive.includes('projectileSpeed'), true);
+});

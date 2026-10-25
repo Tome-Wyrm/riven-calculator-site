@@ -102,11 +102,13 @@ export const isBow = name => WEAPON_BY_NAME.get(name)?.[2] === 1;
 /**
  * Stat picker options for a class: ordinary then spliced, spliced ones tagged. With a weapon's
  * IPS code, physical stats it can't roll are dropped and unsure ones are tagged.
- * @param {Stat[]} stats @param {WeaponClass} cls @param {string} [ipsCode] @returns {[string, string][]}
+ * @param {Stat[]} stats @param {WeaponClass} cls @param {string} [ipsCode]
+ * @param {boolean} [vintage] include vintage stats (for grading an existing riven), marked as such
+ * @returns {[string, string][]}
  */
-export function statOptions(stats, cls, ipsCode) {
+export function statOptions(stats, cls, ipsCode, vintage = true) {
   return stats
-    .filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsCode) !== 'n')
+    .filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsCode) !== 'n' && (vintage || weaponCanRoll(s, ipsCode) !== 'v'))
     .map(s => [s.id, statName(s, cls) + (s.spliced ? ' (spliced)' : '')
-      + (weaponCanRoll(s, ipsCode) === '?' ? ' (may not roll)' : '')]);
+      + ({ '?': ' (may not roll)', v: ' (vintage: no longer rolls)' }[weaponCanRoll(s, ipsCode)] ?? '')]);
 }
