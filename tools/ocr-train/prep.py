@@ -11,9 +11,18 @@ from PIL import Image, ImageCms
 
 if __name__ == '__main__':
     out, files = sys.argv[1], sys.argv[2:]
+    # --start N: number the outputs from N (for callers that send files in batches).
+    start = 0
+    if '--start' in files:
+        i = files.index('--start')
+        start = int(files[i + 1])
+        files = files[:i] + files[i + 2:]
     os.makedirs(out, exist_ok=True)
-    for n, f in enumerate(files):
-        im = Image.open(f)
+    for n, f in enumerate(files, start):
+        try:
+            im = Image.open(f)
+        except Exception:
+            continue          # unreadable: the caller sees no output for it
         icc = im.info.get('icc_profile')
         if icc:
             try:
