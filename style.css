@@ -49,11 +49,11 @@ main,
 
 .site-header { padding-top: 24px; padding-right: calc(var(--gap) + 190px); }
 
-/* Pinned to the viewport, lined up with the header's right edge */
+/* Pinned to the viewport's top right, outside the main column like .share-card */
 .donate {
   position: fixed;
-  top: 12px;
-  right: max(var(--gap), calc((100vw - 1100px) / 2 + var(--gap)));
+  top: 16px;
+  right: 16px;
   z-index: 100;
   padding: 8px 14px;
   border-radius: var(--radius);
@@ -64,6 +64,8 @@ main,
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
 }
 .donate:hover { filter: brightness(1.1); }
+/* Wide enough that the button sits clear of the column: no room needs reserving */
+@media (min-width: 1520px) { .site-header { padding-right: var(--gap); } }
 .site-header h1 { margin: 0; color: var(--accent); }
 .tagline { margin: 4px 0 0; color: var(--muted); }
 
