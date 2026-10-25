@@ -30,10 +30,14 @@ function rivenClass(w) {
 // IPS eligibility, one letter each for Impact, Puncture, Slash: y = can roll, n = can't,
 // ? = may not roll. Sources, most trusted first:
 //  1. Rivens seen in game (screenshots, player data): IPS_OVERRIDES below.
-//  2. The wiki's rule on the weapon's first attack: more than 25% of that type → y. When it says
+//  2. The community Rolls & Resources sheet's IPS tab (tools/data/ips-sheet.json, by riven family;
+//     zaws and kitguns without our labels; "Vinquibus" is the gun only). Agrees with every
+//     screenshot; where it disagrees with the rule below, it's the rule that's wrong (Lacera Slash:
+//     the rule says yes, a 48-cycle log never rolled it).
+//  3. The wiki's rule on the weapon's first attack: more than 25% of that type → y. When it says
 //     no, that's only '?' unless the listings agree: checked against listings it said "can't" for
 //     39 stats that were listed (e.g. Ocucor Impact at 0%).
-//  3. warframe.market listings (tools/data/wfm-ips.json, from tools/wfm-ips-scan.mjs), which nothing
+//  4. warframe.market listings (tools/data/wfm-ips.json, from tools/wfm-ips-scan.mjs), which nothing
 //     in game verifies: they only settle a stat the rule says no to (none in a full filtered search
 //     of a family with >= 20 listings → n), or decide alone when there's no damage data.
 const PHYSICAL = ['impact', 'puncture', 'slash'];
@@ -53,6 +57,9 @@ try {
   for (const r of Object.values(scan)) evidence.set(String(r.name).toLowerCase(), r);
 } catch { /* no scan yet: rule only */ }
 
+/** The community sheet's IPS letters by weapon (family) name. */
+const sheet = new Map(Object.entries(JSON.parse(await readFile(new URL('./data/ips-sheet.json', import.meta.url), 'utf8')).ips));
+
 /** Riven family of each weapon name, from the CSV. */
 const familyOf = new Map();
 for (const line of (await readFile(new URL('./data/internal_names.csv', import.meta.url), 'utf8')).trim().split(/\r?\n/).slice(1)) {
@@ -67,8 +74,10 @@ function ips(w, name) {
   // warframe.market names zaws and kitguns without our "(Zaw)" / "(Kitgun)" labels.
   const ev = evidence.get(family.replace(/ \((Zaw|Kitgun)\)$/, '').toLowerCase());
   const seen = IPS_OVERRIDES[/** @type {keyof typeof IPS_OVERRIDES} */ (family)] ?? '???';
+  const listed = family.endsWith(' (melee)') ? undefined : sheet.get(family.replace(/ \((Zaw|Kitgun)\)$/, ''));
   return PHYSICAL.map((t, i) => {
     if (seen[i] !== '?') return seen[i];
+    if (listed) return listed[i];
     const listedNo = !ev?.[t] && ev?.searched?.[t] && ev.listings >= MIN_LISTINGS_FOR_NO;
     if (rule) {
       if (rule[i] > 0.25) return 'y';

@@ -25,8 +25,10 @@ test('known weapons map to the right class', () => {
   for (const [name, i] of Object.entries(proven)) assert.equal(byName.get(name)?.[3][i], 'y', `${name} IPS`);
   // Soma Impact: the rule says no and a full warframe.market search agrees.
   assert.equal(byName.get('Soma')?.[3][0], 'n');
-  // Akarius Puncture: the rule says no, but listings exist (unverified): only "may not roll".
-  assert.equal(byName.get('Akarius')?.[3][1], '?');
+  // The community sheet beats the damage rule: Lacera Slash (rule yes, sheet no, and a 48-cycle
+  // log never rolled it); Akarius Puncture (rule no, listings said maybe, sheet no).
+  assert.equal(byName.get('Lacera')?.[3][2], 'n');
+  assert.equal(byName.get('Akarius')?.[3][1], 'n');
   for (const [name, , , code] of WEAPONS) assert.match(code, /^[yn?]{3}$/, name);
   for (const name of ['Sirocco', 'Arquebex']) assert.equal(byName.has(name), false, `${name} takes no riven`);
 });
