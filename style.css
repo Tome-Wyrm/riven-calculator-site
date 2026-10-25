@@ -151,9 +151,7 @@ table.ranges {
 .ranges tr.group th {
   padding-top: 14px;
   color: var(--accent);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.85rem;
 }
 
 .ranges td.pos { background: var(--pos-bg); color: var(--pos-text); }
@@ -297,3 +295,6 @@ table.ranges.compact { width: auto; max-width: 100%; }
 /* Build planner: the situation your riven is in, within a merged row */
 .plan th .mine { font-weight: 700; }
 .plan tbody th div + div { margin-top: 2px; }
+
+/* Element icons in spliced recipes */
+.dmg-icon { width: 1.25em; height: 1.25em; vertical-align: -0.3em; }

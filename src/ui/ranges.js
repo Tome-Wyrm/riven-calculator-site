@@ -69,23 +69,57 @@ function controls() {
   return el('div', { class: 'controls' }, items);
 }
 
+const BASE_ICONS = ['heat', 'cold', 'electricity', 'toxin'];
+
+/**
+ * A spliced stat's recipe: the game's element icons for a combined element (Heat + Cold for
+ * Blast), text otherwise.
+ * @param {Stat} s @param {WeaponClass} cls
+ */
+function recipe(s, cls) {
+  const pair = s.from?.[0];
+  if (pair && s.from?.length === 1 && pair.every(id => BASE_ICONS.includes(id))) {
+    return el('span', { class: 'sub recipe' }, pair.flatMap((id, i) => [
+      ...(i ? [' + '] : []),
+      el('img', { src: `img/dmg/${id}.png`, alt: statName(STAT_BY_ID[id], cls), title: statName(STAT_BY_ID[id], cls), class: 'dmg-icon' }),
+    ]));
+  }
+  return el('span', { class: 'sub' }, [recipeText(s, cls, STAT_BY_ID)]);
+}
+
+/** "Damage to Corpus", "Damage to Grineer" → "Damage to Corpus / Grineer". @param {string[]} names */
+function joinNames(names) {
+  const prefix = 'Damage to ';
+  return names.length > 1 && names.every(n => n.startsWith(prefix))
+    ? prefix + names.map(n => n.slice(prefix.length)).join(' / ')
+    : names.join(' / ');
+}
+
 /** @param {string} title @param {Stat[]} stats */
 function section(title, stats) {
   const { cls, shape } = state;
   // Stats whose ranges show exactly the same (Heat / Cold / Electricity / Toxin, the faction stats…)
-  // share one row. Spliced stats keep their own rows for their recipes.
-  /** @type {{names: string[], cells: HTMLElement[], key: string}[]} */
+  // share one row. Spliced stats only merge when their recipes are text (faction damage), each
+  // recipe then listed under the row; spliced elements keep their rows for their icons.
+  /** @type {{stats: Stat[], cells: HTMLElement[], key: string}[]} */
   const groups = [];
   for (const s of stats.filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsOf(state.weapon)) !== 'n')) {
     const cells = [rangeCell(s, cls, shape, '+'), rangeCell(s, cls, shape, '-')];
-    const key = s.spliced ? s.id : cells.map(c => `${c.className}|${c.textContent}`).join('/');
+    const own = s.spliced && s.from?.[0].every(id => BASE_ICONS.includes(id));
+    const key = own ? s.id : `${s.spliced}|` + cells.map(c => `${c.className}|${c.textContent}`).join('/');
     const same = groups.find(g => g.key === key);
-    if (same) { same.names.push(statName(s, cls)); continue; }
-    groups.push({ names: s.spliced ? [statName(s, cls), recipeText(s, cls, STAT_BY_ID)] : [statName(s, cls)], cells, key });
+    if (same) { same.stats.push(s); continue; }
+    groups.push({ stats: [s], cells, key });
   }
-  const rows = groups.map(g => el('tr', {}, [el('th', { scope: 'row' }, STAT_BY_ID[g.key]?.spliced
-    ? [g.names[0], el('span', { class: 'sub' }, [g.names[1]])]
-    : [g.names.join(' / ')]), ...g.cells]));
+  const rows = groups.map(g => {
+    const names = g.stats.map(s => statName(s, cls));
+    const head = [joinNames(names)];
+    if (g.stats[0].spliced) {
+      head.push(...(g.stats.length === 1 ? [recipe(g.stats[0], cls)]
+        : g.stats.map(s => el('span', { class: 'sub' }, [`${statName(s, cls).replace(/^Damage to /, '')}: ${recipeText(s, cls, STAT_BY_ID).replace(/Damage to /g, '')}`]))));
+    }
+    return el('tr', {}, [el('th', { scope: 'row' }, head), ...g.cells]);
+  });
   if (rows.length === 0) return null;
   return el('tbody', {}, [el('tr', { class: 'group' }, [el('th', { colspan: '3', scope: 'colgroup' }, [title])]), ...rows]);
 }
@@ -108,14 +142,14 @@ function tableView() {
   const sections = [
     // Damage, base elements and physical types, in data order; then faction damage.
     section('Damage', ORDINARY.filter(isDamage)),
-    section('Faction damage', ORDINARY.filter(isFaction)),
-    section('Other stats', ORDINARY.filter(s => !isDamage(s) && !isFaction(s))
+    section('Faction Damage', ORDINARY.filter(isFaction)),
+    section('Other Stats', ORDINARY.filter(s => !isDamage(s) && !isFaction(s))
       // Alphabetical by the name shown, so melee's "Attack Speed" sorts under A. The melee combo
       // stats go last as one block.
       .sort(byOtherOrder)),
-    section('Spliced (always positive)', SPLICED.filter(s => !isFaction(s) && !isElement(s))),
-    section('Spliced elements', SPLICED.filter(isElement)),
-    section('Spliced faction damage', SPLICED.filter(isFaction)),
+    section('Spliced (Always Positive)', SPLICED.filter(s => !isFaction(s) && !isElement(s))),
+    section('Spliced Elements', SPLICED.filter(isElement)),
+    section('Spliced Faction Damage', SPLICED.filter(isFaction)),
   ].filter(x => x !== null);
   const head = el('thead', {}, [el('tr', {}, [el('th', { scope: 'col' }, ['Stat']), el('th', { scope: 'col' }, ['Positive']), el('th', { scope: 'col' }, ['Negative'])])]);
   return el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges compact' }, [head, ...sections])]);
