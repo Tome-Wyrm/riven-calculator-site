@@ -99,13 +99,13 @@ function joinNames(names) {
 function section(title, stats) {
   const { cls, shape } = state;
   // Stats whose ranges show exactly the same (Heat / Cold / Electricity / Toxin, the faction stats…)
-  // share one row. Spliced stats only merge when their recipes are text (faction damage), each
-  // recipe then listed under the row; spliced elements keep their rows for their icons.
+  // share one row. Of the spliced stats only faction damage merges (each recipe listed under the
+  // row): the others keep their own rows, so their recipes stay clear.
   /** @type {{stats: Stat[], cells: HTMLElement[], key: string}[]} */
   const groups = [];
   for (const s of stats.filter(s => s.b[cls] !== undefined && weaponCanRoll(s, ipsOf(state.weapon)) !== 'n')) {
     const cells = [rangeCell(s, cls, shape, '+'), rangeCell(s, cls, shape, '-')];
-    const own = s.spliced && s.from?.[0].every(id => BASE_ICONS.includes(id));
+    const own = s.spliced && s.unit !== 'mult';   // only spliced faction damage merges
     const key = own ? s.id : `${s.spliced}|` + cells.map(c => `${c.className}|${c.textContent}`).join('/');
     const same = groups.find(g => g.key === key);
     if (same) { same.stats.push(s); continue; }
