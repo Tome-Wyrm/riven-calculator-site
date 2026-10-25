@@ -2,7 +2,7 @@
 // Goal calculator: "can a <class> riven roll <op> <target> <stat>, and how likely is it?"
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { evaluateGoal, format, quirks, rollScore, weaponCanRoll } from '../engine.js';
+import { SHAPE_ORDER, canRoll, displayValue, evaluateGoal, format, gradeRoll, inferSign, letterGrade, quirks, rollScore, weaponCanRoll } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow, recipeText } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
@@ -21,7 +21,29 @@ const state = {
   op: /** @type {Goal['op']} */ ('gte'),
   target: /** @type {number | null} */ (null),
   rank: MAX_RANK,
+  // The shape the Value and Roll boxes convert on (a roll shows a different value on each shape).
+  shape: /** @type {import('../data/stats.js').Shape} */ ('++'),
 };
+
+/** The roll (u) a value is on the conversion shape, or null when no roll shows it. @param {import('../data/stats.js').Stat} stat @param {number} v */
+function rollOf(stat, v) {
+  const sign = inferSign(stat, state.cls, v);
+  if (!canRoll(stat, state.cls, state.shape, sign)) return null;
+  const g = gradeRoll(stat, state.cls, state.shape, sign, v, state.rank);
+  return g.possible ? g.mid : null;
+}
+
+/** The value a roll on the ±10% scale shows on the conversion shape (as a buff, or as a curse
+ * if the current target reads as one). @param {import('../data/stats.js').Stat} stat @param {number} score */
+function valueOf(stat, score) {
+  const u = Math.max(0, Math.min(1, score / 20 + 0.5));
+  let sign = state.target === null ? '+' : inferSign(stat, state.cls, state.target);
+  if (!canRoll(stat, state.cls, state.shape, sign)) sign = sign === '+' ? '-' : '+';
+  if (!canRoll(stat, state.cls, state.shape, sign)) return null;
+  const v = displayValue(stat, state.cls, state.shape, /** @type {'+' | '-'} */ (sign), u, state.rank);
+  const step = stat.unit === 'mult' ? 100 : 10;
+  return Math.round(v * step) / step;
+}
 
 const pct = (/** @type {number} */ x) => `${(x * 100).toFixed(x > 0 && x < 0.01 ? 2 : 1)}%`;
 
@@ -73,10 +95,30 @@ function controls() {
   const input = /** @type {HTMLInputElement} */ (el('input', {
     type: 'number', step: 'any', inputmode: 'decimal', value: state.target === null ? '' : String(state.target), 'aria-label': 'Target value',
   }));
+  // The same target as a roll on the ±10% scale: type in either box and the other fills in.
+  const u0 = state.target === null ? null : rollOf(stat, state.target);
+  const rollInput = /** @type {HTMLInputElement} */ (el('input', {
+    type: 'number', step: 'any', inputmode: 'decimal', min: '-10', max: '10', 'aria-label': 'Target roll (±10%)',
+    value: u0 === null ? '' : rollScore(u0).toFixed(2), placeholder: '−10 to +10',
+  }));
   // Update results without re-rendering the controls, so the input keeps focus while typing.
   input.addEventListener('input', () => {
     const n = Number(input.value);
-    if (input.value === '') { state.target = null; renderResults(); } else if (Number.isFinite(n)) { state.target = n; renderResults(); }
+    if (input.value === '') { state.target = null; rollInput.value = ''; renderResults(); } else if (Number.isFinite(n)) {
+      state.target = n;
+      const u = rollOf(stat, n);
+      rollInput.value = u === null ? '' : rollScore(u).toFixed(2);
+      renderResults();
+    }
+  });
+  rollInput.addEventListener('input', () => {
+    const n = Number(rollInput.value);
+    if (rollInput.value === '' || !Number.isFinite(n)) return;
+    const v = valueOf(stat, n);
+    if (v === null) return;
+    state.target = v;
+    input.value = String(v);
+    renderResults();
   });
   const ranks = Array.from({ length: MAX_RANK + 1 }, (_, r) => /** @type {[string, string]} */ ([String(r), String(r)]));
 
@@ -88,6 +130,8 @@ function controls() {
     segmented('Comparison', ['gte', 'lte', 'near'], state.op, v => set({ op: /** @type {Goal['op']} */ (v) }),
       v => OP_LABEL[/** @type {Goal['op']} */ (v)]),
     el('label', { class: 'field target' }, [input, el('span', {}, [UNIT_SUFFIX[stat.unit]])]),
+    el('label', { class: 'field target', title: 'The same target as a roll: −10% is the worst roll, +10% the best' }, [el('span', {}, ['or roll']), rollInput, el('span', {}, ['%'])]),
+    segmented('Roll on shape', SHAPE_ORDER, state.shape, v => set({ shape: /** @type {any} */ (v) })),
     select('Rank', ranks, String(state.rank), v => set({ rank: Number(v) })),
   ]);
 }
@@ -102,9 +146,10 @@ function results() {
     resultCell(r, stat),
     el('td', {}, [rollNeeded(r)]),
     el('td', {}, [r.possible ? pct(r.probability) : '—']),
+    el('td', {}, [targetGrade(stat, r.shape, res.sign)]),
   ]));
   const chanceHead = state.op === 'near' ? 'Chance (±1)' : 'Chance';
-  const head = el('thead', {}, [el('tr', {}, ['Shape', 'Range', 'Meets goal', 'Roll needed (±10%)', chanceHead]
+  const head = el('thead', {}, [el('tr', {}, ['Shape', 'Range', 'Meets goal', 'Roll needed (±10%)', chanceHead, `${format(stat, state.target)} grades as`]
     .map(h => el('th', { scope: 'col' }, [h])))]);
 
   const notes = [el('p', { class: 'summary' }, [summary(res, stat)])];
@@ -126,7 +171,53 @@ function results() {
   return el('div', {}, [
     ...notes,
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
+    ...(stat.spliced && res.sign === '+' ? spliceTables(stat, res) : []),
   ]);
+}
+
+/** What the target value grades as on a shape: "+4.20% (A-)", or why it can't. @param {import('../data/stats.js').Stat} stat @param {import('../data/stats.js').Shape} shape @param {'+' | '-'} sign */
+function targetGrade(stat, shape, sign) {
+  if (!canRoll(stat, state.cls, shape, sign)) return '—';
+  const g = gradeRoll(stat, state.cls, shape, sign, /** @type {number} */ (state.target), state.rank);
+  if (!g.possible) return 'Out of range';
+  const [a, b] = [rollScore(g.lo), rollScore(g.hi)];
+  const [la, lb] = [letterGrade(a), letterGrade(b)];
+  return `${roll(g.mid)} (${la === lb ? la : `${la} / ${lb}`})`;
+}
+
+/**
+ * "Splice to this": the values each parent needs on each shape. The spliced stat keeps the better
+ * of its parents' rolls, so it's the same roll window, shown in the parents' own numbers.
+ * @param {import('../data/stats.js').Stat} stat @param {ReturnType<typeof evaluateGoal>} res
+ */
+function spliceTables(stat, res) {
+  const cls = state.cls;
+  const recipes = /** @type {string[][]} */ (stat.from ?? []).filter(r => r.every(id => STAT_BY_ID[id].b[cls] !== undefined));
+  const rule = state.op === 'gte' ? 'One parent at least this (the better roll is kept):'
+    : state.op === 'lte' ? 'Both parents at most this (the better roll is kept):'
+      : 'One parent at this, the other no higher:';
+  return recipes.flatMap(pair => {
+    const parents = pair.map(id => STAT_BY_ID[id]);
+    const rows = res.results.filter(r => r.possible && r.uInterval).map(r => {
+      const show = (/** @type {import('../data/stats.js').Stat} */ p, /** @type {number} */ u) =>
+        format(p, displayValue(p, cls, r.shape, '+', u, state.rank));
+      const [a, b] = /** @type {[number, number]} */ (r.uInterval);
+      const cell = (/** @type {import('../data/stats.js').Stat} */ p) => {
+        if (state.op === 'near' ? (r.delta ?? 1) >= 0.05 : !r.feasible) return el('td', { class: 'na' }, ['—']);
+        if (state.op === 'near') return el('td', {}, [show(p, r.closestU ?? 0)]);
+        if (state.op === 'gte') return el('td', {}, [a <= 0 ? 'Any' : `≥ ${show(p, a)}`]);
+        return el('td', {}, [b >= 1 ? 'Any' : `≤ ${show(p, b)}`]);
+      };
+      return el('tr', {}, [el('th', { scope: 'row' }, [r.shape]), ...parents.map(cell)]);
+    });
+    return [
+      el('h3', { class: 'plan-stage' }, [`Splice from ${parents.map(p => statName(p, cls)).join(' + ')}`]),
+      el('p', { class: 'note' }, [rule]),
+      el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals compact' }, [
+        el('thead', {}, [el('tr', {}, ['Shape', ...parents.map(p => statName(p, cls))].map(h => el('th', { scope: 'col' }, [h])))]),
+        el('tbody', {}, rows)])]),
+    ];
+  });
 }
 
 /** @type {HTMLElement} */
@@ -136,7 +227,7 @@ let resultsBox;
 
 function renderResults() {
   resultsBox.replaceChildren(results());
-  saveState('g', { weapon: state.weapon, cls: state.cls, stat: state.statId, op: state.op, t: state.target ?? '', rank: state.rank });
+  saveState('g', { weapon: state.weapon, cls: state.cls, stat: state.statId, op: state.op, t: state.target ?? '', rank: state.rank, ...(state.shape !== '++' ? { sh: state.shape } : {}) });
 }
 
 function render() {
@@ -154,6 +245,7 @@ function restore() {
     op: oneOf(/** @type {const} */ (['gte', 'lte', 'near'])),
     t: num(),
     rank: num(0, MAX_RANK),
+    sh: oneOf(SHAPE_ORDER),
   });
   if (saved.weapon !== undefined) {
     state.weapon = saved.weapon;
@@ -162,6 +254,7 @@ function restore() {
     state.weapon = '';
     state.cls = saved.cls;
   }
+  if (saved.sh) state.shape = saved.sh;
   if (saved.stat) state.statId = saved.stat;
   if (saved.op) state.op = saved.op;
   if (saved.t !== undefined) state.target = saved.t;

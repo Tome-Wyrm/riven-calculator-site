@@ -4,7 +4,7 @@
 // the Kuva it's likely to cost.
 
 import { CLASSES, SHAPES, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { SHAPE_ORDER, range, solveU, rollScore } from '../engine.js';
+import { SHAPE_ORDER, displayValue, format, range, solveU, rollScore } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { pools } from '../cycle.js';
 import { planBuild, OP_TEXT, splicedRollWindow } from '../planner.js';
@@ -479,10 +479,18 @@ function results() {
     // The spliced stat keeps the better parent roll: with a goal, say what the parents need.
     const win = splicedRollWindow({ cls: state.cls, positives: [], spliced: state.spliced, negative: null, shape: T, goals });
     const g = goals[state.spliced];
+    // In the parents' own numbers on this shape ("Attack Speed +9.7% or Range +1.2 m"), the
+    // roll after it.
+    const at = (/** @type {number} */ u, join = ' or ') => parents.map(id => format(STAT_BY_ID[id], displayValue(STAT_BY_ID[id], state.cls, T, '+', u)) + ` ${name(id)}`).join(join);
+    /** Each parent's values for a roll window: "+67.7% to +67.8% Attack Speed", or one number when they round the same. @param {number} lo @param {number} hi */
+    const between = (lo, hi) => parents.map(id => {
+      const [x, y] = [lo, hi].map(u => format(STAT_BY_ID[id], displayValue(STAT_BY_ID[id], state.cls, T, '+', u)));
+      return `${x === y ? x : `${x} to ${y}`} ${name(id)}`;
+    }).join(' or ');
     const needText = win === null ? ''
-      : `, with ${g.op === 'gte' ? `one of them rolling at least ${rollText(win.lo)}`
-        : g.op === 'lte' ? `both rolling at most ${rollText(win.hi)}`
-          : `both rolling at most ${rollText(win.hi)} and one at least ${rollText(win.lo)}`}`
+      : `, with ${g.op === 'gte' ? `one of them at least ${at(win.lo)} (roll ${rollText(win.lo)})`
+        : g.op === 'lte' ? `both at most ${at(win.hi, ' and ')} (roll ${rollText(win.hi)})`
+          : `one of them at ${between(win.lo, win.hi)} (roll ${rollText(win.lo)} to ${rollText(win.hi)}) and the other no higher`}`
         + ` (for ${name(state.spliced)} ${OP_TEXT[g.op]} ${g.value}; it keeps the better roll)`;
     out.push(...table('pre', `1. Get ${parents.map(name).join(' and ')}${curseOk ? ' (one of them can be the curse)' : ''}${needText} on a ${T} riven, then splice ${name(state.spliced)}`));
     out.push(...table('post', `2. With ${name(state.spliced)} in place, cycle for ${goalList}`));
