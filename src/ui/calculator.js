@@ -1,7 +1,7 @@
 // @ts-check
 // Goal calculator: "can a <class> riven roll <op> <target> <stat>, and how likely is it?"
 
-import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
+import { CLASSES, MAX_RANK, ORDINARY, SHAPES, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER, canRoll, displayValue, evaluateGoal, format, gradeRoll, inferSign, letterGrade, quirks, rollScore, weaponCanRoll } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow, recipeText } from './dom.js';
@@ -193,20 +193,25 @@ function targetGrade(stat, shape, sign) {
 function spliceTables(stat, res) {
   const cls = state.cls;
   const recipes = /** @type {string[][]} */ (stat.from ?? []).filter(r => r.every(id => STAT_BY_ID[id].b[cls] !== undefined));
-  const rule = state.op === 'gte' ? 'One parent at least this (the better roll is kept):'
-    : state.op === 'lte' ? 'Both parents at most this (the better roll is kept):'
+  const rule = state.op === 'gte' ? 'One parent at least this, as a positive or as the curse (the better roll is kept):'
+    : state.op === 'lte' ? 'Both parents at most this, as positives or the curse (the better roll is kept):'
       : 'One parent at this, the other no higher:';
   return recipes.flatMap(pair => {
     const parents = pair.map(id => STAT_BY_ID[id]);
     const rows = res.results.filter(r => r.possible && r.uInterval).map(r => {
-      const show = (/** @type {import('../data/stats.js').Stat} */ p, /** @type {number} */ u) =>
-        format(p, displayValue(p, cls, r.shape, '+', u, state.rank));
+      const show = (/** @type {import('../data/stats.js').Stat} */ p, /** @type {'+' | '-'} */ sign, /** @type {number} */ u) =>
+        format(p, displayValue(p, cls, r.shape, sign, u, state.rank));
       const [a, b] = /** @type {[number, number]} */ (r.uInterval);
+      // Bounds by size ("or more"), not ≥ / ≤: a recoil buff and every curse show as negative numbers.
+      // A curse's roll counts by its size too, so the same window applies to it.
+      const need = (/** @type {import('../data/stats.js').Stat} */ p, /** @type {'+' | '-'} */ sign) =>
+        state.op === 'near' ? show(p, sign, r.closestU ?? 0)
+          : state.op === 'gte' ? (a <= 0 ? 'Any' : `${show(p, sign, a)} or more`)
+            : (b >= 1 ? 'Any' : `${show(p, sign, b)} or less`);
       const cell = (/** @type {import('../data/stats.js').Stat} */ p) => {
         if (state.op === 'near' ? (r.delta ?? 1) >= 0.05 : !r.feasible) return el('td', { class: 'na' }, ['—']);
-        if (state.op === 'near') return el('td', {}, [show(p, r.closestU ?? 0)]);
-        if (state.op === 'gte') return el('td', {}, [a <= 0 ? 'Any' : `≥ ${show(p, a)}`]);
-        return el('td', {}, [b >= 1 ? 'Any' : `≤ ${show(p, b)}`]);
+        const curse = SHAPES[r.shape].negatives > 0 && canRoll(p, cls, r.shape, '-');
+        return el('td', {}, [need(p, '+'), ...(curse ? [el('span', { class: 'sub' }, [`as the curse: ${need(p, '-')}`])] : [])]);
       };
       return el('tr', {}, [el('th', { scope: 'row' }, [r.shape]), ...parents.map(cell)]);
     });
