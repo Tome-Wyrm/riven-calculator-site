@@ -12,7 +12,7 @@ const DIR = '../test/fixtures/local/';
 const KEY = 'riven-review-v1';
 
 /** @typedef {{file: string, weapon: string | null, rank: number | null, stats: string[], locked: string[], source?: string, problems?: string[]}} Item */
-/** @typedef {{verdict: 'ok' | 'reject' | 'twoCards', weapon?: string | null, rank?: number | null, stats?: string[], locked?: string[]}} Review */
+/** @typedef {{verdict: 'ok' | 'reject' | 'twoCards', weapon?: string | null, rank?: number | null, stats?: string[], locked?: string[], obstructed?: boolean}} Review */
 
 /** @type {Item[]} */
 const queue = await (await fetch(DIR + 'review-queue.json', { cache: 'no-store' })).json();
@@ -50,7 +50,8 @@ function current() {
     stats.push(`${v} ${id}`);
     if (/** @type {HTMLInputElement} */ (row.querySelector('input[type=checkbox]')).checked) locked.push(id);
   }
-  return { weapon, rank: r === '' ? null : Number(r), stats, locked };
+  const obstructed = /** @type {HTMLInputElement} */ (f.querySelector('[name=obstructed]')).checked;
+  return { weapon, rank: r === '' ? null : Number(r), stats, locked, ...(obstructed ? { obstructed: true } : {}) };
 }
 
 /** "In range" check for one stat row, given the whole answer (the shape depends on every sign). */
@@ -98,6 +99,11 @@ function show() {
   $('form').replaceChildren(
     el('label', { class: 'field' }, [el('span', {}, ['Weapon']), weapon]),
     el('label', { class: 'field' }, [el('span', {}, ['Rank']), rank]),
+    // Cursor or overlay over some of the text: still a fair test for the reader, but those lines
+    // shouldn't be training labels.
+    el('label', { class: 'obstructed', title: 'Alt+O' }, [
+      el('input', { type: 'checkbox', name: 'obstructed', ...(prior?.obstructed ? { checked: '' } : {}) }),
+      ' Obstructed (cursor or overlay over some text)']),
     ...rows,
     el('div', { class: 'buttons' }, [
       btn('Accept ✓', 'accept', accept),
@@ -138,7 +144,7 @@ function download() {
     const r = saved[item.file];
     if (!r) continue;
     out[item.file] = r.verdict === 'ok'
-      ? { weapon: r.weapon, rank: r.rank, stats: r.stats, locked: r.locked, source: item.source }
+      ? { weapon: r.weapon, rank: r.rank, stats: r.stats, locked: r.locked, ...(r.obstructed ? { obstructed: true } : {}), source: item.source }
       : r.verdict === 'twoCards' ? { twoCards: true, source: item.source } : { rejected: true, source: item.source };
   }
   const a = el('a', { href: URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' })), download: 'review-answers.json' });
@@ -152,6 +158,11 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.altKey) { e.preventDefault(); accept(); }
   else if (e.altKey && e.key.toLowerCase() === 'x') { e.preventDefault(); decide('reject'); }
   else if (e.altKey && e.key.toLowerCase() === 't') { e.preventDefault(); decide('twoCards'); }
+  else if (e.altKey && e.key.toLowerCase() === 'o') {
+    e.preventDefault();
+    const box = /** @type {HTMLInputElement} */ ($('form').querySelector('[name=obstructed]'));
+    box.checked = !box.checked;
+  }
   else if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
   else if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); go(1); }
 });

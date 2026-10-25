@@ -15,6 +15,7 @@
     .form { display: grid; gap: 10px; }
     .row { display: grid; grid-template-columns: 7em 1fr auto; gap: 6px; align-items: center; }
     .row input[type=text] { width: 100%; }
+    .row label { white-space: nowrap; }
     .row .check { font-size: 0.8rem; grid-column: 1 / -1; margin-top: -4px; }
     .ok { color: var(--pos-text); } .bad { color: var(--neg-text); }
     .buttons { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -32,7 +33,7 @@
     <h1>Riven review</h1>
     <p class="note">Check each image against what the reader got, fix anything wrong, then <b>Accept</b>. Your answers are
       kept in this browser as you go; <b>Download answers</b> when you're done (or any time) and hand the file over.
-      Keys: <kbd>Enter</kbd> accept · <kbd>Alt</kbd>+<kbd>X</kbd> not usable · <kbd>Alt</kbd>+<kbd>T</kbd> two cards ·
+      Keys: <kbd>Enter</kbd> accept · <kbd>Alt</kbd>+<kbd>X</kbd> not usable · <kbd>Alt</kbd>+<kbd>T</kbd> two cards · <kbd>Alt</kbd>+<kbd>O</kbd> obstructed ·
       <kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> previous / next · click the image to zoom.</p>
     <p id="status" class="status"></p>
     <div class="layout">
