@@ -105,8 +105,9 @@ function show() {
   });
   const btn = (/** @type {string} */ text, /** @type {string} */ cls, /** @type {() => void} */ fn) => { const b = el('button', { type: 'button', class: cls }, [text]); b.addEventListener('click', fn); return b; };
   $('form').replaceChildren(
-    el('label', { class: 'field' }, [el('span', {}, ['Weapon']), weapon]),
+    // Checked in this order: rank, weapon, then the stats (focus starts on rank; Tab moves on).
     el('label', { class: 'field' }, [el('span', {}, ['Rank']), rank]),
+    el('label', { class: 'field' }, [el('span', {}, ['Weapon']), weapon]),
     // Cursor or overlay over some of the text: still a fair test for the reader, but those lines
     // shouldn't be training labels.
     el('label', { class: 'obstructed', title: 'Alt+O' }, [
@@ -125,7 +126,7 @@ function show() {
     el('div', { class: 'buttons' }, [btn('Download answers', '', download)]),
   );
   checkRows();
-  /** @type {HTMLInputElement} */ (weapon).focus();
+  /** @type {HTMLSelectElement} */ (rank).focus();
 }
 
 /** A button that swaps its stat row with the one above (-1) or below (1). */
