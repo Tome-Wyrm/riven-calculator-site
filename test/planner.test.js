@@ -114,3 +114,11 @@ test('a value goal for the curse', () => {
   assert.ok(small.expectedKuva > any.expectedKuva, `${small.expectedKuva} vs ${any.expectedKuva}`);
   assert.throws(() => planBuild({ ...base, negGoal: { op: 'gte', value: 999 } }), /can't be/);
 });
+
+test('after a splice every cycle pays the locked price: the spliced stat holds a lock', () => {
+  const target = { ...VIRAL, negative: null };
+  const p = planBuild(target, { stage: 'post', have: [], shape: '+++-' });
+  near(p.expectedKuva, p.expectedCycles * 2 * FLAT_COST, 1e-3);
+  // Giving the splice up (unlocked, it's rerolled away) is never worth it once it's on the right shape.
+  assert.ok(p.steps.every(s => !s.action.startsWith('unsplice:')));
+});

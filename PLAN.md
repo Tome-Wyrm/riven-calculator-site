@@ -265,6 +265,11 @@ Back-solve the roll quality u for each stat on a riven you already own.
         about 0.5x today's rank-8 ranges (an old riven, like the Akarius one), and the spliced
         Status Damage (+52.5%) came in at the same scale. The Mausolon splice (Critical Chance +
         -Zoom → Weak Point Critical Chance +291.7%) fits today's ranges.
+  - [x] Splice locks (2026-10-25, from in-game use): the spliced stat comes locked in a slot of its
+        own, so cycling with it costs the locked price; unlocking it to cycle loses it. One other
+        stat (blessing or curse) can be locked beside it, never two ordinary ones. Locking any curse
+        holds the shape (more positive slots for a positive-only stat). Planner models all of this;
+        still assumed: splice + one more lock costs the same as one lock.
   - [x] "Keeps the better parent roll" confirmed (2026-10-25, a Hirudo +++- splice screen): Status
         Chance +110.3% (u 0.944–0.949) + Melee Damage +202.2% (u 0.955–0.958) → Status Damage +110.5%
         (u 0.954–0.959), i.e. Melee Damage's roll. The game also writes weapon names in title case on

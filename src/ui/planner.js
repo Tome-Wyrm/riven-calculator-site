@@ -118,15 +118,17 @@ function lockToggle(id) {
 
 /**
  * The next move from your riven, given what's locked on it now: "Unlock Cold, lock Toxin and cycle".
- * @param {string} action @param {string[]} parents
+ * @param {string} action @param {string[]} parents @param {boolean} spliced  after the splice
  */
-function nextMove(action, parents) {
-  if (action === 'splice') return actionText(action, parents, current().have);
+function nextMove(action, parents, spliced) {
+  if (action === 'splice' || action === '-?' || action.startsWith('unsplice:')) return actionText(action, parents, current().have, spliced);
   const want = action === 'cycle' ? null : action.startsWith('-') ? action.slice(1) : action;
-  const unlock = state.myLocks.filter(id => id !== want);
+  // (The spliced stat's lock is a slot of its own: it stays.)
+  const unlock = state.myLocks.filter(id => id !== want && !(spliced && id === state.spliced));
   const keep = want !== null && state.myLocks.includes(want);
   const text = want === null ? 'cycle' : `${keep ? 'keep' : 'lock'} ${name(action)} ${keep ? 'locked ' : ''}and cycle`;
-  return unlock.length ? `Unlock ${unlock.map(name).join(', ')}, ${text}` : text[0].toUpperCase() + text.slice(1) + (want === null ? ', nothing locked' : '');
+  const rest = spliced ? `, with ${name(state.spliced)} locked` : want === null && !unlock.length ? ', nothing locked' : '';
+  return (unlock.length ? `Unlock ${unlock.map(name).join(', ')}, ${text}` : text[0].toUpperCase() + text.slice(1)) + rest;
 }
 
 /**
@@ -305,11 +307,19 @@ function controls() {
 /**
  * @param {string} action @param {string[]} parents
  * @param {string[]} [have] the riven's stats at that point ('-x' = x is its curse, which can be a parent)
+ * @param {boolean} [spliced] after the splice (the spliced stat holds a lock of its own)
  */
-function actionText(action, parents, have = []) {
-  if (action === 'cycle') return 'Cycle, nothing locked';
+function actionText(action, parents, have = [], spliced = false) {
+  if (action.startsWith('unsplice:')) {
+    const rest = action.slice(9);
+    return `Unlock ${name(state.spliced)} (cycling loses it), ${rest === 'cycle' ? 'cycle with nothing locked' : `lock ${rest === '-?' ? 'the curse' : name(rest)} and cycle`}`;
+  }
+  const also = spliced ? ` (with ${name(state.spliced)})` : '';
+  if (action === 'cycle') return spliced ? `Cycle with only ${name(state.spliced)} locked` : 'Cycle, nothing locked';
   if (action === 'splice') return `Splice ${parents.map(id => name(have.includes(`-${id}`) ? `-${id}` : id)).join(' + ')} → ${name(state.spliced)}`;
-  return `Lock ${name(action)} and cycle`;
+  // Any curse: its lock holds the shape.
+  if (action === '-?') return `Lock the curse${also} and cycle`;
+  return `Lock ${name(action)}${also} and cycle`;
 }
 
 function results() {
@@ -389,7 +399,7 @@ function results() {
   ];
   if (state.from === 'mine') {
     out.push(el('p', { class: 'note next' }, [mine
-      ? `Your next move: ${nextMove(mine.action, parents)}.`
+      ? `Your next move: ${nextMove(mine.action, parents, mine.stage === 'post' && !!state.spliced)}.`
       : `Your riven isn't the ${T} shape the target needs${state.spliced && mineNow?.stage === 'post' ? ', and a spliced riven\'s shape can\'t change' : ''}: cycle it unlocked until it is.`
         + (state.shape !== 'any' && mineNow?.shape ? ` (Or set Shape to Any to also plan for its own ${mineNow.shape} shape.)` : '')]));
   }
@@ -411,7 +421,7 @@ function results() {
     }), ...(s.good.length ? ['anygood'] : [])]);
     const traitText = (/** @type {string} */ t) => (t === 'anygood' ? 'a good roll on a parent'
       : t.endsWith(':good') ? `${name(t.slice(0, -5))} (good roll)` : t.endsWith(':high') ? `${name(t.slice(0, -5))} (rolled too high)` : name(t));
-    const moveOf = (/** @type {typeof steps[number]} */ s) => actionText(s.action, parents, s.have);
+    const moveOf = (/** @type {typeof steps[number]} */ s) => actionText(s.action, parents, s.have, s.stage === 'post' && !!state.spliced);
     const all = [...new Set(steps.flatMap(s => [...traits(s)]))];
     /** @type {string[][]} */
     const conditions = [[]];
