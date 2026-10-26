@@ -13,8 +13,9 @@
     .shot.full { cursor: zoom-out; }
     .shot.full img { max-width: none; }
     .form { display: grid; gap: 10px; }
-    .row { display: grid; grid-template-columns: 7em 1fr auto; gap: 6px; align-items: center; }
+    .row { display: grid; grid-template-columns: 7em 1fr auto auto; gap: 6px; align-items: center; }
     .row input[type=text] { width: 100%; }
+    .row .move button { padding: 0 6px; }
     .row label { white-space: nowrap; }
     .row .check { font-size: 0.8rem; grid-column: 1 / -1; margin-top: -4px; }
     .ok { color: var(--pos-text); } .bad { color: var(--neg-text); }

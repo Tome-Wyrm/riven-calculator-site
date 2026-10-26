@@ -22,6 +22,8 @@ try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* fresh 
 const store = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* full or blocked */ } };
 
 const STATS = [...ORDINARY, ...SPLICED];
+// For a splice screen's unrevealed new stat; review-only, never a stat on the site.
+const UNKNOWN = '???';
 const statLabel = (/** @type {import('../src/data/stats.js').Stat} */ s) => s.name + (s.meleeName ? ` / ${s.meleeName}` : '') + (s.spliced ? ' (spliced)' : '');
 let index = Math.max(0, queue.findIndex(q => !saved[q.file]));
 
@@ -60,6 +62,11 @@ function checkRows() {
   const w = WEAPONS.find(x => x[0] === a.weapon);
   const parsed = a.stats.map(s => { const [v, id] = s.split(' '); return { n: Number(v.replace(/^x/, '')), stat: STAT_BY_ID[id], v }; });
   const notes = $('form').querySelectorAll('.check');
+  // An unrevealed stat (a splice screen's "???") has no sign, so no shape to check against.
+  if (parsed.some(p => p.v && !p.stat && a.stats.some(s => s.endsWith(' ' + UNKNOWN)))) {
+    notes.forEach(n => { n.textContent = ''; n.className = 'check'; });
+    return;
+  }
   if (!w || a.rank === null || parsed.some(p => !p.v)) { notes.forEach(n => { n.textContent = w ? '' : 'weapon not recognised'; n.className = 'check bad'; }); return; }
   const signs = parsed.map(p => inferSign(p.stat, w[1], p.n));
   const shape = shapeFor(signs.filter(s => s === '+').length, signs.filter(s => s === '-').length);
@@ -90,10 +97,11 @@ function show() {
   const rows = Array.from({ length: 4 }, (_, i) => {
     const [v = '', id = ''] = (a.stats[i] ?? '').split(' ');
     const sel = el('select', {}, [el('option', { value: '' }, ['—']),
+      el('option', { value: UNKNOWN, ...(id === UNKNOWN ? { selected: '' } : {}) }, ['??? (unrevealed)']),
       ...STATS.map(s => el('option', { value: s.id, ...(s.id === id ? { selected: '' } : {}) }, [statLabel(s)]))]);
     const lock = el('input', { type: 'checkbox', title: 'Locked', ...(a.locked.includes(id) && id ? { checked: '' } : {}) });
     return el('div', { class: 'row' }, [el('input', { type: 'text', value: v, placeholder: '+97.4 / x1.06' }), sel,
-      el('label', {}, [lock, ' 🔒']), el('span', { class: 'check' })]);
+      el('label', {}, [lock, ' 🔒']), el('span', { class: 'move' }, [moveBtn('↑', -1), moveBtn('↓', 1)]), el('span', { class: 'check' })]);
   });
   const btn = (/** @type {string} */ text, /** @type {string} */ cls, /** @type {() => void} */ fn) => { const b = el('button', { type: 'button', class: cls }, [text]); b.addEventListener('click', fn); return b; };
   $('form').replaceChildren(
@@ -118,6 +126,19 @@ function show() {
   );
   checkRows();
   /** @type {HTMLInputElement} */ (weapon).focus();
+}
+
+/** A button that swaps its stat row with the one above (-1) or below (1). */
+function moveBtn(/** @type {string} */ text, /** @type {number} */ dir) {
+  const b = el('button', { type: 'button', title: dir < 0 ? 'Move up' : 'Move down' }, [text]);
+  b.addEventListener('click', () => {
+    const row = /** @type {HTMLElement} */ (b.closest('.row'));
+    const other = dir < 0 ? row.previousElementSibling : row.nextElementSibling;
+    if (!other?.classList.contains('row')) return;
+    dir < 0 ? other.before(row) : other.after(row);
+    checkRows();
+  });
+  return b;
 }
 
 function accept() {
