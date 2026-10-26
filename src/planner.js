@@ -11,7 +11,7 @@
 // -Zoom → Weak Point Critical Chance): then the spliced stat takes the positive parent's place and
 // a random curse replaces the negative one. With two positive parents, a random positive fills the
 // second slot. The spliced stat comes locked, in a lock slot of its own: cycling with it locked
-// costs the locked price (one other stat can be locked beside it, assumed at the same price), and
+// costs the locked price (one other stat can be locked beside it, at the same price: any locks cost the locked price), and
 // unlocking it to cycle at the normal price loses it, back to before the splice.
 // Policy iteration finds the cheapest action in every state; the result is exact for the model.
 //
