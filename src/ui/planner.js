@@ -121,7 +121,7 @@ function lockToggle(id) {
  * @param {string} action @param {string[]} parents @param {boolean} spliced  after the splice
  */
 function nextMove(action, parents, spliced) {
-  if (action === 'splice' || action === '-?' || action.startsWith('unsplice:')) return actionText(action, parents, current().have, spliced);
+  if (action === 'splice' || action === '-?') return actionText(action, parents, current().have, spliced);
   const want = action === 'cycle' ? null : action.startsWith('-') ? action.slice(1) : action;
   // (The spliced stat's lock is a slot of its own: it stays.)
   const unlock = state.myLocks.filter(id => id !== want && !(spliced && id === state.spliced));
@@ -307,13 +307,9 @@ function controls() {
 /**
  * @param {string} action @param {string[]} parents
  * @param {string[]} [have] the riven's stats at that point ('-x' = x is its curse, which can be a parent)
- * @param {boolean} [spliced] after the splice (the spliced stat holds a lock of its own)
+ * @param {boolean} [spliced] after the splice (the spliced stat stays locked, in a slot of its own)
  */
 function actionText(action, parents, have = [], spliced = false) {
-  if (action.startsWith('unsplice:')) {
-    const rest = action.slice(9);
-    return `Unlock ${name(state.spliced)} (cycling loses it), ${rest === 'cycle' ? 'cycle with nothing locked' : `lock ${rest === '-?' ? 'the curse' : name(rest)} and cycle`}`;
-  }
   const also = spliced ? ` (with ${name(state.spliced)})` : '';
   if (action === 'cycle') return spliced ? `Cycle with only ${name(state.spliced)} locked` : 'Cycle, nothing locked';
   if (action === 'splice') return `Splice ${parents.map(id => name(have.includes(`-${id}`) ? `-${id}` : id)).join(' + ')} → ${name(state.spliced)}`;

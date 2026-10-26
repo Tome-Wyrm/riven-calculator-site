@@ -10,9 +10,8 @@
 // the spliced trait stays and the shape is frozen. A parent can be the curse (Critical Chance +
 // -Zoom → Weak Point Critical Chance): then the spliced stat takes the positive parent's place and
 // a random curse replaces the negative one. With two positive parents, a random positive fills the
-// second slot. The spliced stat comes locked, in a lock slot of its own: cycling with it locked
-// costs the locked price (one other stat can be locked beside it, at the same price: any locks cost the locked price), and
-// unlocking it to cycle at the normal price loses it, back to before the splice.
+// second slot. The spliced stat stays locked in a slot of its own at no extra cost (cycling with
+// only it locked is the normal price); one other stat can be locked beside it, at the locked price.
 // Policy iteration finds the cheapest action in every state; the result is exact for the model.
 //
 // Value goals ("Toxin at least 100%", at most, or exactly): a wanted stat only counts once its
@@ -291,26 +290,14 @@ function solveFor(t, parents) {
     return out;
   }
 
-  /**
-   * A cycle with the spliced stat unlocked: it's rerolled away, so the riven is back to before the
-   * splice (with the same wanted traits and curse).
-   * @param {State} s @param {{lock: string | null}} action
-   */
-  function unsplice(s, action) {
-    let mask = 0;
-    postTracked.forEach((id, i) => { if (s.mask & (1 << i)) mask |= 1 << preTracked.indexOf(id); });
-    return cycle({ stage: 'pre', mask, neg: s.neg, shape: s.shape, pg: 0 }, action);
-  }
-
-  /** @param {State} s @returns {{lock: string | null, label: string, unsplice?: boolean}[]} */
+  /** @param {State} s @returns {{lock: string | null, label: string}[]} */
   function actions(s) {
     if (canSplice(s)) return [{ lock: 'SPLICE', label: 'splice' }];
     const acts = [{ lock: null, label: 'cycle' }];
     tracked(s).forEach((id, i) => { if (s.mask & (1 << i)) acts.push({ lock: id, label: `lock ${id}` }); });
     // The curse: the wanted one or a parent, or any other (its lock still holds the shape).
     if (s.neg || SHAPES[s.shape].negatives) acts.push({ lock: 'NEG', label: `lock ${negStat(s.neg) ?? 'the curse'}` });
-    // After the splice, each of those can also be done with the spliced stat unlocked (and lost).
-    return s.stage === 'post' && S ? [...acts, ...acts.map(a => ({ ...a, unsplice: true }))] : acts;
+    return acts;
   }
 
   // Transition tables per state and action.
@@ -319,13 +306,11 @@ function solveFor(t, parents) {
   const table = keys.map(k => {
     const s = /** @type {State} */ (states.get(k));
     if (isDone(s)) return [];
-    // The spliced stat holds a lock unless it's being given up.
-    const spliceLocked = s.stage === 'post' && S;
     return actions(s).map(a => ({
       ...a,
-      cost: a.lock === 'SPLICE' ? 0 : a.lock || (spliceLocked && !a.unsplice) ? 2 * FLAT_COST : FLAT_COST,
+      cost: a.lock === 'SPLICE' ? 0 : a.lock ? 2 * FLAT_COST : FLAT_COST,
       cycles: a.lock === 'SPLICE' ? 0 : 1,
-      next: [...(a.lock === 'SPLICE' ? splice(s) : a.unsplice ? unsplice(s, a) : cycle(s, a))].map(([kk, p]) => [/** @type {number} */ (index.get(kk)), p]),
+      next: [...(a.lock === 'SPLICE' ? splice(s) : cycle(s, a))].map(([kk, p]) => [/** @type {number} */ (index.get(kk)), p]),
     }));
   });
 
@@ -392,8 +377,7 @@ function gauss(A) {
  * @property {string[]} high        splice parents whose roll is above it (too high for an at most / exactly goal)
  * @property {Shape} shape
  * @property {string} action        'cycle', 'splice', or the id to lock ('-x' for the negative, '-?' for
- *   a curse the target doesn't want); after the splice, 'unsplice:' + one of those = the same with
- *   the spliced stat unlocked (lost)
+ *   a curse the target doesn't want)
  * @property {number} kuva          expected Kuva from here to the finished riven
  * @property {number} cycles        expected cycles from here
  */
@@ -522,7 +506,7 @@ export function planBuild(t, current = null) {
       shape: s.shape,
       good: (best.parents ?? []).filter((/** @type {string} */ _, /** @type {number} */ b) => ((s.pg >> (2 * b)) & 3) === 1),
       high: (best.parents ?? []).filter((/** @type {string} */ _, /** @type {number} */ b) => ((s.pg >> (2 * b)) & 3) === 2),
-      action: a.unsplice ? `unsplice:${move}` : move,
+      action: move,
       kuva: best.V[i],
       cycles: best.C[i],
     });
