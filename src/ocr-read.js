@@ -72,6 +72,7 @@ async function prepare(blob) {
  * @property {string[]} issues             what couldn't be read
  * @property {{statId: string | null, value: string}[]} noMultiplier  faction stats shown as "+0"
  * @property {boolean} twoCards
+ * @property {boolean} market   a warframe.market listing, not a game screenshot
  */
 
 /** @param {Blob} blob @returns {Promise<ScreenshotRead>} */
@@ -120,6 +121,6 @@ export function interpretText(text) {
   ];
   return {
     text: data.text, weapon: parsed.weapon, cls, rank, rows, positives, notes: refined.notes, issues,
-    noMultiplier, twoCards: parsed.twoCards,
+    noMultiplier, twoCards: parsed.twoCards, market: parsed.market,
   };
 }

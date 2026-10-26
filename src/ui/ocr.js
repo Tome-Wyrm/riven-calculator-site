@@ -34,6 +34,11 @@ async function showScreenshot(blob) {
     const found = rows.map(r => `${r.value} ${STAT_BY_ID[r.statId].name}`).join(', ');
     say([`Read ${read.weapon?.name ?? 'a riven'}${rank === null ? '' : `, rank ${rank}`}: ${found}. Check the values above.`],
       issues.length ? 'note warn' : 'note');
+    if (read.market) {
+      status.append(el('p', { class: 'note warn' }, [
+        "This looks like a warframe.market listing, not the game: its stat boxes don't read well, so some may be missing. "
+        + 'Check the values above against the listing, or use a screenshot from the game.']));
+    }
     if (read.twoCards) {
       status.append(el('p', { class: 'note warn' }, [
         'This looks like two riven cards side by side, and their lines get mixed up. Crop to one card and try again.']));
@@ -46,7 +51,8 @@ async function showScreenshot(blob) {
     if (read.notes.length) status.append(el('p', { class: 'note' }, [`Fixed using the name and the stat ranges: ${read.notes.join('; ')}.`]));
     if (issues.length) status.append(el('p', { class: 'note warn' }, [`Couldn't read ${issues.join(', ')}.`]));
     status.append(raw);
-    offerShare({
+    // A market listing isn't the game's own text, so it's no use as reader test data.
+    if (!read.market) offerShare({
       kind: 'screenshot',
       summary: `${read.weapon?.name ?? 'Unknown weapon'}, rank ${rank ?? '?'}: ${found}`,
       image: blob,

@@ -152,3 +152,9 @@ test('the fine-tuned model reads a padlock as "#" and the cycle arrow as "@"', (
   const r = parseRivenText('Glaxion Cori-ignitox\n+93.7% Heat\n# +106.2% Corrosive\n+93.5% Toxin\n# -58.4% Zoom\nMR 13\n@ 24');
   assert.deepEqual(r.stats.map(s => [s.statId, !!s.locked]), [['heat', false], ['corrosive', true], ['toxin', false], ['zoom', true]]);
 });
+
+test('a warframe.market listing is recognised as one (not the game)', () => {
+  const listing = 'Tazicor geli-cariata\n+86.7% Viral +90.5% Cold\n-120% Critical Chance\nMr. 16 Ranks: 8 Re-rolls: 108 Polarity:';
+  assert.equal(parseRivenText(listing).market, true);
+  assert.equal(parseRivenText('18\nTazicor geli-cariata\n+86.7% Viral\n-120% Critical Chance\nMR 16 108').market, false);
+});

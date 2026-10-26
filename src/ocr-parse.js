@@ -184,6 +184,8 @@ function findWeaponExact(lines) {
  * @property {string[]} header   lines above the first stat (the riven's name is at the end)
  * @property {boolean} twoCards  two riven titles were read: OCR mixes two cards' lines, so the
  *   stats can't be trusted
+ * @property {boolean} market    a warframe.market listing ("Ranks: 8", "Re-rolls: 108", "Polarity:"),
+ *   not the game: its stat chips read poorly
  */
 
 /** @param {string} text OCR output @returns {OcrRiven} */
@@ -243,7 +245,8 @@ export function parseRivenText(text) {
     return WEAPONS.some(([n]) => t.startsWith(n.toLowerCase()) && /^[\s-]+\S{2}/.test(t.slice(n.length)));
   }).map(l => norm(l.replace(/^(\S{1,2}\s+)+/, ''))));        // the same title read twice is one card
   const twoCards = titles.size >= 2 || new Set(stats.map(s => s.statId).filter(Boolean)).size < stats.filter(s => s.statId).length;
-  return { weapon: findWeapon(header.length ? header : lines, stats.slice(0, 4)), rank, stats: stats.slice(0, 4), header, twoCards };
+  const market = [/\branks?\s*:\s*\d/i, /\bre-?\s?rolls?\s*:/i, /\bpolarity\s*:/i, /\bmr\.\s*\d/i].filter(re => re.test(text)).length >= 2;
+  return { weapon: findWeapon(header.length ? header : lines, stats.slice(0, 4)), rank, stats: stats.slice(0, 4), header, twoCards, market };
 }
 
 /**
