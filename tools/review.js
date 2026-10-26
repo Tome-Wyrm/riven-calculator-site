@@ -12,7 +12,7 @@ const DIR = '../test/fixtures/local/';
 const KEY = 'riven-review-v1';
 
 /** @typedef {{file: string, weapon: string | null, rank: number | null, stats: string[], locked: string[], source?: string, problems?: string[]}} Item */
-/** @typedef {{verdict: 'ok' | 'reject' | 'twoCards' | 'splice', weapon?: string | null, rank?: number | null, stats?: string[], locked?: string[], obstructed?: boolean}} Review */
+/** @typedef {{verdict: 'ok' | 'partial' | 'reject' | 'twoCards' | 'splice', checked?: Part[], weapon?: string | null, rank?: number | null, stats?: string[], locked?: string[], obstructed?: boolean}} Review */
 
 /** @type {Item[]} */
 const queue = await (await fetch(DIR + 'review-queue.json', { cache: 'no-store' })).json();
@@ -25,7 +25,26 @@ const STATS = [...ORDINARY, ...SPLICED];
 // For a splice screen's unrevealed new stat; review-only, never a stat on the site.
 const UNKNOWN = '???';
 const statLabel = (/** @type {import('../src/data/stats.js').Stat} */ s) => s.name + (s.meleeName ? ` / ${s.meleeName}` : '') + (s.spliced ? ' (spliced)' : '');
-let index = Math.max(0, queue.findIndex(q => !saved[q.file]));
+// Review one part of every card at a time (rank, then weapon, then stats), or everything at once.
+/** @typedef {'rank' | 'weapon' | 'stats'} Part */
+/** @type {Part[]} */
+const PARTS = ['rank', 'weapon', 'stats'];
+const MODES = /** @type {const} */ ([['rank', 'Rank'], ['weapon', 'Weapon'], ['stats', 'Stats'], ['all', 'Everything']]);
+const MODE_KEY = 'riven-review-mode';
+/** @type {Part | 'all'} */
+let mode = 'all';
+try { const m = localStorage.getItem(MODE_KEY); if (MODES.some(([v]) => v === m)) mode = /** @type {Part | 'all'} */ (m); } catch { /* default */ }
+
+/** Parts already checked on a card (an answer accepted before modes existed counts as all of them). @param {Review | undefined} r */
+const checkedParts = r => r?.verdict === 'ok' ? r.checked ?? PARTS : r?.verdict === 'partial' ? r.checked ?? [] : [];
+/** Whether the card needs nothing more in the current mode. @param {string} file */
+function done(file) {
+  const r = saved[file];
+  if (!r) return false;
+  if (r.verdict !== 'ok' && r.verdict !== 'partial') return true;
+  return mode === 'all' ? r.verdict === 'ok' : checkedParts(r).includes(mode);
+}
+let index = Math.max(0, queue.findIndex(q => !done(q.file)));
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 /** @param {string} tag @param {Record<string, string>} [attrs] @param {(Node | string)[]} [kids] */
@@ -83,12 +102,12 @@ function checkRows() {
 function show() {
   const item = queue[index];
   const prior = saved[item.file];
-  const a = prior?.verdict === 'ok' ? { ...item, ...prior } : item;
+  const a = prior?.verdict === 'ok' || prior?.verdict === 'partial' ? { ...item, ...prior } : item;
   /** @type {HTMLImageElement} */ ($('img')).src = DIR + item.file;
   $('shot').classList.remove('full');
-  const reviewed = Object.keys(saved).length;
-  $('status').replaceChildren(`${index + 1} / ${queue.length} · ${item.file}${item.source ? ` (${item.source})` : ''} · reviewed ${reviewed}`,
-    ...(prior ? [' · ', el('span', { class: 'done' }, [`this one: ${prior.verdict === 'ok' ? 'accepted' : prior.verdict === 'twoCards' ? 'two cards' : prior.verdict === 'splice' ? 'splice screen' : 'not usable'}`])] : []),
+  const reviewed = queue.filter(q => done(q.file)).length;
+  $('status').replaceChildren(`${index + 1} / ${queue.length} · ${item.file}${item.source ? ` (${item.source})` : ''} · done in this mode ${reviewed}`,
+    ...(prior ? [' · ', el('span', { class: 'done' }, [`this one: ${prior.verdict === 'ok' ? 'accepted' : prior.verdict === 'partial' ? `checked ${checkedParts(prior).join(', ')}` : prior.verdict === 'twoCards' ? 'two cards' : prior.verdict === 'splice' ? 'splice screen' : 'not usable'}`])] : []),
     ...(item.problems?.length ? [` · reader flagged: ${item.problems.join(', ')}`] : []));
 
   const weapon = el('input', { type: 'text', name: 'weapon', list: 'weapons', value: a.weapon ?? '', placeholder: 'weapon (blank if not shown)' });
@@ -104,16 +123,23 @@ function show() {
       el('label', {}, [lock, ' 🔒']), el('span', { class: 'move' }, [moveBtn('↑', -1), moveBtn('↓', 1)]), el('span', { class: 'check' })]);
   });
   const btn = (/** @type {string} */ text, /** @type {string} */ cls, /** @type {() => void} */ fn) => { const b = el('button', { type: 'button', class: cls }, [text]); b.addEventListener('click', fn); return b; };
+  /** Hidden outside its own mode (its value still saves). @param {Part} part @param {HTMLElement} e */
+  const only = (part, e) => { if (mode !== 'all' && mode !== part) e.hidden = true; return e; };
+  const modes = el('div', { class: 'buttons modes' }, MODES.map(([m, label], i) => {
+    const b = btn(label, m === mode ? 'accept' : '', () => setMode(m));
+    b.title = `Alt+${i + 1}`;
+    return b;
+  }));
   $('form').replaceChildren(
-    // Checked in this order: rank, weapon, then the stats (focus starts on rank; Tab moves on).
-    el('label', { class: 'field' }, [el('span', {}, ['Rank']), rank]),
-    el('label', { class: 'field' }, [el('span', {}, ['Weapon']), weapon]),
+    modes,
+    only('rank', el('label', { class: 'field' }, [el('span', {}, ['Rank']), rank])),
+    only('weapon', el('label', { class: 'field' }, [el('span', {}, ['Weapon']), weapon])),
     // Cursor or overlay over some of the text: still a fair test for the reader, but those lines
     // shouldn't be training labels.
-    el('label', { class: 'obstructed', title: 'Alt+O' }, [
+    only('stats', el('label', { class: 'obstructed', title: 'Alt+O' }, [
       el('input', { type: 'checkbox', name: 'obstructed', ...(prior?.obstructed ? { checked: '' } : {}) }),
-      ' Obstructed (cursor or overlay over some text)']),
-    ...rows,
+      ' Obstructed (cursor or overlay over some text)'])),
+    ...rows.map(row => only('stats', row)),
     el('div', { class: 'buttons' }, [
       btn('Accept ✓', 'accept', accept),
       btn('Not usable', '', () => decide('reject')),
@@ -121,12 +147,13 @@ function show() {
       btn('Splice screen', '', () => decide('splice')),
       btn('← Back', '', () => go(-1)),
       btn('Skip →', '', () => go(1)),
-      btn('Next unreviewed', '', () => { const n = queue.findIndex((q, i) => i > index && !saved[q.file]); if (n >= 0) { index = n; show(); } }),
+      btn('Next unreviewed', '', nextUndone),
     ]),
     el('div', { class: 'buttons' }, [btn('Download answers', '', download)]),
   );
   checkRows();
-  /** @type {HTMLSelectElement} */ (rank).focus();
+  const first = mode === 'weapon' ? weapon : mode === 'stats' ? rows[0].querySelector('input') : rank;
+  /** @type {HTMLElement} */ (first).focus();
 }
 
 /** A button that swaps its stat row with the one above (-1) or below (1). */
@@ -142,16 +169,32 @@ function moveBtn(/** @type {string} */ text, /** @type {number} */ dir) {
   return b;
 }
 
+/** @param {Part | 'all'} m */
+function setMode(m) {
+  mode = m;
+  try { localStorage.setItem(MODE_KEY, m); } catch { /* not remembered */ }
+  show();
+}
+/** The next card this mode still needs (wrapping round), else just the next card. */
+function nextUndone() {
+  const n = queue.findIndex((q, i) => i > index && !done(q.file));
+  const wrap = n >= 0 ? n : queue.findIndex(q => !done(q.file));
+  if (wrap >= 0 && wrap !== index) { index = wrap; show(); } else go(1);
+}
+
+/** Saves the whole form, marking this mode's part (or every part) as checked. */
 function accept() {
-  saved[queue[index].file] = { verdict: 'ok', ...current() };
+  const file = queue[index].file;
+  const checked = mode === 'all' ? PARTS : PARTS.filter(p => p === mode || checkedParts(saved[file]).includes(p));
+  saved[file] = { ...current(), verdict: checked.length === PARTS.length ? 'ok' : 'partial', checked };
   store();
-  go(1);
+  nextUndone();
 }
 /** @param {'reject' | 'twoCards' | 'splice'} verdict */
 function decide(verdict) {
   saved[queue[index].file] = { verdict };
   store();
-  go(1);
+  nextUndone();
 }
 /** @param {number} step */
 function go(step) {
@@ -165,7 +208,7 @@ function download() {
   const out = {};
   for (const item of queue) {
     const r = saved[item.file];
-    if (!r) continue;
+    if (!r || r.verdict === 'partial') continue;   // not every part checked yet
     out[item.file] = r.verdict === 'ok'
       ? { weapon: r.weapon, rank: r.rank, stats: r.stats, locked: r.locked, ...(r.obstructed ? { obstructed: true } : {}), source: item.source }
       : r.verdict === 'twoCards' ? { twoCards: true, source: item.source }
@@ -188,6 +231,7 @@ document.addEventListener('keydown', e => {
     const box = /** @type {HTMLInputElement} */ ($('form').querySelector('[name=obstructed]'));
     box.checked = !box.checked;
   }
+  else if (e.altKey && /^[1-4]$/.test(e.key)) { e.preventDefault(); setMode(MODES[Number(e.key) - 1][0]); }
   else if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
   else if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); go(1); }
 });
