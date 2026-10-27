@@ -188,6 +188,19 @@ function findWeaponExact(lines) {
  *   not the game: its stat chips read poorly
  */
 
+/**
+ * Whether a line is a riven's title: the weapon's name then the riven's own name ("Magnus Ampilis",
+ * "Mausolon 227?"), after any stray 1–2 character tokens.
+ * @param {string} line
+ */
+export function isTitle(line) {
+  const t = line.replace(/^(\S{1,2}\s+)+/, '').toLowerCase();
+  // A variant's full name on its own ("Acceltra Prime" under the "fits in" picture) is a label:
+  // rivens only ever show the base name.
+  if (WEAPONS.some(([n]) => n.toLowerCase() === t && WEAPONS.some(([m]) => m !== n && t.includes(m.toLowerCase())))) return false;
+  return WEAPONS.some(([n]) => t.startsWith(n.toLowerCase()) && /^[\s-]+\S{2}/.test(t.slice(n.length)));
+}
+
 /** @param {string} text OCR output @returns {OcrRiven} */
 export function parseRivenText(text) {
   const lines = [];
@@ -239,11 +252,8 @@ export function parseRivenText(text) {
   for (const s of stats) s.statId = matchStat(s.text);
 
   // Two cards side by side (a transmute or compare screen): two lines start with a weapon name.
-  const titles = new Set((header.length ? header : lines).filter(l => {
-    const t = l.replace(/^(\S{1,2}\s+)+/, '').toLowerCase();
-    // A title is the weapon's name then the riven's own name ("Magnus Ampilis", "Mausolon 227?").
-    return WEAPONS.some(([n]) => t.startsWith(n.toLowerCase()) && /^[\s-]+\S{2}/.test(t.slice(n.length)));
-  }).map(l => norm(l.replace(/^(\S{1,2}\s+)+/, ''))));        // the same title read twice is one card
+  const titles = new Set((header.length ? header : lines).filter(isTitle)
+    .map(l => norm(l.replace(/^(\S{1,2}\s+)+/, ''))));        // the same title read twice is one card
   const twoCards = titles.size >= 2 || new Set(stats.map(s => s.statId).filter(Boolean)).size < stats.filter(s => s.statId).length;
   const market = [/\branks?\s*:\s*\d/i, /\bre-?\s?rolls?\s*:/i, /\bpolarity\s*:/i, /\bmr\.\s*\d/i].filter(re => re.test(text)).length >= 2;
   return { weapon: findWeapon(header.length ? header : lines, stats.slice(0, 4)), rank, stats: stats.slice(0, 4), header, twoCards, market };

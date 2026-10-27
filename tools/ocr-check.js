@@ -34,7 +34,7 @@ async function loadExpected() {
 
 /** A read, in the answer file's shape. @param {import('../src/ocr-read.js').ScreenshotRead} r @returns {Answer} */
 function toAnswer(r) {
-  if (r.twoCards) return { twoCards: true };
+  if (r.twoCards || r.cards) return { twoCards: true };   // several cards, read apart or not
   return {
     weapon: r.weapon?.name ?? null,
     rank: r.rank,
