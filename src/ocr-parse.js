@@ -276,6 +276,19 @@ export function possibleRanks(stats, cls) {
  * @param {{statId: string | null, value: string}[]} stats @param {WeaponClass} cls
  * @param {number | null} [drainRank]
  */
+/**
+ * The ranks a drain number can mean, given its colour: white is 10 + rank, red (the riven's
+ * polarity doesn't match its slot) is that x1.25 rounded ("23" = 22.5 = rank 8), green (it
+ * matches) is halved, so several ranks share a number. Empty if the number can't be a drain.
+ * @param {number} n @param {'white' | 'red' | 'green'} colour @returns {number[]}
+ */
+export function ranksFromDrain(n, colour) {
+  const ranks = Array.from({ length: MAX_RANK + 1 }, (_, r) => r);
+  if (colour === 'red') return ranks.filter(r => Math.round((10 + r) * 1.25) === n);
+  if (colour === 'green') return ranks.filter(r => Math.floor((10 + r) / 2) === n || Math.ceil((10 + r) / 2) === n);
+  return ranks.filter(r => 10 + r === n);
+}
+
 export function inferRank(stats, cls, drainRank = null) {
   const fits = possibleRanks(stats, cls);
   if (drainRank !== null && fits.includes(drainRank)) return drainRank;

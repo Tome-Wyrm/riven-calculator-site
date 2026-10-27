@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRivenText, matchStat, inferRank, guessClass } from '../src/ocr-parse.js';
+import { parseRivenText, matchStat, inferRank, guessClass, ranksFromDrain } from '../src/ocr-parse.js';
 
 // Text as OCR might return it for the screenshots in this project's history, with typical noise:
 // icons read as stray characters, wrapped names, a misread letter or two.
@@ -157,4 +157,12 @@ test('a warframe.market listing is recognised as one (not the game)', () => {
   const listing = 'Tazicor geli-cariata\n+86.7% Viral +90.5% Cold\n-120% Critical Chance\nMr. 16 Ranks: 8 Re-rolls: 108 Polarity:';
   assert.equal(parseRivenText(listing).market, true);
   assert.equal(parseRivenText('18\nTazicor geli-cariata\n+86.7% Viral\n-120% Critical Chance\nMR 16 108').market, false);
+});
+
+test('the drain number by colour: white 10 + rank, red x1.25 rounded, green halved', () => {
+  assert.deepEqual(ranksFromDrain(18, 'white'), [8]);
+  assert.deepEqual(ranksFromDrain(23, 'red'), [8]);
+  assert.deepEqual(ranksFromDrain(18, 'red'), [4]);       // white 18 would be rank 8
+  assert.deepEqual(ranksFromDrain(8, 'green'), [5, 6, 7]); // 15, 16, 17 halved
+  assert.deepEqual(ranksFromDrain(23, 'white'), []);
 });
