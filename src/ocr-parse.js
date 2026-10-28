@@ -140,13 +140,17 @@ const byLength = [...WEAPONS].sort((a, b) => b[0].length - a[0].length);
 function findWeapon(lines, stats) {
   // The title is just above the stats, so look from the bottom up: words in the artwork ("SEER")
   // come earlier.
-  const exact = findWeaponExact([...lines].reverse()) ?? findWeaponExact([lines.join('')]);
+  // A line after one ending in "-" is the rest of a wrapped name, never the start of one
+  // ("Amanata Plaga-" / "acridra" isn't an Acrid riven).
+  const starts = lines.map((l, i) => (i > 0 && /-\s*$/.test(lines[i - 1]) ? null : l));
+  const exact = findWeaponExact(starts.filter(l => l !== null).reverse()) ?? findWeaponExact([lines.join('')]);
   if (exact) return exact;
   // Stray short tokens are dropped from the start of the line the name starts on, but not from
   // the lines after it: there a short token may be the end of the name ("Phiitaem" / "a Parci-").
   const fitting = CLASSES.filter(c => possibleRanks(stats, c).length);
   let best = null, bestScore = Infinity;
   for (let i = lines.length - 1; i >= 0; i--) {
+    if (starts[i] === null) continue;
     const first = norm(lines[i].replace(/^(\S{1,2}\s+)+/, ''));
     if (first.length < 3) continue;
     const text = first + lines.slice(i + 1).map(norm).join('');

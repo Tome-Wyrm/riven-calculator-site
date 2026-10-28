@@ -121,7 +121,24 @@ async function readImage(img, scale = undefined) {
   const worker = await getWorker();
   const { canvas, colour } = prepare(img, scale);
   const { data } = await worker.recognize(canvas, {}, { text: true, blocks: true });
-  return { read: interpretText(data.text, findDrain(data, colour, canvas.width, canvas.height)), data, scale: canvas.width / img.width };
+  const k = canvas.width / img.width;
+  const all = linesOf(data, k);
+  const lines = withoutGradePanel(all);
+  const text = lines === all ? data.text : lines.map(l => l.text).join('\n');
+  return { read: interpretText(text, findDrain(data, colour, canvas.width, canvas.height)), data, scale: k, lines };
+}
+
+/**
+ * Drops a grading bot's panel posted beside the card: a column of the card's stats again, each
+ * with a "Grade: B+ (+2.2%)" line under it, which would otherwise read as a second card. Everything
+ * from the left edge of the "Grade:" lines rightwards goes (the card is always on the left).
+ * @param {ReturnType<typeof linesOf>} lines
+ */
+function withoutGradePanel(lines) {
+  const grades = lines.filter(l => /^\W{0,2}Grade\s*:/i.test(l.text));
+  if (grades.length < 2) return lines;
+  const left = Math.min(...grades.map(l => l.x0)) - 0.1 * Math.max(...grades.map(l => l.x1 - l.x0));
+  return lines.filter(l => l.x1 <= left || (l.x0 + l.x1) / 2 < left);
 }
 
 /** A card's "MR 15" bar (OCR can read the M as A, and add a stray word before it: "Wig MR 8"). */
@@ -176,8 +193,7 @@ function cardColumns(found, width) {
 async function readCard(img, x0, y0, x1, y1) {
   [x0, y0, x1, y1] = [Math.max(0, x0), Math.max(0, y0), Math.min(img.width, x1), Math.min(img.height, y1)].map(Math.round);
   if (x1 - x0 < 40 || y1 - y0 < 40) return null;
-  const { read, data, scale } = await readImage(await createImageBitmap(img, x0, y0, x1 - x0, y1 - y0));
-  const lines = linesOf(data, scale);
+  const { read, lines } = await readImage(await createImageBitmap(img, x0, y0, x1 - x0, y1 - y0));
   const ok = !read.twoCards && (read.rows.length >= 3 || (read.rows.length >= 2 && lines.some(l => isTitle(l.text) || MR_BAR.test(l.text))));
   return ok ? { x: (x0 + x1) / 2, read, box: textBox(lines.map(l => ({ ...l, x0: l.x0 + x0, x1: l.x1 + x0, y0: l.y0 + y0, y1: l.y1 + y0 }))) } : null;
 }
@@ -199,8 +215,7 @@ function textBox(lines) {
  */
 export async function locateCard(blob) {
   const img = await createImageBitmap(blob);
-  const { data, scale } = await readImage(img);
-  const lines = linesOf(data, scale);
+  const { lines } = await readImage(img);
   const found = anchors(lines, img.width);
   if (found.length >= 2) return null;
   const stats = lines.filter(l => STAT_LINE.test(l.text) && (!found.length || Math.abs((l.x0 + l.x1) / 2 - found[0][0]) < 1.2 * Math.max(found[0][1], 100)));
@@ -225,8 +240,7 @@ export async function locateCard(blob) {
  */
 export async function readScreenshot(blob) {
   const img = await createImageBitmap(blob);
-  const { read, data, scale } = await readImage(img);
-  const lines = linesOf(data, scale);
+  const { read, lines } = await readImage(img);
   const found = anchors(lines, img.width);
   /** @type {{x: number, read: ScreenshotRead, box: ReturnType<typeof textBox>}[]} */
   const cards = [];
