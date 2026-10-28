@@ -112,24 +112,24 @@ function locate(file) {
 }
 
 /**
- * Close-ups for the current mode: the whole card for its rank, the title for the weapon, the text
- * panel for stats (all three in Everything mode). Purely a view; nothing is read from them.
+ * Close-ups for the current mode: the whole card for its rank, the text panel for stats. Purely a view; nothing is read from them.
  * @param {string} file
  */
 async function showZoom(file) {
+  if (mode !== 'rank' && mode !== 'stats') { $('zoom').replaceChildren(); return; }
   $('zoom').replaceChildren(el('p', { class: 'sub' }, ['Finding the card…']));
   const found = await locate(file);
   if (queue[index].file !== file) return;
   const spot = found?.spot, img = found?.img;
   if (!spot) { $('zoom').replaceChildren(el('p', { class: 'sub' }, ["Couldn't find a single card to zoom in on."])); return; }
-  const { text, title } = spot;
+  const { text } = spot;
   const w = text.x1 - text.x0, h = text.y1 - text.y0;
   /** @type {[string, number, number, number, number][]} */
   const views = [];
   // The art above the text panel is about as tall again as the panel; the drain is at its top right.
-  if (mode === 'rank' || mode === 'all') views.push(['Card', text.x0 - 0.2 * w, text.y0 - 1.5 * h, text.x1 + 0.2 * w, text.y1 + 0.35 * h]);
-  if (mode === 'weapon' || mode === 'all') { const th = title.y1 - title.y0; views.push(['Title', title.x0 - 0.1 * w, title.y0 - 0.4 * th, title.x1 + 0.1 * w, title.y1 + 0.4 * th]); }
-  if (mode === 'stats' || mode === 'all') views.push(['Text', text.x0 - 0.06 * w, text.y0 - 0.06 * h, text.x1 + 0.06 * w, text.y1 + 0.25 * h]);
+  // No title close-up (a wrapped title's first line was often cut off), and none in Everything mode.
+  if (mode === 'rank') views.push(['Card', text.x0 - 0.2 * w, text.y0 - 1.5 * h, text.x1 + 0.2 * w, text.y1 + 0.35 * h]);
+  if (mode === 'stats') views.push(['Text', text.x0 - 0.06 * w, text.y0 - 0.06 * h, text.x1 + 0.06 * w, text.y1 + 0.25 * h]);
   $('zoom').replaceChildren(...views.map(([label, x0, y0, x1, y1]) => {
     [x0, y0] = [Math.max(0, x0), Math.max(0, y0)];
     [x1, y1] = [Math.min(img.width, x1), Math.min(img.height, y1)];
