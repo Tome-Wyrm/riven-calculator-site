@@ -104,7 +104,10 @@ function checkRows() {
 const located = new Map();
 /** @param {string} file */
 function locate(file) {
-  if (!located.has(file)) located.set(file, fetch(DIR + file).then(r => r.blob()).then(locateCard).catch(() => null));
+  // The close-ups are cut from this same copy of the file, never from the page's <img>, which may
+  // already be showing another card by the time the read finishes.
+  if (!located.has(file)) located.set(file, fetch(DIR + file).then(r => r.blob())
+    .then(async blob => ({ spot: await locateCard(blob), img: await createImageBitmap(blob) })).catch(() => null));
   return /** @type {Promise<any>} */ (located.get(file));
 }
 
@@ -115,8 +118,9 @@ function locate(file) {
  */
 async function showZoom(file) {
   $('zoom').replaceChildren(el('p', { class: 'sub' }, ['Finding the card…']));
-  const [spot, img] = await Promise.all([locate(file), /** @type {HTMLImageElement} */ ($('img')).decode().then(() => $('img'), () => null)]);
-  if (queue[index].file !== file || !img) return;
+  const found = await locate(file);
+  if (queue[index].file !== file) return;
+  const spot = found?.spot, img = found?.img;
   if (!spot) { $('zoom').replaceChildren(el('p', { class: 'sub' }, ["Couldn't find a single card to zoom in on."])); return; }
   const { text, title } = spot;
   const w = text.x1 - text.x0, h = text.y1 - text.y0;
@@ -128,12 +132,12 @@ async function showZoom(file) {
   if (mode === 'stats' || mode === 'all') views.push(['Text', text.x0 - 0.06 * w, text.y0 - 0.06 * h, text.x1 + 0.06 * w, text.y1 + 0.25 * h]);
   $('zoom').replaceChildren(...views.map(([label, x0, y0, x1, y1]) => {
     [x0, y0] = [Math.max(0, x0), Math.max(0, y0)];
-    [x1, y1] = [Math.min(/** @type {HTMLImageElement} */ (img).naturalWidth, x1), Math.min(/** @type {HTMLImageElement} */ (img).naturalHeight, y1)];
+    [x1, y1] = [Math.min(img.width, x1), Math.min(img.height, y1)];
     const k = Math.min(4, 430 / (x1 - x0), (label === 'Card' ? 520 : 400) / (y1 - y0));
     const c = /** @type {HTMLCanvasElement} */ (el('canvas', { width: String(Math.round((x1 - x0) * k)), height: String(Math.round((y1 - y0) * k)), title: label }));
     const g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
     g.imageSmoothingQuality = 'high';
-    g.drawImage(/** @type {HTMLImageElement} */ (img), x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
+    g.drawImage(img, x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
     return c;
   }));
 }
