@@ -189,6 +189,33 @@ function textBox(lines) {
   return { x0: Math.min(...own.map(l => l.x0)), x1: Math.max(...own.map(l => l.x1)), y0: Math.min(...own.map(l => l.y0)), y1: Math.max(...own.map(l => l.y1)) };
 }
 
+/** @typedef {{x0: number, y0: number, x1: number, y1: number}} Box */
+
+/**
+ * Where a single card's text sits, in image pixels, for showing it close up: the box around its
+ * text lines, and the title's band (the lines just above the first stat, read as a title or not;
+ * an estimate a line high when nothing was read there). Null when no card, or several, are found.
+ * @param {Blob} blob @returns {Promise<{text: Box, title: Box} | null>}
+ */
+export async function locateCard(blob) {
+  const img = await createImageBitmap(blob);
+  const { data, scale } = await readImage(img);
+  const lines = linesOf(data, scale);
+  const found = anchors(lines, img.width);
+  if (found.length >= 2) return null;
+  const stats = lines.filter(l => STAT_LINE.test(l.text) && (!found.length || Math.abs((l.x0 + l.x1) / 2 - found[0][0]) < 1.2 * Math.max(found[0][1], 100)));
+  const text = textBox(found.length ? lines.filter(l => Math.abs((l.x0 + l.x1) / 2 - found[0][0]) < 1.2 * Math.max(found[0][1], 100)) : stats);
+  if (!text || !stats.length) return null;
+  const first = stats.reduce((a, l) => (l.y0 < a.y0 ? l : a));
+  const h = first.y1 - first.y0;
+  const above = lines.filter(l => l.y1 <= first.y0 + h * 0.3 && l.y0 >= first.y0 - 2.6 * h
+    && (l.x0 + l.x1) / 2 > text.x0 && (l.x0 + l.x1) / 2 < text.x1);
+  const title = above.length
+    ? { x0: Math.min(...above.map(l => l.x0)), x1: Math.max(...above.map(l => l.x1)), y0: Math.min(...above.map(l => l.y0)), y1: Math.max(...above.map(l => l.y1)) }
+    : { x0: text.x0, x1: text.x1, y0: first.y0 - 1.4 * h, y1: first.y0 };
+  return { text: { x0: Math.min(text.x0, title.x0), x1: Math.max(text.x1, title.x1), y0: Math.min(text.y0, title.y0), y1: text.y1 }, title };
+}
+
 /**
  * Reads a screenshot. Several cards side by side (a cycle, splice or unveil screen) are each read
  * on their own, so their lines can't mix: found by their titles and MR bars, or, when only one

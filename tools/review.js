@@ -7,6 +7,7 @@
 import { ORDINARY, SPLICED, STAT_BY_ID } from '../src/data/stats.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { inferSign, shapeFor, gradeRoll, canRoll, format } from '../src/engine.js';
+import { locateCard } from '../src/ocr-read.js';
 
 const DIR = '../test/fixtures/local/';
 const KEY = 'riven-review-v1';
@@ -99,11 +100,52 @@ function checkRows() {
   });
 }
 
+/** Where each image's card text is (one quick read, done in the background). @type {Map<string, Promise<any>>} */
+const located = new Map();
+/** @param {string} file */
+function locate(file) {
+  if (!located.has(file)) located.set(file, fetch(DIR + file).then(r => r.blob()).then(locateCard).catch(() => null));
+  return /** @type {Promise<any>} */ (located.get(file));
+}
+
+/**
+ * Close-ups for the current mode: the whole card for its rank, the title for the weapon, the text
+ * panel for stats (all three in Everything mode). Purely a view; nothing is read from them.
+ * @param {string} file
+ */
+async function showZoom(file) {
+  $('zoom').replaceChildren(el('p', { class: 'sub' }, ['Finding the card…']));
+  const [spot, img] = await Promise.all([locate(file), /** @type {HTMLImageElement} */ ($('img')).decode().then(() => $('img'), () => null)]);
+  if (queue[index].file !== file || !img) return;
+  if (!spot) { $('zoom').replaceChildren(el('p', { class: 'sub' }, ["Couldn't find a single card to zoom in on."])); return; }
+  const { text, title } = spot;
+  const w = text.x1 - text.x0, h = text.y1 - text.y0;
+  /** @type {[string, number, number, number, number][]} */
+  const views = [];
+  // The art above the text panel is about as tall again as the panel; the drain is at its top right.
+  if (mode === 'rank' || mode === 'all') views.push(['Card', text.x0 - 0.2 * w, text.y0 - 1.5 * h, text.x1 + 0.2 * w, text.y1 + 0.35 * h]);
+  if (mode === 'weapon' || mode === 'all') { const th = title.y1 - title.y0; views.push(['Title', title.x0 - 0.1 * w, title.y0 - 0.4 * th, title.x1 + 0.1 * w, title.y1 + 0.4 * th]); }
+  if (mode === 'stats' || mode === 'all') views.push(['Text', text.x0 - 0.06 * w, text.y0 - 0.06 * h, text.x1 + 0.06 * w, text.y1 + 0.25 * h]);
+  $('zoom').replaceChildren(...views.map(([label, x0, y0, x1, y1]) => {
+    [x0, y0] = [Math.max(0, x0), Math.max(0, y0)];
+    [x1, y1] = [Math.min(/** @type {HTMLImageElement} */ (img).naturalWidth, x1), Math.min(/** @type {HTMLImageElement} */ (img).naturalHeight, y1)];
+    const k = Math.min(4, 430 / (x1 - x0), (label === 'Card' ? 520 : 400) / (y1 - y0));
+    const c = /** @type {HTMLCanvasElement} */ (el('canvas', { width: String(Math.round((x1 - x0) * k)), height: String(Math.round((y1 - y0) * k)), title: label }));
+    const g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(/** @type {HTMLImageElement} */ (img), x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
+    return c;
+  }));
+}
+
 function show() {
   const item = queue[index];
   const prior = saved[item.file];
   const a = prior?.verdict === 'ok' || prior?.verdict === 'partial' ? { ...item, ...prior } : item;
   /** @type {HTMLImageElement} */ ($('img')).src = DIR + item.file;
+  showZoom(item.file);
+  // Have the next card's close-up ready.
+  if (queue[index + 1]) locate(queue[index + 1].file);
   $('shot').classList.remove('full');
   const reviewed = queue.filter(q => done(q.file)).length;
   $('status').replaceChildren(`${index + 1} / ${queue.length} · ${item.file}${item.source ? ` (${item.source})` : ''} · done in this mode ${reviewed}`,
@@ -132,7 +174,11 @@ function show() {
   }));
   $('form').replaceChildren(
     modes,
-    only('rank', el('label', { class: 'field' }, [el('span', {}, ['Rank']), rank])),
+    // Rank mode is keys only: a digit sets the rank and moves on.
+    mode === 'rank'
+      ? el('p', {}, ['Rank ', el('span', { class: 'rank-now' }, [a.rank === null ? '?' : String(a.rank)]),
+        el('span', { class: 'sub' }, [' (the draft) · press 0–8, or / * - + for ?']), el('span', { hidden: '' }, [rank])])
+      : only('rank', el('label', { class: 'field' }, [el('span', {}, ['Rank']), rank])),
     only('weapon', el('label', { class: 'field' }, [el('span', {}, ['Weapon']), weapon])),
     // Cursor or overlay over some of the text: still a fair test for the reader, but those lines
     // shouldn't be training labels.
@@ -145,15 +191,18 @@ function show() {
       btn('Not usable', '', () => decide('reject')),
       btn('Two cards', '', () => decide('twoCards')),
       btn('Splice screen', '', () => decide('splice')),
+    ]),
+    el('div', { class: 'buttons' }, [
       btn('← Back', '', () => go(-1)),
-      btn('Skip →', '', () => go(1)),
+      btn('Forward →', '', () => go(1)),
       btn('Next unreviewed', '', nextUndone),
     ]),
     el('div', { class: 'buttons' }, [btn('Download answers', '', download)]),
   );
   checkRows();
-  const first = mode === 'weapon' ? weapon : mode === 'stats' ? rows[0].querySelector('input') : rank;
-  /** @type {HTMLElement} */ (first).focus();
+  const first = mode === 'weapon' ? weapon : mode === 'stats' ? rows[0].querySelector('input') : mode === 'all' ? rank : null;
+  if (first) /** @type {HTMLElement} */ (first).focus();
+  else /** @type {HTMLElement | null} */ (document.activeElement)?.blur();
 }
 
 /** A button that swaps its stat row with the one above (-1) or below (1). */
@@ -222,7 +271,12 @@ $('form').addEventListener('input', checkRows);
 $('form').addEventListener('change', checkRows);
 $('shot').addEventListener('click', () => $('shot').classList.toggle('full'));
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.altKey) { e.preventDefault(); accept(); }
+  if (mode === 'rank' && !e.altKey && !e.ctrlKey && /^[0-8/*+-]$/.test(e.key)) {
+    e.preventDefault();
+    /** @type {HTMLSelectElement} */ ($('form').querySelector('[name=rank]')).value = /^\d$/.test(e.key) ? e.key : '';
+    accept();
+  }
+  else if (e.key === 'Enter' && !e.altKey) { e.preventDefault(); accept(); }
   else if (e.altKey && e.key.toLowerCase() === 'x') { e.preventDefault(); decide('reject'); }
   else if (e.altKey && e.key.toLowerCase() === 't') { e.preventDefault(); decide('twoCards'); }
   else if (e.altKey && e.key.toLowerCase() === 's') { e.preventDefault(); decide('splice'); }
