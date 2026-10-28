@@ -112,11 +112,11 @@ function locate(file) {
 }
 
 /**
- * Close-ups for the current mode: the whole card for its rank, the text panel for stats. Purely a view; nothing is read from them.
+ * Close-ups for the current mode: the whole card for its rank, the text panel (title included) for the weapon and stats. Purely a view; nothing is read from them.
  * @param {string} file
  */
 async function showZoom(file) {
-  if (mode !== 'rank' && mode !== 'stats') { $('zoom').replaceChildren(); return; }
+  if (mode === 'all') { $('zoom').replaceChildren(); return; }
   $('zoom').replaceChildren(el('p', { class: 'sub' }, ['Finding the card…']));
   const found = await locate(file);
   if (queue[index].file !== file) return;
@@ -127,9 +127,9 @@ async function showZoom(file) {
   /** @type {[string, number, number, number, number][]} */
   const views = [];
   // The art above the text panel is about as tall again as the panel; the drain is at its top right.
-  // No title close-up (a wrapped title's first line was often cut off), and none in Everything mode.
+  // No title-only close-up (a wrapped title's first line was often cut off), and none in Everything mode.
   if (mode === 'rank') views.push(['Card', text.x0 - 0.2 * w, text.y0 - 1.5 * h, text.x1 + 0.2 * w, text.y1 + 0.35 * h]);
-  if (mode === 'stats') views.push(['Text', text.x0 - 0.06 * w, text.y0 - 0.06 * h, text.x1 + 0.06 * w, text.y1 + 0.25 * h]);
+  if (mode === 'stats' || mode === 'weapon') views.push(['Text', text.x0 - 0.06 * w, text.y0 - 0.06 * h, text.x1 + 0.06 * w, text.y1 + 0.25 * h]);
   $('zoom').replaceChildren(...views.map(([label, x0, y0, x1, y1]) => {
     [x0, y0] = [Math.max(0, x0), Math.max(0, y0)];
     [x1, y1] = [Math.min(img.width, x1), Math.min(img.height, y1)];
