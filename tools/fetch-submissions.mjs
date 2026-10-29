@@ -3,6 +3,7 @@
 //
 //   node tools/fetch-submissions.mjs            fetch new submissions
 //   node tools/fetch-submissions.mjs --dry-run  list them without saving anything
+//   node tools/fetch-submissions.mjs --backfill-edited  mark older answers edited or untouched
 //
 // Needs a .env file in the repo root (git-ignored; the token must stay private):
 //   DISCORD_BOT_TOKEN=...      a bot with Message Content Intent, View Channel, Read Message History
@@ -10,7 +11,8 @@
 //
 // Screenshot submissions: the image is saved as the next free xNN number, and the corrected
 // values (what the grader showed when it was sent) go into expected.json as a draft answer,
-// marked "unverified" until someone checks it against the image. Inventory imports are saved to
+// marked "unverified" until someone checks it against the image, and "edited" when the sender
+// changed anything the reader got (false: it's only the reader's own draft, unchecked by anyone). Inventory imports are saved to
 // test/fixtures/local/imports/ for the odds tally. The last message read is remembered in
 // test/fixtures/local/submissions-state.json, so each run only fetches what's new.
 
@@ -26,6 +28,7 @@ const STATE = path.join(DIR, 'submissions-state.json');
 const IMPORTS = path.join(DIR, 'imports');
 const API = 'https://discord.com/api/v10';
 const dryRun = process.argv.includes('--dry-run');
+const backfill = process.argv.includes('--backfill-edited');
 
 try { process.loadEnvFile(path.join(ROOT, '.env')); } catch { /* no .env: checked below */ }
 const { DISCORD_BOT_TOKEN: TOKEN, DISCORD_CHANNEL_ID: CHANNEL } = process.env;
@@ -71,9 +74,24 @@ export function normalise(v, statId, cls) {
   return `${stat && inferSign(stat, cls, n) === '-' ? '-' : '+'}${Math.abs(n)}`;
 }
 
+/**
+ * Whether the sender changed the reader's draft before sending: the weapon, the rank, or any
+ * stat, value or lock. Null when the submission doesn't carry both.
+ * @param {any} data
+ */
+export function wasEdited(data) {
+  const read = data.read, c = data.corrected;
+  if (!read || !c) return null;
+  const rows = (/** @type {any[]} */ rs) => JSON.stringify((rs ?? []).filter(r => r.statId)
+    .map(r => [r.statId, normalise(r.value, r.statId, c.cls), !!r.locked]));
+  // The grader starts at rank 8 when the reader found none.
+  return (c.weapon || null) !== (read.weapon || null) || (c.rank ?? null) !== (read.rank ?? 8) || rows(c.rows) !== rows(read.rows);
+}
+
 /** The draft answer for a screenshot submission. @param {any} data @param {string} messageId */
 export function draftAnswer(data, messageId) {
-  const note = { unverified: true, source: `discord:${messageId}` };
+  const edited = wasEdited(data);
+  const note = { unverified: true, ...(edited === null ? {} : { edited }), source: `discord:${messageId}` };
   if (data.read?.twoCards) return { twoCards: true, ...note };
   const c = data.corrected ?? {};
   const rows = (c.rows ?? []).filter(r => r.statId);
@@ -88,12 +106,38 @@ export function draftAnswer(data, messageId) {
 
 const natural = (/** @type {string} */ a, /** @type {string} */ b) => a.localeCompare(b, undefined, { numeric: true });
 
+/** @param {Record<string, any>} expected */
+function writeExpected(expected) {
+  const sorted = Object.fromEntries(Object.keys(expected).sort(natural).map(k => [k, expected[k]]));
+  fs.writeFileSync(EXPECTED, `{\n${Object.entries(sorted).map(([k, v]) => ` ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n')}\n}\n`);
+}
+
+/** Marks answers fetched before "edited" existed, from their messages' data.json. @param {Record<string, any>} expected */
+async function backfillEdited(expected) {
+  let n = 0;
+  for (const [file, a] of Object.entries(expected)) {
+    const id = /^discord:(\d+)$/.exec(a.source ?? '')?.[1];
+    if (!id || 'edited' in a) continue;
+    const m = await api(`/channels/${CHANNEL}/messages/${id}`).catch(() => null);
+    const dataFile = m?.attachments?.find((/** @type {any} */ x) => x.filename === 'data.json');
+    if (!dataFile) continue;
+    const edited = wasEdited(await (await fetch(dataFile.url)).json());
+    if (edited === null) continue;
+    a.edited = edited;
+    n++;
+    console.log(`${file.padEnd(9)} ${edited ? 'edited' : 'untouched'}`);
+  }
+  if (!dryRun) writeExpected(expected);
+  console.log(`${n} answer(s) marked.${dryRun ? ' (dry run: nothing saved)' : ''}`);
+}
+
 async function main() {
   if (!TOKEN || !CHANNEL) throw new Error('Missing DISCORD_BOT_TOKEN or DISCORD_CHANNEL_ID (put them in .env in the repo root).');
   const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : { lastId: null };
   const expected = fs.existsSync(EXPECTED) ? JSON.parse(fs.readFileSync(EXPECTED, 'utf8')) : {};
   let next = Math.max(0, ...fs.readdirSync(DIR).map(f => Number(f.match(/^x(\d+)\./)?.[1] ?? 0))) + 1;
 
+  if (backfill) return backfillEdited(expected);
   const messages = await newMessages(state.lastId);
   console.log(`${messages.length} new message(s) in the channel.`);
   let shots = 0, imports = 0, skipped = 0;
@@ -116,7 +160,7 @@ async function main() {
       const ext = path.extname(image.filename) || '.png';
       const name = `x${next++}${ext}`;
       const answer = draftAnswer(data, m.id);
-      console.log(`${name.padEnd(9)} ${answer.twoCards ? 'two cards' : `${answer.weapon ?? '(no weapon)'} r${answer.rank}: ${answer.stats.join(', ')}`}`);
+      console.log(`${name.padEnd(9)} ${answer.twoCards ? 'two cards' : `${answer.weapon ?? '(no weapon)'} r${answer.rank}: ${answer.stats.join(', ')}`}${answer.edited ? '  (edited)' : ''}`);
       if (!dryRun) {
         fs.writeFileSync(path.join(DIR, name), Buffer.from(await (await fetch(image.url)).arrayBuffer()));
         expected[name] = answer;
@@ -128,8 +172,7 @@ async function main() {
   }
 
   if (!dryRun) {
-    const sorted = Object.fromEntries(Object.keys(expected).sort(natural).map(k => [k, expected[k]]));
-    fs.writeFileSync(EXPECTED, `{\n${Object.entries(sorted).map(([k, v]) => ` ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(',\n')}\n}\n`);
+    writeExpected(expected);
     fs.writeFileSync(STATE, JSON.stringify(state, null, 1));
   }
   console.log(`${shots} screenshot(s), ${imports} import(s), ${skipped} other message(s) skipped.${dryRun ? ' (dry run: nothing saved)' : ''}`);

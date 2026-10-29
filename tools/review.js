@@ -17,6 +17,9 @@ const KEY = 'riven-review-v1';
 
 /** @type {Item[]} */
 const queue = await (await fetch(DIR + 'review-queue.json', { cache: 'no-store' })).json();
+// Whether each site submission's sender changed the reader's draft (tools/fetch-submissions.mjs).
+/** @type {Record<string, {edited?: boolean}>} */
+const expected = await fetch(DIR + 'expected.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({}));
 /** @type {Record<string, Review>} */
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* fresh start */ }
@@ -152,7 +155,9 @@ function show() {
   if (queue[index + 1]) locate(queue[index + 1].file);
   $('shot').classList.remove('full');
   const reviewed = queue.filter(q => done(q.file)).length;
+  const edited = expected[item.file]?.edited;
   $('status').replaceChildren(`${index + 1} / ${queue.length} · ${item.file}${item.source ? ` (${item.source})` : ''} · done in this mode ${reviewed}`,
+    ...(edited === undefined ? [] : [' · ', el('span', { class: edited ? 'ok' : 'bad' }, [edited ? 'sender edited the draft' : "sender didn't edit the draft"])]),
     ...(prior ? [' · ', el('span', { class: 'done' }, [`this one: ${prior.verdict === 'ok' ? 'accepted' : prior.verdict === 'partial' ? `checked ${checkedParts(prior).join(', ')}` : prior.verdict === 'twoCards' ? 'two cards' : prior.verdict === 'splice' ? 'splice screen' : 'not usable'}`])] : []),
     ...(item.problems?.length ? [` · reader flagged: ${item.problems.join(', ')}`] : []));
 
