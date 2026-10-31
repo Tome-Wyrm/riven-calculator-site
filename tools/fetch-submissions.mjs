@@ -3,6 +3,7 @@
 //
 //   node tools/fetch-submissions.mjs            fetch new submissions
 //   node tools/fetch-submissions.mjs --dry-run  list them without saving anything
+//   node tools/fetch-submissions.mjs --old      fetch from the old channel (OLD_DISCORD_BOT_TOKEN, OLD_DISCORD_CHANNEL_ID)
 //   node tools/fetch-submissions.mjs --backfill-edited  mark older answers edited or untouched
 //
 // Needs a .env file in the repo root (git-ignored; the token must stay private):
@@ -31,7 +32,8 @@ const dryRun = process.argv.includes('--dry-run');
 const backfill = process.argv.includes('--backfill-edited');
 
 try { process.loadEnvFile(path.join(ROOT, '.env')); } catch { /* no .env: checked below */ }
-const { DISCORD_BOT_TOKEN: TOKEN, DISCORD_CHANNEL_ID: CHANNEL } = process.env;
+const old = process.argv.includes('--old') ? 'OLD_' : '';
+const TOKEN = process.env[`${old}DISCORD_BOT_TOKEN`], CHANNEL = process.env[`${old}DISCORD_CHANNEL_ID`];
 
 /** GET from Discord's API, waiting out rate limits. @param {string} url */
 async function api(url) {
@@ -138,7 +140,9 @@ async function main() {
   let next = Math.max(0, ...fs.readdirSync(DIR).map(f => Number(f.match(/^x(\d+)\./)?.[1] ?? 0))) + 1;
 
   if (backfill) return backfillEdited(expected);
-  const messages = await newMessages(state.lastId);
+  // Each channel keeps its own place (the old one's stragglers come after the new one's first messages).
+  state.channels ??= {};
+  const messages = await newMessages(state.channels[CHANNEL] ?? state.lastId);
   console.log(`${messages.length} new message(s) in the channel.`);
   let shots = 0, imports = 0, skipped = 0;
 
@@ -168,7 +172,7 @@ async function main() {
     } else {
       skipped++;
     }
-    if (!dryRun) state.lastId = m.id;
+    if (!dryRun) state.channels[CHANNEL] = m.id;
   }
 
   if (!dryRun) {

@@ -8,7 +8,7 @@
 
 import { el } from './dom.js';
 
-const WEBHOOK = 'https://discord.com/api/webhooks/1563434905793466441/8qA_SLQwXGu9_46h_QFautTeDf5b2RD2-Ehm9rok37emxn9Cst3C1Y5OLKGR9XTcy-dN';
+const WEBHOOK = 'https://discord.com/api/webhooks/1565937153924661349/mR8hZoabx_6xRHE7SGN_l9cqR9QjzXiLxweNezIAM6diVs7EK5eEsnDJ4d8b-gY4P2Ke';
 const ISSUES_URL = 'https://github.com/Tome-Wyrm/riven-calculator-site/issues/new';
 const COOLDOWN_MS = 30_000;
 const MAX_IMAGE = 8 * 1024 * 1024;        // Discord's limit for webhook files without boosts
