@@ -3,7 +3,7 @@
 // ±10% scale, with a letter grade.
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { canRoll, fittingShapes, weaponCanRoll, format, gradeRoll, inferSign, letterGrade, range, rollScore, shapeFor } from '../engine.js';
+import { canRoll, displayValue, fittingShapes, weaponCanRoll, format, gradeRoll, inferSign, letterGrade, range, rollScore, shapeFor } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
@@ -156,10 +156,13 @@ function results() {
     const flip = curse && state.curse === 'mild';
     const [sLo, sHi] = [rollScore(flip ? 1 - g.hi : g.lo), rollScore(flip ? 1 - g.lo : g.hi)].sort((x, y) => x - y);
     scores.push((sLo + sHi) / 2);
-    return el('tr', {}, [name, shownCell, rangeCell,
+    const into = splicesInto(stat, g, parsed, shape);
+    if (into.length) name.prepend(spliceToggle(stat.id), ' ');
+    return [el('tr', {}, [name, shownCell, rangeCell,
       el('td', { class: curse ? 'neg' : 'pos' }, [scoreText(sLo, sHi)]),
-      el('td', { class: 'grade' }, [gradeText(sLo, sHi)])]);
-  });
+      el('td', { class: 'grade' }, [gradeText(sLo, sHi)])]),
+    ...(open.has(stat.id) ? into : [])];
+  }).flat();
 
   const head = el('thead', {}, [el('tr', {}, ['Stat', 'Shown', `Range (${shape}, rank ${rank})`, 'Roll', 'Grade']
     .map(h => el('th', { scope: 'col' }, [h])))]);
@@ -179,6 +182,50 @@ function results() {
   ]);
 }
 
+/** Stats whose "Splices into" rows are open (not saved: a view toggle). */
+const open = new Set();
+
+/** @param {string} id */
+function spliceToggle(id) {
+  const b = el('button', { type: 'button', class: 'splice-toggle', 'aria-expanded': String(open.has(id)) },
+    [`${open.has(id) ? '▾' : '▸'} Splices into`]);
+  b.addEventListener('click', () => { open.has(id) ? open.delete(id) : open.add(id); renderResults(); });
+  return b;
+}
+
+/**
+ * Rows for what `stat` splices into on this riven: the spliced stat keeps its parents' better roll
+ * (a curse ranked by its size) and lands at that roll in its own positive range, on the same shape
+ * (splicing keeps it). When the riven has no other parent for it, the other could still roll
+ * better, so the value is a minimum.
+ * @param {Stat} stat @param {{lo: number, hi: number}} g this stat's roll
+ * @param {{stat: Stat, sign: string, shown: number | null}[]} parsed @param {import('../data/stats.js').Shape} shape
+ */
+function splicesInto(stat, g, parsed, shape) {
+  const { cls, rank } = state;
+  return SPLICED.filter(s => s.b[cls] !== undefined && (s.from ?? []).some(p => p.includes(stat.id))
+    && !parsed.some(p => p.stat.id === s.id)).map(s => {
+    const others = (s.from ?? []).filter(p => p.includes(stat.id)).map(p => /** @type {string} */ (p.find(id => id !== stat.id)));
+    // A partner already on the riven: the better of the two rolls decides, and the value is exact.
+    let best = { ...g, from: stat }, exact = false;
+    for (const p of parsed) {
+      if (!others.includes(p.stat.id) || !canRoll(p.stat, cls, shape, p.sign)) continue;
+      const o = gradeRoll(p.stat, cls, shape, p.sign, /** @type {number} */ (p.shown), rank);
+      if (!o.possible) continue;
+      exact = true;
+      if (o.lo + o.hi > best.lo + best.hi) best = { ...o, from: p.stat };
+    }
+    const [lo, hi] = [displayValue(s, cls, shape, '+', best.lo, rank), displayValue(s, cls, shape, '+', best.hi, rank)];
+    const value = Math.abs(hi - lo) < (s.unit === 'mult' ? 0.01 : 0.1) ? format(s, (lo + hi) / 2) : `${format(s, lo)} to ${format(s, hi)}`;
+    return el('tr', { class: 'splice-row' }, [
+      el('th', { scope: 'row' }, [statName(s, cls)]),
+      el('td', {}, [exact ? value : `At least ${value}`,
+        ...(exact && best.from !== stat ? [el('span', { class: 'sub' }, [`${statName(best.from, cls)}'s roll is better`])] : [])]),
+      el('td', { colspan: '2' }, [`${statName(stat, cls)} + ${others.map(id => statName(STAT_BY_ID[id], cls)).join(' or ')}`]),
+      el('td', { class: 'grade' }, [gradeText(rollScore(best.lo), rollScore(best.hi))]),
+    ]);
+  });
+}
 /**
  * Sends this riven to the Build planner as the riven to start from.
  * @param {{stat: Stat, sign: string, shown: number | null}[]} parsed @param {import('../data/stats.js').Shape} shape
@@ -268,6 +315,7 @@ function restore() {
   if (saved.rank !== undefined) state.rank = Math.round(saved.rank);
   if (saved.rows) state.rows = saved.rows;
   if (saved.curse) state.curse = saved.curse;
+
 }
 
 /**

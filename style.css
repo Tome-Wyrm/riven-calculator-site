@@ -328,3 +328,8 @@ table.ranges.compact { width: auto; max-width: 100%; }
 
 /* Element icons in spliced recipes */
 .dmg-icon { width: 1.25em; height: 1.25em; vertical-align: -0.3em; }
+
+/* Grader: "Splices into" rows under a stat. */
+.splice-toggle { font-size: 0.75rem; padding: 0 6px; margin-right: 4px; }
+.splice-row th, .splice-row td { font-size: 0.85rem; color: var(--muted); }
+.splice-row th { padding-left: 2em; font-weight: 400; }
