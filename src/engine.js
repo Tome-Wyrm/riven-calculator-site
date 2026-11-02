@@ -6,7 +6,7 @@
 // u ∈ [0, 1] is the roll quality (the player-data fingerprint `Value` / 2^30). For curses a
 // higher u means a bigger negative. The game works in 32-bit floats, so each step is fround-ed.
 
-import { SHAPES, DISPOSITION, MAX_RANK } from './data/stats.js';
+import { SHAPES, DISPOSITION, MAX_RANK, polarityFor } from './data/stats.js';
 
 /** @typedef {import('./data/stats.js').Stat} Stat */
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
@@ -26,8 +26,8 @@ export const fingerprintToU = (/** @type {number} */ value) => value / 2 ** 30;
  */
 export function canRoll(stat, cls, shape, sign) {
   if (stat.b[cls] === undefined) return false;
-  if (sign === '+') return stat.polarity !== 'negOnly';
-  return SHAPES[shape].malus !== null && stat.polarity !== 'posOnly';
+  if (sign === '+') return polarityFor(stat, cls) !== 'negOnly';
+  return SHAPES[shape].malus !== null && polarityFor(stat, cls) !== 'posOnly';
 }
 
 /**
@@ -221,8 +221,8 @@ function clampInterval(a, b) {
  * @param {Stat} stat @param {WeaponClass} cls @param {number} target @returns {Sign}
  */
 export function inferSign(stat, cls, target) {
-  if (stat.polarity === 'posOnly') return '+';
-  if (stat.polarity === 'negOnly') return '-';
+  if (polarityFor(stat, cls) === 'posOnly') return '+';
+  if (polarityFor(stat, cls) === 'negOnly') return '-';
   // A stat this class can't roll (a misread, or the wrong class): go by the number's own sign.
   if (stat.b[cls] === undefined) return target < (stat.unit === 'mult' ? 1 : 0) ? '-' : '+';
   const plus = displayValue(stat, cls, '++', '+', 0.5);

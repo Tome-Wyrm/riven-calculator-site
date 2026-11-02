@@ -13,7 +13,7 @@
 //    locked alongside it.
 // Costs are from the wiki's cycle table; a locked trait doubles them.
 
-import { ORDINARY } from './data/stats.js';
+import { ORDINARY, polarityFor } from './data/stats.js';
 import { weaponCanRoll } from './engine.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
@@ -32,7 +32,7 @@ export function pools(cls, ipsCode) {
   // Vintage stats ('v') are on older rivens only: a cycle never rolls them.
   const rollable = ORDINARY.filter(s => s.b[cls] !== undefined && !['n', 'v'].includes(weaponCanRoll(s, ipsCode)));
   return {
-    positive: rollable.filter(s => s.polarity !== 'negOnly').map(s => s.id),
-    negative: rollable.filter(s => s.polarity !== 'posOnly').map(s => s.id),
+    positive: rollable.filter(s => polarityFor(s, cls) !== 'negOnly').map(s => s.id),
+    negative: rollable.filter(s => polarityFor(s, cls) !== 'posOnly').map(s => s.id),
   };
 }

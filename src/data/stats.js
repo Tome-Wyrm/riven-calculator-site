@@ -29,9 +29,13 @@
  * @property {Partial<Record<WeaponClass, number>>} b   base coefficient; missing = can't roll
  * @property {Unit} unit
  * @property {Polarity} polarity
+ * @property {Polarity} [meleePolarity]   on melee rivens, when it differs
  * @property {boolean} spliced
  * @property {string[][]} [from]    spliced only: pairs of ordinary stat ids that splice into it
  */
+
+/** A stat's polarity on a class: Damage can be a curse on guns but never on melee. @param {Stat} stat @param {WeaponClass} cls @returns {Polarity} */
+export const polarityFor = (stat, cls) => (cls === 'melee' && stat.meleePolarity) || stat.polarity;
 
 /** @type {WeaponClass[]} */
 export const CLASSES = ['rifle', 'shotgun', 'pistol', 'archgun', 'melee'];
@@ -83,7 +87,7 @@ const ELEMENT = [0.01, 0.01, 0.01, 0.0133, 0.01];
 /** The 32 ordinary (rollable) stats. */
 export const ORDINARY = [
   //   id                   name                               prefix    suffix   rifle      shotgun    pistol     archgun    melee
-  stat('damage',            'Damage',                          'Visi',   'Ata',   [0.0183333,0.0183,    0.0244,    0.0111,    0.0183],   'pct',    'both', { meleeName: 'Melee Damage' }),
+  stat('damage',            'Damage',                          'Visi',   'Ata',   [0.0183333,0.0183,    0.0244,    0.0111,    0.0183],   'pct',    'both', { meleeName: 'Melee Damage', meleePolarity: 'posOnly' }),
   // Base elements
   stat('cold',              'Cold',                            'Geli',   'Do',    ELEMENT,                                                 'pct',    'posOnly'),
   stat('electricity',       'Electricity',                     'Vexi',   'Tio',   ELEMENT,                                                 'pct',    'posOnly'),
