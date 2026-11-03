@@ -12,7 +12,7 @@ import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
-/** What each setting studies. Targets at level 150 on the Steel Path, as endgame rivens are judged. */
+/** What each setting studies. Targets at level 150 on the Steel Path, as endgame rivens are judged; "any" is a Heavy Gunner without faction weaknesses. */
 const SETTINGS = {
   room: { label: 'Room clearing, any faction, armor stripped', scenario: 'room', opts: { enemy: '' } },
   burst: { label: 'Room clearing, any faction, armor stripped, burst (no reloads)', scenario: 'room', opts: { enemy: '', burst: true } },
@@ -62,10 +62,12 @@ if (!isMainThread) {
   /** Runs one setting's studies on a pool of workers. @param {keyof typeof SETTINGS} key */
   const run = async key => {
     const s = SETTINGS[key];
+    // Builds are judged by fights (src/fight.js): a faction's unit, or for any faction a Heavy Gunner
+    // without weaknesses (armor stripped), at level 150 on the Steel Path.
     const target = 'target' in s && s.target ? (() => {
       const [f, stripped] = s.target;
       return { enemy: f, target: targetOf(E.UNITS[f].find(u => u.name === E.DEFAULT_UNIT[f]), 150, true, stripped, E) };
-    })() : {};
+    })() : { target: targetOf({ ...E.UNITS.grineer.find(u => u.name === 'Heavy Gunner'), types: '' }, 150, true, true, E) };
     const inputs = guns.map(g => {
       const pool = pools(g.cls, g.ips);
       return { weapon: g.name, cls: g.cls, shape: '+++-', scenario: s.scenario,

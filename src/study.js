@@ -35,7 +35,8 @@ export function study(input) {
   const sc = SCENARIOS[input.scenario];
   const { cls, shape } = input;
   // The kind of build decides the weak point share.
-  const opts = { ...input.opts, weakpoint: sc.weakpoint };
+  // Room clearing and weak point builds fight 20 targets in a row (src/fight.js), single target one.
+  const opts = { ...input.opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1 };
   const pool = modPool(cls, w, sc, opts);
   const arcanes = arcanePool(cls, sc, opts);
   const raw = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign) => rawValue(STAT_BY_ID[id], cls, shape, sign, sign === '+' ? medianU(id) : 0.5);

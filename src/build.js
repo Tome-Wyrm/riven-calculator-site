@@ -12,6 +12,7 @@ import { GUN_ARCANES } from './data/arcanes.js';
 import { STAT_BY_ID } from './data/stats.js';
 import { rivenOrder, BASE, COMBINED } from './elements.js';
 import { dpsOf } from './sim.js';
+import { fight } from './fight.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('./data/weapon-stats.js').WeaponStats} WeaponStats */
@@ -180,7 +181,12 @@ const fitsWith = (p, others) => others.every(o => o.name !== p.name && !o.excl.i
  */
 export function optimise(w, pool, arcanes, opts, o = {}) {
   const size = o.slots ?? 8;
-  const value = (/** @type {Piece[]} */ slots, /** @type {Piece | null} */ arc) => dpsOf(w, totalsOf(arc ? [...slots, arc] : slots), opts);
+  // A build's worth: the fight against the target (src/fight.js) when there is one, else the closed form.
+  const target = opts.target;
+  const value = (/** @type {Piece[]} */ slots, /** @type {Piece | null} */ arc) => {
+    const t = totalsOf(arc ? [...slots, arc] : slots);
+    return target ? fight(w, t, { ...opts, target }).dps : dpsOf(w, t, opts);
+  };
   // For the pair move: the strongest mod of each base element (most of it, then most else besides).
   /** @type {Map<string, Piece>} */
   const strongest = new Map();
@@ -276,7 +282,7 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
  * @param {Record<string, number>[]} rolls  riven rolls to value (stat id → raw value)
  */
 export function rivenWorth(w, cls, sc, opts, rolls) {
-  opts = { ...opts, weakpoint: sc.weakpoint };
+  opts = { ...opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1 };
   const pool = modPool(cls, w, sc, opts);
   const arcanes = arcanePool(cls, sc, opts);
   const none = optimise(w, pool, arcanes, opts);

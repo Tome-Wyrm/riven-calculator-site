@@ -12,9 +12,12 @@
 //             × (1 + the matching elemental mods)
 //
 // The DoT is the base damage × (1 + Damage) × faction² × crit, per tick: Slash 35%, Heat, Toxin,
-// Electricity and Gas 50%, 7 ticks, each x (1 + its own element's mods: the wiki's Damage/Calculation;
-// a Heat, Toxin or Electricity mod counts even once combined, Gas only counts Gas bonuses). Proc types
-// are weighted by each type's share of the modded hit.
+// Electricity and Gas 50%, each x (1 + its own element's mods: the wiki's Damage/Calculation; a
+// Heat, Toxin or Electricity mod counts even once combined, Gas only counts Gas bonuses). Proc types
+// are weighted by each type's share of the modded hit. Ticks (the wiki's Damage over Time): Slash,
+// Heat and Toxin wait a second, then tick each second up to the proc's end (6 s: 6 ticks, the last at
+// 6 s); Electricity and Gas tick at once and each second before the end (6 ticks, none at 6 s). So
+// Status Duration rounds differently: at 7.8 s Toxin ticks 7 times, Electricity 8.
 // Viral procs stack (6 s each, up to 10): the first adds +100% damage, each more +25%. The build's
 // elements are Viral, so a riven's Viral or Status Chance adds stacks until they cap.
 // Weak point hits (a chosen share of the direct hits; explosions never count) follow the wiki's Enemy
@@ -71,13 +74,23 @@ export const BUILDS = {
 const PHYSICAL = ['impact', 'puncture', 'slash'];
 const ELEMENTS = ['cold', 'electricity', 'heat', 'toxin', 'blast', 'corrosive', 'gas', 'magnetic', 'radiation', 'viral'];
 /** Damage per tick, as a share of the hit, for the types whose procs deal damage over time. */
-const DOT = { slash: 0.35, heat: 0.5, toxin: 0.5, electricity: 0.5, gas: 0.5 };
-const TICKS = 7;
+export const DOT = { slash: 0.35, heat: 0.5, toxin: 0.5, electricity: 0.5, gas: 0.5 };
+/** The DoTs that tick when they proc (Electricity, Gas); the others wait a second. */
+export const TICKS_AT_ONCE = new Set(['electricity', 'gas']);
+
+/**
+ * How many times a proc of a DoT type ticks, lasting `seconds`: each whole second after a delayed
+ * proc up to its end, or from the proc on but not at its end.
+ * @param {string} type @param {number} seconds
+ */
+export function ticksOf(type, seconds) {
+  return TICKS_AT_ONCE.has(type) ? Math.ceil(seconds - 1e-9) : Math.floor(seconds + 1e-9);
+}
 /** The build's two elementals combine into this. */
 const BUILD_ELEMENT = 'viral';
-const STATUS_SECONDS = 6;
+export const STATUS_SECONDS = 6;
 /** Status types a target can carry (each counted once by "per status type" bonuses). */
-const STATUS_TYPES = [...PHYSICAL, ...ELEMENTS];
+export const STATUS_TYPES = [...PHYSICAL, ...ELEMENTS];
 export const FACTIONS = ['grineer', 'corpus', 'infested', 'orokin', 'scaldra', 'techrot', 'murmur'];
 
 /** @typedef {'' | 'grineer' | 'corpus' | 'infested' | 'orokin' | 'scaldra' | 'techrot' | 'murmur'} Enemy */
@@ -111,6 +124,7 @@ export const HEADS = {
  * @property {number} [armor]      the enemy's armor without a target (default 0: stripped)
  * @property {Target} [target]     the unit fought, at its level (overrides armor)
  * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
+ * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)
  */
 
 /**
@@ -177,7 +191,8 @@ export function dpsOf(w, t, opts = {}) {
   // A fire-rate lock (the Semi- Cannonades) keeps the weapon's own rate.
   const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1)));
   const crit = (/** @type {number} */ cc, /** @type {number} */ cd) => 1 + Math.max(0, cc) * (Math.max(1, cd) - 1);
-  const statusMult = TICKS * Math.max(0, 1 + m('statusDuration')) * Math.max(0, 1 + m('statusDamage'));
+  const statusSeconds = STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
+  const statusMult = Math.max(0, 1 + m('statusDamage'));
 
   /** @type {Record<string, number>} the build's elemental mods by element, uncombined: they scale DoT ticks */
   const matching = {};
@@ -211,7 +226,7 @@ export function dpsOf(w, t, opts = {}) {
     const dotScale = statusMult * base * faction * faction * D * scale * pellets * rate;
     for (const [type, v] of Object.entries(byType)) dealt[type] = (dealt[type] ?? 0) + v * direct;
     for (const [type, tick] of Object.entries(DOT)) {
-      const dot = procsPerPellet(type) * tick * dotScale * (1 + (matching[type] ?? 0));
+      const dot = procsPerPellet(type) * tick * ticksOf(type, statusSeconds) * dotScale * (1 + (matching[type] ?? 0));
       if (type === 'slash') bleed += dot; else dealt[type] = (dealt[type] ?? 0) + dot;
     }
     for (const type of Object.keys(procs)) procs[type] += procsPerPellet(type) * pellets * rate;
@@ -259,7 +274,7 @@ export function dpsOf(w, t, opts = {}) {
  * Stats with each per status type bonus counted `n` times into its own stat.
  * @param {Record<string, number>} stats @param {number} n
  */
-function withPerStatus(stats, n) {
+export function withPerStatus(stats, n) {
   const out = { ...stats };
   for (const [k, v] of Object.entries(stats)) {
     if (k.endsWith('PerStatus')) { const id = k.slice(0, -'PerStatus'.length); out[id] = (out[id] ?? 0) + n * v; }
@@ -273,7 +288,7 @@ function withPerStatus(stats, n) {
  * Null for a part that does no damage.
  * @param {Part} p @param {Totals} t @param {(id: string) => number} m
  */
-function hitByType(p, t, m) {
+export function hitByType(p, t, m) {
   const base = Object.values(p.dmg).reduce((s, v) => s + v, 0);
   if (base <= 0) return null;
   /** @type {Record<string, number>} */
@@ -296,7 +311,7 @@ function hitByType(p, t, m) {
  * forced procs and Hunter Munitions' Slash proc chance on each critical hit.
  * @param {Part} p @param {Record<string, number>} byType @param {number} hit @param {number} cc @param {(id: string) => number} m
  */
-function procsOf(p, byType, hit, cc, m) {
+export function procsOf(p, byType, hit, cc, m) {
   const chance = Math.max(0, p.sc * (1 + m('statusChance')));
   const slashOnCrit = Math.min(1, Math.max(0, cc)) * m('slashOnCrit');   // the only "on crit" proc stat
   return (/** @type {string} */ type) => chance * (byType[type] ?? 0) / hit + (p.forced?.includes(type) ? 1 : 0)

@@ -45,7 +45,7 @@ export function modelFields() {
   const s = modelState;
   return {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
-    enemy: s.enemy, unit: s.enemy ? s.unit : '', lvl: s.enemy && s.level !== 150 ? s.level : '', sp: s.enemy && s.steelPath ? 1 : '',
+    enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
     armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '',
   };
 }
@@ -149,9 +149,12 @@ export function modelBlock(weapon, cls, rerender) {
   const gun = /** @type {Exclude<WeaponClass, 'melee'>} */ (cls);
   const set = (/** @type {Partial<typeof modelState>} */ patch) => { Object.assign(s, patch); rerender(); };
   if (s.mode >= w.modes.length) s.mode = -1;
-  const units = s.enemy ? enemies.UNITS[s.enemy] ?? [] : [];
-  const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies?.DEFAULT_UNIT[s.enemy]) ?? null;
-  const target = unit ? targetOf(unit, s.level, s.steelPath, !s.armor, enemies) : null;
+  // The target: one of the faction's units at its level. Any faction: a Grineer unit's health and
+  // armor without faction weaknesses (builds are judged by fights, src/fight.js, so there's always one).
+  const pick = s.enemy || 'grineer';
+  const units = enemies.UNITS[pick] ?? [];
+  const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies.DEFAULT_UNIT[pick]) ?? null;
+  const target = unit ? targetOf(s.enemy ? unit : { ...unit, types: '' }, s.level, s.steelPath, !s.armor, enemies) : null;
   const opts = {
     mode: s.mode < 0 ? w.main : s.mode, enemy: s.enemy, burst: s.burst, primed: s.primed,
     ...(target ? { target } : { armor: s.armor }),
@@ -179,7 +182,7 @@ export function modelBlock(weapon, cls, rerender) {
       el('div', { class: 'field' }, [el('span', {}, ['Mode']), segmented('Mode', ['normal', 'sp'], s.steelPath ? 'sp' : 'normal',
         v => set({ steelPath: v === 'sp' }), v => (v === 'sp' ? 'Steel Path' : 'Normal'))]),
     ] : []),
-    select('Armor', [['0', 'Stripped'], ['2700', unit ? 'Full' : 'Steel Path (2700)']], s.armor ? '2700' : '0', v => set({ armor: Number(v) })),
+    select('Armor', [['0', 'Stripped'], ['2700', 'Full']], s.armor ? '2700' : '0', v => set({ armor: Number(v) })),
     el('div', { class: 'field' }, [el('span', {}, ['Statuses']), segmented('Statuses', ['own', 'primed'], s.primed ? 'primed' : 'own',
       v => set({ primed: v === 'primed' }), v => (v === 'primed' ? 'Primed (all)' : 'The weapon’s own'))]),
     el('div', { class: 'field' }, [el('span', {}, ['DPS']), segmented('DPS', ['sustained', 'burst'], s.burst ? 'burst' : 'sustained',
@@ -187,6 +190,7 @@ export function modelBlock(weapon, cls, rerender) {
   ]);
   const about = el('p', { class: 'note' }, [
     `For each riven, the best build the search finds around it (eight slots, the riven taking one, and an arcane), `
+    + `judged by fights against the target: the shots a kill takes, reloads included (twenty targets in a row for room clearing and weak points, one for single target). A gun that already kills in one shot gains nothing from more damage, only from shooting sooner. The percentages are kill speed, `
     + `against the best build without a riven, at median rolls on a ${s.shape} riven (spliced stats keep the better `
     + `of two rolls, so theirs is higher). ${{
       room: 'Room clearing: kills keep on-kill stacks (Galvanized mods, Merciless) at their maximum; body shots',
@@ -197,7 +201,7 @@ export function modelBlock(weapon, cls, rerender) {
     }[s.scenario]}; aiming bonuses count. ${s.primed
       ? 'Primed target: every status type on it (a primer companion’s or the squad’s work), Viral and Corrosive at 10 stacks, Heat burning. '
       : 'Per status type bonuses (Galvanized) count the status types the weapon keeps up by itself. '}`
-    + (unit && target ? `Target: ${unit.name}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
+    + (unit && target ? `Target: ${unit.name}${s.enemy ? '' : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
       + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'

@@ -641,24 +641,66 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
       ticks x (1 + Gas bonuses); the model had left it out). Re-scored: room clearing 51% / 26%, single
       target 53% / 72% (was 59% / 84%); curses agree more (56%, 67%). Status Duration and Status
       Damage now rank high, exposing the next bias:
-- [ ] **DoT against the time to kill.** The model gives every proc its full ticks, as if the target
-      lived forever, so Status Duration (more ticks) is overrated. Over a kill time T with procs at
-      rate r, a DoT lasting D deals r × tick × (D − D²/2T) a second when T ≥ D, r × tick × T/2 when
-      shorter; Heat (timers reset) r × tick × T/2. T comes from the target (13c: health, shields) and
-      the DPS itself, solved by iteration; room clearing and single target differ mostly here.
-      Blast procs aren't modelled either (10 stacks detonate for 3x the stored hits).
+- [x] **DoT against the time to kill.** The closed form gave every proc its full ticks, as if the
+      target lived forever, so Status Duration (more ticks) was overrated. Solved by the fight below.
+      Blast procs aren't modelled yet (10 stacks detonate for 3x the stored hits).
       **Heat's armor strip takes time, and Status Duration slows it** (the user, 2026-11-03; the wiki's
       Damage/Heat Damage): 15%, 30%, 40%, then 50% stripped, a step every 0.5 s x (1 + Status
       Duration), so full strip takes 2 s, 4 s at +100%, 1 s with a −50% curse; when the proc ends,
       armor comes back over 6 s. So Status Duration both helps (longer DoTs) and hurts (slower strip).
-- [ ] **So: simulate the fight, not a closed form** (the user's point from the start: these effects
-      only add up over time). Proposed: a deterministic, expected-value fight in small time steps
-      (~0.1 s) against the 13c target: shots, reloads, procs by type with their own timers, Heat
-      stacks resetting together and its stepped strip, Corrosive and Viral stacks, Blast stacks and
-      detonations, kill time when health and shields run out; Galvanized and on-kill stacks per build
-      type. Expected values keep it smooth for the optimiser (no random noise between builds) and fast
-      enough for thousands of builds a study; a random (Monte Carlo) run can check it later. The
-      closed form stays as a fast first pass if the search needs one.
+- [x] **The fight** (`src/fight.js`, 2026-11-03; the user: step by the fire rate, not engine ticks,
+      and the questions are "is it dead yet?" and "how many shots did it take?"). A build against its
+      target, shot by shot: each shot's expected damage (crits, weak points, procs as averages), DoTs
+      running as rates between shots (a DoT kill between shots is placed where it happens), procs with
+      their own timers, Heat stacks on one timer that whole procs reset (they ramp), Heat's stepped
+      strip slowed by Status Duration, Corrosive, Viral and Magnetic stacks, shields first with
+      spill-over, Galvanized counting the status types on *this* target (a fresh enemy has none).
+      - **Shots to kill, smoothed**: the killing shot counts for the share of it the kill needed
+        (2.5 shots, not 3: the average of what crit rolls spread), never less than one shot. Pure
+        breakpoints made every stat that saved the same shot tie.
+      - **Room clearing** (and weak points): identical targets, so one fight without reloads gives
+        the shots a kill takes, and the reloads are spread over the kills. **Single target**: one
+        fight, reloads and all. A target alive after 20 s is finished at its rate so far.
+      - The optimiser scores builds by the fight whenever there's a target, which is always on the
+        page now ("any faction": a unit without faction weaknesses, Heavy Gunner by default). The
+        result reads as an effective DPS (health and shields over the time per kill); the closed
+        form (`dpsOf`) stays for the old reference model and tools.
+      - Speed: queues with running totals (everything a build applies lasts the same time, so it
+        expires in order) and the one-fight room: ~2 s a study (was 0.6–1.4 s with the closed form).
+      - **Felarx**, the user's example: against a level 150 Heavy Gunner it kills in about a shot, so
+        its best riven stats are Ammo Efficiency, Fire Rate, Reload Speed and Magazine, ahead of any
+        damage stat; Rubico Prime against a level 100 Steel Path Lancer fills its build with
+        Primed Fast Hands, Speed Trigger and Magnetic Capacity.
+      - **Re-scored with fights** (`tools/score-optimiser.mjs`; "any faction" settings fight a level
+        150 Steel Path Heavy Gunner without weaknesses, armor stripped). Top 6 / slot 1 in top 3 /
+        in the best riven / curse ok:
+
+        | Setting | Fights | Closed form (after the DoT fix) |
+        |---|---|---|
+        | Single target | 54% / **78%** / 45% / 50% | 53% / 72% / 43% / 67% |
+        | Room clearing | 51% / **40%** / 38% / 48% | 51% / 26% / 36% / 56% |
+        | Room, burst | 49% / 32% / 36% / 47% | — |
+        | Weak points | 28% / 8% / 20% / 55% | — |
+        | Primed target | 28% / 18% / 17% / 64% | — |
+        | Heavy Gunner, full armor | 58% / 23% / 52% / 26% | — |
+        | Elite Crewman | 42% / 27% / 32% / 51% | — |
+
+        Status Duration no longer tops anything. Where a build kills the target in about a shot
+        (primed targets, weak point builds), damage stats stop mattering and Ammo Efficiency,
+        Magazine and Reload Speed lead: the Felarx effect, which the community's picks (made for
+        damage) don't share. Against full armor, Corrosive and Viral lead, as before. The odd "Zoom
+        curse is costly" (45 against full armor) is the search finding a slightly better build with
+        a curse than without: noise of a greedy search, not a real cost.
+      - **Tick timing** (the user asked, 2026-11-03; the wiki's Damage over Time table): Slash, Heat
+        and Toxin wait a second, then tick each second up to the end (6 ticks at 6 s); Electricity
+        and Gas tick at once and each second before the end (6 ticks, none at 6 s). Both the closed
+        form and the fight had given every proc **7** ticks, one too many. With Status Duration the
+        two kinds round differently (`ticksOf`): at 7.8 s Toxin ticks 7 times, Electricity 8 (read
+        off the table's pattern; worth an in-game check). In the fight, Electricity's first tick
+        lands with the shot, and the rest of the ticks run spread over the second around each
+        tick's time, so a Toxin proc kills later than the same Electricity proc (a test).
+      - [ ] Show the shots per kill on the page; Blast stacks; a random (Monte Carlo) run to check
+            the averages; the curse comparison should not count a search's luck as a cost.
 - **Decided** (the user, 2026-11-03): room clearing keeps Galvanized stacks at their maximum. They
   are up most of the time, and they decay one at a time, so getting them back is usually trivial.
 
