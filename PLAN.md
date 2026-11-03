@@ -361,7 +361,18 @@ and what a damage model says each stat is worth on that weapon. The grader then 
   - Charge weapons listing an unlimited fire rate (Lanka) get 1 / charge time. "Vinquibus (Primary)"
     is our Vinquibus. Kitgun chambers have no stats of their own (grip and loader decide): left out.
   - Melee isn't included (the model covers guns only).
-- Overframe has a build simulator but no open data or API: use it only to cross-check numbers by hand.
+- **Underframe** (underframe.site; the user's "overframe" was this) has a build simulator: use it to
+  cross-check numbers by hand. Looked at 2026-11-02: it all runs in the browser, but the damage engine
+  is compiled WebAssembly (`/static/dps_calculator.wasm`, Emscripten), so it can't be read as source;
+  `script.js` (2.2 MB, readable) is the UI and the optimiser's plumbing. Its data is one JSON
+  (`/api/data`, 5.3 MB): 1,376 mods with the game's upgrade types and per-rank values, 139 arcanes,
+  conditionals (Galvanized stacks…), 62 frame abilities as weapon buffs (Roar, Nourish, Eclipse,
+  Xata's Whisper…), 35 companions, 736 enemy presets (armor, shields, health resistance), incarnons.
+  **No license anywhere: all rights reserved.** Learning mechanics from it is fine; copying its code or
+  shipping its curated data isn't, without the author's permission (their Discord is on the site).
+  It already does riven work too: "Auto Riven" and "Get Rolls Data" (a rolls scan with protected
+  mods, forced stats, small build tweaks and the elemental combo kept), on a time-stepped simulation
+  (sim time, samples, a combat log, "luck averaged").
 
 **12c — Damage model** (`src/sim.js`, pure, no DOM) — done
 - [x] Per part: (1 + Damage) × (physical × (1 + IPS) + innate elements + base × elements) × faction ×
@@ -404,7 +415,7 @@ and what a damage model says each stat is worth on that weapon. The grader then 
       Damage** (94: the sheet lists MS / CD / CC on low-crit guns like Afuris at 5%, "for sale value
       regardless of weapon CC being useless", its own note). The model's picks the community never
       lists: Gas (47), Ammo Efficiency (29, on short-magazine guns), Electricity, Status Duration.
-- [ ] Cross-check ~10 guns against Overframe by hand.
+- [ ] Cross-check ~10 guns against Underframe by hand.
 - [ ] Open: the reference build is fixed. A riven that supplies Viral / Corrosive lets a real build drop
       an elemental mod; the model can't see that slot saving, which is much of why the community
       prefers combined elements.
@@ -436,10 +447,37 @@ Both builds are optimised over the same mod pool, so slot saving, arcanes and fr
 by themselves instead of being guessed. 12c's bucket maths stays as the evaluator; the fixed
 `BUILDS` table goes.
 
-**13a — Mods and arcanes (`src/data/mods.js`, curated)**
-- WFCD's mod data isn't usable as is (Serration lists ranks 0–3 only; conditional mods and arcanes
-  are prose), so: a hand table of the gun mods that matter, max rank, each effect as data
-  (bucket + value + condition), checked against the wiki. Rifle first, then shotgun, pistol, archgun.
+**13a — Mods and arcanes (`src/data/mods.js`, generated)**
+- **Sources** (decided 2026-11-02): game facts, so any faithful copy will do; where two disagree,
+  check in game.
+  - Mod numbers: **DE's Public Export** (ExportUpgrades: every rank's stat text), read through WFCD's
+    copy (`Mods.json`, no LZMA to unpack). warframe-public-export-plus (calamity-inc, MIT) has
+    no stat values for ordinary mods (only names, drain, polarity), so it serves arcanes, enemies,
+    abilities and weapons instead (13c, 13d).
+  - **Underframe's game data** (`/api/data`): which mods can't be equipped together
+    (`incompatible_mods`), and a second copy of every value to check ours against.
+  - Every source is kept locally by `tools/lib/cache.mjs` (`tools/data/cache/`, **not in git**,
+    with `sources.json` saying when each was fetched): a build uses the cached copy when a fetch
+    fails or the data no longer looks right, and `--offline` uses only the copies. An outdated copy
+    beats nothing, and it's something to compare against.
+- [x] `tools/build-mods.mjs` → `src/data/mods.js`: 289 class-level gun mods (Rifle, Assault Rifle,
+      Sniper, Bow, PRIMARY, Shotgun, Pistol, Archgun) at max rank, Conclave / Flawed / riven entries
+      left out. `tools/lib/mod-text.mjs` reads the stat text into effects: plain and dual-stat, faction
+      multipliers, elements (colour tags stripped), triggers with duration / stacks / aiming / per
+      status type, Hunter Munitions' slash on crit (its "Slash" is a bare colour tag), Acuity's
+      multishot lock. Lines it can't read stay as notes (31: movement, ammo conversion, Hush…).
+- [x] **Cross-check against Underframe** (per-rank values × (max rank + 1); conditionals against its
+      conditionals table): **all agree** except Motus Setup (a movement trigger we don't read).
+      7 mods aren't in Underframe's data; 6 conditionals it has nothing on (Charged / Primed Chamber,
+      accuracy ones). What the check caught on the way:
+  - DE's export has **unreleased 10-rank "Expert" copies under ordinary names** ("Split Chamber"
+    +165%, "Point Strike" +275%, "Vital Sense" +220%, every 90% elemental at +165%). Released Expert
+    mods are named "Primed …"; the others are dropped. Before that, ~30 core mods were wrong.
+  - WFCD's level lists can run past the max rank: the max rank's entry is used, not the last.
+  - WFCD writes line breaks as the two characters "\n"; Underframe calls Orokin "corrupted" and the
+    Murmur "murmurs", and spells "Bane of" where DE spells "Bane Of" (names match ignoring case).
+- [ ] Arcanes (PE++ ExportArcanes, structured per-rank) and the elemental combination rules.
+- [ ] Put the other builders (weapons, weapon stats, picks) on the same local cache.
 - Effects: plain (Serration +165% Damage), dual-stat (Hammer Shot +60% CD +80% SC), elementals
   (90% and the 60/60 dual-stats, in **slot order**, which decides combinations), conditional (Galvanized
   on-kill stacks, Bladed Rounds / Argon Scope aiming, Hunter Munitions slash on crit), exclusive groups
@@ -476,7 +514,7 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 **13e — UI and checks**
 - The model block gets: scenario, faction / level, frame, companion, arcane (or "best"). Results: the
   riven's value per stat and the best sets, now as best-with − best-without, plus both builds.
-- Checks: arsenal numbers for a few builds (damage per shot, crit, status), Overframe by hand for ~10
+- Checks: arsenal numbers for a few builds (damage per shot, crit, status), Underframe by hand for ~10
   guns, and the community score (`tools/score-sim.mjs`) per scenario.
 - Open questions for the user before 13d: Narin's exact weak point effects; which frames and
   companions matter most; the primer companions to start with.
