@@ -605,8 +605,39 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 - [ ] **To check**: weapons with no weak point bonus (Ignis, Arca Plasmor, Catchmoon…: 1x, Acuity
       does nothing, Deadhead does); per-unit weak points (MOA rears 3x non-head, Bursa consoles,
       Juggernaut maws) are averaged away by the faction profile; Cernos Prime's own +50% on headshots.
-- [ ] `tools/score-sim.mjs` still scores the reference build; score the optimiser against the
-      community too.
+- [x] **The optimiser scored against the community** (`tools/score-optimiser.mjs`, 2026-11-03: 235 gun
+      families, one per pick family, +++- at median rolls, 11 worker threads, ~1 min a setting;
+      results cached in `tools/data/cache/score-optimiser.json`). Old reference build: 58% of first
+      choices in the top 6, 79% of slot-1 first choices in the top 3.
+
+      | Setting | Top 6 | Slot 1 in top 3 | In the best riven | Curse ok |
+      |---|---|---|---|---|
+      | Single target, any, stripped | **59%** | **84%** | 53% | 51% |
+      | Room clearing, any, stripped (page default) | 53% | 27% | 43% | 44% |
+      | Room clearing, burst | 49% | 15% | 43% | 44% |
+      | Room clearing, primed target | 52% | 33% | 39% | 48% |
+      | Weak points | 40% | 9% | 27% | 42% |
+      | Room clearing, Heavy Gunner 150 SP, full armor | 50% | 7% | 42% | 45% |
+      | Room clearing, Elite Crewman 150 SP | 41% | 14% | 38% | 46% |
+
+      ("Curse ok": the community's first-choice curse costs at most 2 points more than the most
+      harmless one.) What drives the gaps:
+  - **Single target agrees best, better than the old model.** The community's picks read like a build
+    without kill stacks.
+  - **Galvanized Chamber dilutes a Multishot riven in room clearing**: at 5 kill stacks it's +230%
+    Multishot, so the riven's adds little (Soma +32%, Nataruk +23%; with Split Chamber in single
+    target, +82% and +86%, the top stat). Multishot is the most missed pick in every room setting.
+  - **Galvanized Aptitude makes every status type worth ~8%** at full stacks: riven elements look
+    strong (Soma's Toxin +58% with it, +41% without), and Impact / Puncture curses look costly (a
+    median −108% Puncture curse removes Soma's Puncture, 40% of its physical damage, and a status
+    type: −17%). True in game; the community's picks don't count it.
+  - **Reloads**: Ammo Efficiency is worth 0% in burst, 23–35% with reloads; burst agrees less overall.
+  - **Targets** pull the advice where expected: full-armor Grineer → Viral, Corrosive, Damage to
+    Grineer; shielded Corpus → Magnetic; weak points → Weakpoint Damage and Weakpoint Crit Chance.
+    Corrosive is the community's most missed pick against stripped armor and isn't missed at all
+    against full armor: the sheet assumes armor.
+- **Decided** (the user, 2026-11-03): room clearing keeps Galvanized stacks at their maximum. They
+  are up most of the time, and they decay one at a time, so getting them back is usually trivial.
 
 **13c — Scenarios**
 - **Single target** (a boss: no kills, so on-kill stacks decay; status stacks build over time),
