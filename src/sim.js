@@ -177,6 +177,23 @@ export function dps(w, cls, mods, opts = {}) {
 }
 
 /**
+ * An attack's crit chance: its own x (1 + Critical Chance mods), plus an incarnon perk's flat bonus
+ * added after the mods (Elemental Excess, -10%). @param {Part} p @param {number} mods
+ */
+export const critChanceOf = (p, mods) => p.cc * (1 + mods) + (p.ccFlat ?? 0);
+
+/**
+ * The average damage multiplier from crits: 1 + CC x (CD - 1) (past 100%, the tiers keep it linear),
+ * plus an incarnon's bonus on non-critical hits (Devastating / Devouring Attrition: a 50% chance of
+ * +2000% on each hit that doesn't crit, so it fades as crit chance rises and is gone at 100%).
+ * @param {number} cc @param {number} cd @param {Part} [p]
+ */
+export function critScale(cc, cd, p) {
+  const nonCrit = p?.nonCrit ? Math.max(0, 1 - Math.max(0, cc)) * p.nonCrit.chance * p.nonCrit.mult : 0;
+  return 1 + Math.max(0, cc) * (Math.max(1, cd) - 1) + nonCrit;
+}
+
+/**
  * An attack's weak point multiplier: the target's (its head, or opts.headMult) plus 1.5 x Weakpoint
  * Damage, then x (1 + headshot bonuses: Deadhead, Target Acquired, the weapon's own, e.g. Cernos
  * Prime's +50%). Weapons the wiki marks -2 (Arca Plasmor, Flux Rifle…) get no weak point bonus: 1x,
@@ -210,7 +227,7 @@ export function dpsOf(w, t, opts = {}) {
   const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
   // A fire-rate lock (the Semi- Cannonades) keeps the weapon's own rate.
   const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1)));
-  const crit = (/** @type {number} */ cc, /** @type {number} */ cd) => 1 + Math.max(0, cc) * (Math.max(1, cd) - 1);
+  const crit = critScale;
   const statusSeconds = STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
   const statusMult = Math.max(0, 1 + m('statusDamage'));
 
@@ -226,13 +243,13 @@ export function dpsOf(w, t, opts = {}) {
     if (!typed) continue;
     const { base, byType, hit } = typed;
 
-    const cc = p.cc * (1 + m('critChance'));
-    const ccWp = p.cc * (1 + m('critChance') + m('weakpointCrit'));
+    const cc = critChanceOf(p, m('critChance'));
+    const ccWp = critChanceOf(p, m('critChance') + m('weakpointCrit'));
     const cd = p.cd * (1 + m('critDamage'));
     // Body and weak point hits: their scale (weak point × crit) mixed by share; Damage mods apart.
     // Explosions are never weak point hits.
     const onWp = p.aoe ? 0 : wp;
-    const scale = (1 - onWp) * crit(cc, cd) + onWp * weakPointMult(p, enemy, opts, m) * crit(ccWp, headcrit ? 2 * cd : cd);
+    const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, m) * crit(ccWp, headcrit ? 2 * cd : cd, p);
     // Galvanized's Direct Damage: added to Damage, or multiplying it, at this attack's share.
     const [coShare, coMult] = p.co ?? [1, 0];
     const Ddirect = Math.max(0, coMult ? D * (1 + coShare * m('directDamage')) : D + coShare * m('directDamage'));
@@ -363,7 +380,7 @@ function statusTypesUp(w, mode, t, opts, parts) {
   const perSecond = {};
   for (const { p, typed } of parts) {
     if (!typed) continue;
-    const procs = procsOf(p, typed.byType, typed.hit, p.cc * (1 + m('critChance')), m);
+    const procs = procsOf(p, typed.byType, typed.hit, critChanceOf(p, m('critChance')), m);
     for (const type of new Set([...Object.keys(typed.byType), ...(p.forced ?? []), 'slash'])) {
       if (STATUS_TYPES.includes(type)) perSecond[type] = (perSecond[type] ?? 0) + procs(type) * p.ms * pellets * rate * uptime;
     }

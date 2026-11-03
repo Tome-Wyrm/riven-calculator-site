@@ -52,7 +52,8 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
  *   spliced one), one per slot: a list is "any one of these" (Cold or Toxin)
  * @property {string | null} spliced  spliced stat wanted, if any
  * @property {string[]} [parents]     which recipe to splice it from (default: the cheapest)
- * @property {string | null} negative wanted negative, or null for "don't care"
+ * @property {string | string[] | null} negative wanted negative (a list: any one of these), or null
+ *   for "don't care"
  * @property {Shape} shape            the finished riven's shape
  * @property {Record<string, ValueGoal>} [goals]  wanted positive → the value it must show at rank 8
  * @property {ValueGoal} [negGoal]  the wanted negative's value goal (its size: "30" for -30%)
@@ -68,6 +69,9 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
  *   0 below the goal's roll window (or not on the riven), 1 inside it, 2 above it
  */
 
+/** The wanted curses as a list (none, one, or any one of several). @param {Target} t */
+const negativesOf = t => (Array.isArray(t.negative) ? t.negative : t.negative ? [t.negative] : []);
+
 /**
  * Builds and solves the plan for one splice recipe (or none).
  * @param {Target} t @param {string[] | null} parents
@@ -75,7 +79,11 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
 function solveFor(t, parents) {
   const { positive: posPool, negative: negPool } = pools(t.cls, t.ipsCode);
   const S = t.spliced;
-  const targetNeg = t.negative;
+  // The wanted curse: any one of these (those that can roll as curses here). targetNeg stands for
+  // the set (its ids joined by '|'), or null for none.
+  const negWanted = negativesOf(t);
+  const NEG = negWanted.filter(id => negPool.includes(id));
+  const targetNeg = NEG.length ? NEG.join('|') : null;
   /**
    * The chance a freshly rolled positive meets its value goal on a shape (1 with no goal). The game
    * rounds what it shows (1 decimal, 2 for multipliers), so "≥ 148.5" includes rolls showing as
@@ -97,7 +105,7 @@ function solveFor(t, parents) {
   if (t.positives.length + (S ? 1 : 0) > finalPos) throw new Error(`A ${t.shape} riven has only ${finalPos} positives.`);
   if (targetNeg && SHAPES[t.shape].negatives === 0) throw new Error(`A ${t.shape} riven has no negative.`);
   for (const id of parents ?? []) if (!posPool.includes(id)) throw new Error(`${STAT_BY_ID[id].name} can't roll as a positive on this weapon.`);
-  if (targetNeg && !negPool.includes(targetNeg)) throw new Error(`${STAT_BY_ID[targetNeg].name} can't roll as a negative on this weapon.`);
+  if (negWanted.length && !NEG.length) throw new Error(`${negWanted.map(id => STAT_BY_ID[id].name).join(' or ')} can't roll as a negative on this weapon.`);
   // Each slot's alternatives, less the ones this weapon can't roll or that can't meet their goal;
   // a slot needs at least one left.
   const groups = t.positives.map(p => {
@@ -145,7 +153,7 @@ function solveFor(t, parents) {
   const negStat = code => (code === 1 ? targetNeg : code >= 2 && parents ? parents[code - 2] : null);
   /** Negative codes possible in a stage: parents only before the splice, and only if they can be curses. */
   const negCodes = (/** @type {'pre' | 'post'} */ stage) => [0, ...(targetNeg ? [1] : []),
-    ...(stage === 'pre' && parents ? [2, 3].filter(c => negPool.includes(/** @type {string} */ (negStat(c))) && negStat(c) !== targetNeg) : [])];
+    ...(stage === 'pre' && parents ? [2, 3].filter(c => negPool.includes(/** @type {string} */ (negStat(c))) && !NEG.includes(/** @type {string} */ (negStat(c)))) : [])];
   const add = (/** @type {State} */ s) => { const k = key(s); if (!states.has(k)) states.set(k, s); return k; };
   const stages = /** @type {('pre' | 'post')[]} */ (parents ? ['pre', 'post'] : ['post']);
   for (const stage of stages) {
@@ -177,12 +185,12 @@ function solveFor(t, parents) {
     && ((s.mask & parentMask) === parentMask || (s.neg >= 2 && (s.mask & (1 << (3 - s.neg))) !== 0))
     && (!win || (cat(s.pg, 0) !== 2 && cat(s.pg, 1) !== 2 && (cat(s.pg, 0) === 1 || cat(s.pg, 1) === 1)));
 
-  /** The chance a fresh curse of the wanted stat meets its goal. @param {Shape} shape */
-  const meetsNeg = shape => (targetNeg && t.negGoal && SHAPES[shape].negatives ? meets(targetNeg, shape, '-', t.negGoal) : 1);
-  if (targetNeg && t.negGoal && meetsNeg(t.shape) === 0) {
-    const r = range(STAT_BY_ID[targetNeg], t.cls, t.shape, '-');
+  /** The chance a fresh curse of a wanted stat meets the curse's goal. @param {Shape} shape @param {string} id */
+  const meetsNeg = (shape, id) => (t.negGoal && SHAPES[shape].negatives ? meets(id, shape, '-', t.negGoal) : 1);
+  if (NEG.length && t.negGoal && NEG.every(id => meetsNeg(t.shape, id) === 0)) {
+    const r = range(STAT_BY_ID[NEG[0]], t.cls, t.shape, '-');
     const [lo, hi] = [Math.abs(r.at0), Math.abs(r.at1)].sort((a, b) => a - b).map(v => Math.round(v * 100) / 100);
-    throw new Error(`-${STAT_BY_ID[targetNeg].name} can't be ${OP_TEXT[t.negGoal.op]} ${t.negGoal.value} on a ${t.shape} riven (it rolls ${lo} to ${hi}).`);
+    throw new Error(`${NEG.map(id => `-${STAT_BY_ID[id].name}`).join(' or ')} can't be ${OP_TEXT[t.negGoal.op]} ${t.negGoal.value} on a ${t.shape} riven${NEG.length > 1 ? '' : ` (it rolls ${lo} to ${hi})`}.`);
   }
   /**
    * Splits drawn stats into the ones that rolled well enough and the rest.
@@ -217,8 +225,11 @@ function solveFor(t, parents) {
       // A stat locked as the negative can't also be drawn as a positive.
       const pool = posPool.filter(id => !fixedPos.includes(id) && !(lockNeg && id === negStat(s.neg)));
       const T = tr.filter(id => pool.includes(id));
-      const X = targetNeg && pool.includes(targetNeg) && !tr.includes(targetNeg) ? 1 : 0;
-      const others = pool.filter(id => !T.includes(id) && id !== targetNeg);
+      // Wanted curses that could be drawn as positives instead (x of them are, any x alike).
+      const Xs = NEG.filter(id => pool.includes(id) && !tr.includes(id));
+      const X = Xs.length;
+      const xsMeet = (/** @type {Shape} */ sh) => (X ? Xs.reduce((a, id) => a + meetsNeg(sh, id), 0) / X : 0);
+      const others = pool.filter(id => !T.includes(id) && !NEG.includes(id));
       const O1 = others.filter(id => negPool.includes(id)).length;
       const O2 = others.length - O1;
       const total = binom(pool.length, d);
@@ -229,15 +240,21 @@ function solveFor(t, parents) {
         for (let x = 0; x <= X; x++) for (let j = 0; j <= O1; j++) {
           const m = d - A.length - x - j;
           if (m < 0 || m > O2) continue;
-          const p0 = (binom(O1, j) * binom(O2, m)) / total / shapes.length;
+          const p0 = (binom(X, x) * binom(O1, j) * binom(O2, m)) / total / shapes.length;
           if (!p0) continue;
           // Negative drawn from the negative pool minus everything that's already a positive: the
           // chance of each stat we track as a curse (the wanted one, or a parent not drawn as a positive).
           const taken = negFixedPos + A.filter(id => negPool.includes(id)).length + x + j;
           const negChances = negCodes(s.stage).filter(code => code > 0).map(code => {
+            if (code === 1) {
+              // Any wanted curse not already a positive: the rest of the set, and those of the x not drawn.
+              const rest = NEG.filter(id => !Xs.includes(id) && !A.includes(id) && !fixedPos.includes(id));
+              const good = rest.reduce((a, id) => a + meetsNeg(shape, id), 0) + (X - x) * xsMeet(shape);
+              return /** @type {[number, number]} */ ([code, good / (negPool.length - taken)]);
+            }
             const id = /** @type {string} */ (negStat(code));
-            const free = code === 1 ? x === 0 : !A.includes(id) && !fixedPos.includes(id);
-            return /** @type {[number, number]} */ ([code, free ? (code === 1 ? meetsNeg(shape) : 1) / (negPool.length - taken) : 0]);
+            const free = !A.includes(id) && !fixedPos.includes(id);
+            return /** @type {[number, number]} */ ([code, free ? 1 / (negPool.length - taken) : 0]);
           });
           for (const [good, q] of rolls(A, shape)) {
             const p = p0 * q;
@@ -291,7 +308,7 @@ function solveFor(t, parents) {
       // The new curse: from the negative pool minus the riven's positives (approximated by how
       // many positives the shape has; most stats can be either sign).
       const left = negPool.length - SHAPES[s.shape].positives;
-      const pTarget = targetNeg && targetNeg !== S && !survivors.includes(targetNeg) ? meetsNeg(s.shape) / left : 0;
+      const pTarget = NEG.filter(id => id !== S && !survivors.includes(id)).reduce((a, id) => a + meetsNeg(s.shape, id), 0) / left;
       for (const [neg, w] of /** @type {[number, number][]} */ ([[1, pTarget], [0, 1 - pTarget]])) {
         if (!w) continue;
         const kk = key({ stage: 'post', mask, neg, shape: s.shape, pg: 0 });
@@ -449,7 +466,7 @@ export function planBuild(t, current = null) {
       const curse = current.have.find(id => id.startsWith('-'))?.slice(1);
       let neg = 0;
       if (curse && SHAPES[current.shape].negatives > 0) {
-        if (curse === t.negative) neg = 1;
+        if (negativesOf(t).includes(curse)) neg = 1;
         else if (stage === 'pre' && sol.parents?.includes(curse)) neg = 2 + sol.parents.indexOf(curse);
       }
       let pg = 0;

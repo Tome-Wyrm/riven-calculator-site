@@ -33,6 +33,7 @@ const state = {
   mins: ['', '', ''],                   // value wanted for each positive, '' = any
   ops: /** @type {Op[]} */ (['gte', 'gte', 'gte']),
   negative: NONE,
+  negAlts: /** @type {string[]} */ ([]),   // other curses that would do ("-Zoom or -Recoil")
   negOp: /** @type {Op} */ ('gte'),
   negMin: '',                           // value wanted for the curse (its size), '' = any
   shape: /** @type {Shape | 'any'} */ ('any'),   // the finished riven's shape; 'any' = the cheapest
@@ -71,6 +72,9 @@ function valueGoals() {
 }
 
 /** A positive slot's stats: its pick and the alternatives that would do instead. @param {number} i */
+/** The wanted curses: the pick and its alternatives. */
+const negSlot = () => (state.negative ? [...new Set([state.negative, ...state.negAlts.filter(Boolean)])] : []);
+
 const slot = i => (state.want[i] ? [...new Set([state.want[i], ...state.alts[i].filter(Boolean)])] : []);
 
 /** The curse's value goal, if any. @returns {import('../planner.js').ValueGoal | undefined} */
@@ -131,11 +135,12 @@ function lockToggle(id) {
  */
 function nextMove(action, parents, spliced) {
   if (action === 'splice' || action === '-?') return actionText(action, parents, current().have, spliced);
-  const want = action === 'cycle' ? null : action.startsWith('-') ? action.slice(1) : action;
+  // (A plan's "any of these curses" is your riven's own curse.)
+  const want = action === 'cycle' ? null : action.startsWith('-') ? (action.includes('|') ? state.myNeg : action.slice(1)) : action;
   // (The spliced stat's lock is a slot of its own: it stays.)
   const unlock = state.myLocks.filter(id => id !== want && !(spliced && id === state.spliced));
   const keep = want !== null && state.myLocks.includes(want);
-  const text = want === null ? 'cycle' : `${keep ? 'keep' : 'lock'} ${name(action)} ${keep ? 'locked ' : ''}and cycle`;
+  const text = want === null ? 'cycle' : `${keep ? 'keep' : 'lock'} ${name(action.startsWith('-') ? `-${want}` : action)} ${keep ? 'locked ' : ''}and cycle`;
   const rest = spliced ? `, with ${name(state.spliced)} locked` : want === null && !unlock.length ? ', nothing locked' : '';
   return (unlock.length ? `Unlock ${unlock.map(name).join(', ')}, ${text}` : text[0].toUpperCase() + text.slice(1)) + rest;
 }
@@ -168,7 +173,7 @@ function current() {
   });
   // Likewise the wanted curse, if its value misses its goal.
   const ng = negGoal(), nv = magnitude(state.myNegVal);
-  const curseOk = !(state.myNeg === state.negative && ng && nv !== null && !meetsGoal(nv, ng));
+  const curseOk = !(negSlot().includes(state.myNeg) && ng && nv !== null && !meetsGoal(nv, ng));
   const rolls = shape ? parentRolls(shape) : undefined;
   return {
     shape,
@@ -194,7 +199,9 @@ const rollText = u => { const x = rollScore(u); return `${x < 0 ? '-' : '+'}${Ma
 
 const kuva = (/** @type {number} */ n) => `${Math.round(n).toLocaleString('en-US')} Kuva`;
 const cyc = (/** @type {number} */ n) => `${n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString('en-US')} cycles`;
-const name = (/** @type {string} */ id) => (id.startsWith('-') ? `−${statName(STAT_BY_ID[id.slice(1)], state.cls)}` : statName(STAT_BY_ID[id], state.cls));
+const name = (/** @type {string} */ id) => (id.startsWith('-')
+  ? id.slice(1).split('|').map(x => `−${statName(STAT_BY_ID[x], state.cls)}`).join(' or ')
+  : statName(STAT_BY_ID[id], state.cls));
 
 /** Shapes that can hold the target. */
 function validShapes() {
@@ -213,6 +220,7 @@ function controls() {
   state.want = state.want.map(id => (positive.includes(id) ? id : NONE));
   state.alts = state.alts.map((a, i) => (state.want[i] ? a.filter(id => positive.includes(id)) : []));
   if (!negative.includes(state.negative)) state.negative = NONE;
+  state.negAlts = state.negative ? state.negAlts.filter(id => negative.includes(id)) : [];
   if (!splicedList.some(s => s.id === state.spliced)) state.spliced = NONE;
   const shapes = validShapes();
   if (state.shape !== 'any' && !shapes.includes(state.shape)) state.shape = 'any';
@@ -264,6 +272,13 @@ function controls() {
     ])),
     el('div', { class: 'controls' }, [
       select('Negative', negOptions, state.negative, v => set({ negative: v })),
+      // Other curses that would do: any one of them counts.
+      ...(state.negative ? state.negAlts.map((alt, j) => select('or', [[NONE, '(none)'], ...negOptions.slice(1)], alt, v => {
+        const negAlts = [...state.negAlts];
+        if (v) negAlts[j] = v; else negAlts.splice(j, 1);
+        set({ negAlts });
+      })) : []),
+      ...(state.negative && state.negAlts.length < 5 ? [orButton(-1, negative, set)] : []),
       // The curse's size: "≤ 30" = no worse than -30%.
       ...(state.negative ? [
         opPicker('Negative value', state.negOp, v => set({ negOp: v })),
@@ -305,7 +320,7 @@ function controls() {
     rows.push(el('div', { class: 'controls' }, [
       select('Its negative', [[NONE, 'None'], ...negOptions.slice(1)], state.myNeg, v => set({ myNeg: v })),
       ...(state.myNeg ? [lockToggle(state.myNeg)] : []),
-      ...(state.myNeg && (goalParents().includes(state.myNeg) || (state.myNeg === state.negative && negGoal()))
+      ...(state.myNeg && (goalParents().includes(state.myNeg) || (negSlot().includes(state.myNeg) && negGoal()))
         ? [numberBox('value', state.myNegVal, 'meets it', v => set({ myNegVal: v }))] : []),
     ]));
     const now = splicesNow(positive);
@@ -331,21 +346,23 @@ function actionText(action, parents, have = [], spliced = false) {
   const also = spliced ? ` (with ${name(state.spliced)})` : '';
   if (action === 'cycle') return spliced ? `Cycle with only ${name(state.spliced)} locked` : 'Cycle, nothing locked';
   if (action === 'splice') return `Splice ${parents.map(id => name(have.includes(`-${id}`) ? `-${id}` : id)).join(' + ')} → ${name(state.spliced)}`;
-  // Any curse: its lock holds the shape.
-  if (action === '-?') return `Lock the curse${also} and cycle`;
+  // Any curse (its lock holds the shape), or any of the wanted ones.
+  if (action === '-?' || action.includes('|')) return `Lock the curse${also} and cycle`;
   return `Lock ${name(action)}${also} and cycle`;
 }
 
 /**
- * "+ or": adds another stat that would do for slot i (the first one not already wanted).
- * @param {number} i @param {string[]} positive @param {(patch: Partial<typeof state>) => void} set
+ * "+ or": adds another stat that would do for positive slot i, or for the curse (i = -1): the first
+ * one of `pool` not already wanted.
+ * @param {number} i @param {string[]} pool @param {(patch: Partial<typeof state>) => void} set
  */
-function orButton(i, positive, set) {
+function orButton(i, pool, set) {
   const b = el('button', { type: 'button', class: 'copy-link', title: 'Another stat that would do just as well here: the plan takes whichever comes first' }, ['+ or']);
   b.addEventListener('click', () => {
-    const taken = new Set(state.want.flatMap((_, k) => slot(k)));
-    const next = positive.find(id => !taken.has(id));
+    const taken = new Set([...state.want.flatMap((_, k) => slot(k)), ...negSlot()]);
+    const next = pool.find(id => !taken.has(id));
     if (!next) return;
+    if (i < 0) { set({ negAlts: [...state.negAlts, next] }); return; }
     const alts = state.alts.map(a => [...a]);
     alts[i].push(next);
     set({ alts });
@@ -380,7 +397,7 @@ function results() {
     try {
       const plan = planBuild({
         cls: state.cls, ipsCode: ipsOf(state.weapon), positives: slots, spliced: state.spliced || null,
-        parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape,
+        parents: state.recipe ? state.recipe.split('+') : undefined, negative: negSlot().length > 1 ? negSlot() : state.negative || null, shape,
         goals: valueGoals(), negGoal: negGoal(),
       }, mineNow && mineNow.shape
         ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape, goodParents: mineNow.goodParents, highParents: mineNow.highParents }
@@ -520,7 +537,7 @@ function results() {
   };
   const goals = valueGoals();
   const goalList = [...state.want.flatMap((id, i) => (!id ? [] : [goals[id] ? `${slotText(i)} ${OP_TEXT[goals[id].op]} ${goals[id].value}` : slotText(i)])),
-    ...(state.negative ? [name(`-${state.negative}`) + (ng ? ` ${OP_TEXT[ng.op]} ${ng.value}` : '')] : [])].join(', ');
+    ...(state.negative ? [name(`-${negSlot().join('|')}`) + (ng ? ` ${OP_TEXT[ng.op]} ${ng.value}` : '')] : [])].join(', ');
   if (state.spliced) {
     const curseOk = SHAPES[T].negatives > 0 && parents.some(id => pools(state.cls, ipsOf(state.weapon)).negative.includes(id));
     // The spliced stat keeps the better parent roll: with a goal, say what the parents need.
@@ -560,7 +577,7 @@ function renderResults() {
   resultsBox.replaceChildren(results());
   saveState('p', {
     weapon: state.weapon, cls: state.cls, spliced: state.spliced, recipe: state.recipe,
-    want: state.want.map((id, i) => slot(i).join('|')).filter(Boolean).join(','), neg: state.negative, shape: state.shape,
+    want: state.want.map((id, i) => slot(i).join('|')).filter(Boolean).join(','), neg: negSlot().join('|'), shape: state.shape,
     min: state.want.map((id, i) => (id && state.mins[i] ? `${id}:${state.ops[i]}:${state.mins[i]}` : '')).filter(Boolean).join(','),
     smin: state.spliced && state.splicedMin ? `${state.splicedOp}:${state.splicedMin}` : '',
     nmin: state.negative && state.negMin ? `${state.negOp}:${state.negMin}` : '',
@@ -595,7 +612,7 @@ function restore() {
     recipe: v => v,
     // "cold|toxin,range": a slot's alternatives after its pick.
     want: v => v.split(',').map(x => x.split('|').filter(id => STAT_BY_ID[id])).filter(x => x.length).slice(0, 3),
-    neg: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
+    neg: v => (v === '' ? [] : v.split('|').every(id => STAT_BY_ID[id]) ? v.split('|') : undefined),
     shape: oneOf(/** @type {(Shape | 'any')[]} */ ([...SHAPE_ORDER, 'any'])),
     from: oneOf(/** @type {const} */ (['fresh', 'mine'])),
     mp: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
@@ -621,7 +638,7 @@ function restore() {
     state.want = [...saved.want.map(x => x[0]), NONE, NONE, NONE].slice(0, 3);
     state.alts = [...saved.want.map(x => x.slice(1)), [], [], []].slice(0, 3);
   }
-  if (saved.neg !== undefined) state.negative = saved.neg;
+  if (saved.neg !== undefined) { state.negative = saved.neg[0] ?? NONE; state.negAlts = saved.neg.slice(1); }
   if (saved.shape) state.shape = saved.shape;
   state.from = saved.from ?? 'fresh';
   if (saved.mp) state.myPos = [...saved.mp, NONE, NONE, NONE].slice(0, 3);
@@ -669,6 +686,7 @@ export function loadTargetIntoPlanner(target) {
     splicedMin: '',
     recipe: NONE,
     negative: target.negative ?? NONE,
+    negAlts: [],
     negMin: '',
     shape: 'any',
   });

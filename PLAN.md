@@ -327,6 +327,8 @@ it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL 
       overlapping slots can't share one). At most 6 tracked stats, splice parents included. Panel:
       "+ or" beside a pick; links store a slot as `cold|toxin`. Felarx-style melee example (Status
       Damage spliced, -Slash): Cold + Range ~1.74M Kuva, Cold/Toxin + Range/Attack Speed ~0.54M.
+      The curse takes alternatives too ("-Zoom or -Recoil"; links: `neg=zoom|recoil`): any one of
+      them counts, with the curse's value goal on whichever lands.
 
 - [x] **Recommended rolls gated** (2026-11-03, still under construction): 🚧 in its title, closed on
       every load; opening it asks for a name, and only names whose MD5 is in `src/data/allowlist.js`
@@ -788,6 +790,32 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 - [ ] Score per faction (Corpus shields for Magnetic) and with Overguard once it's modelled.
 - [ ] Ties: Impact, Magnetic and Radiation often tie exactly against one unshielded unit (none
       combines and their procs do little there).
+
+**13g — Incarnon evolutions** — 2026-11-03 (the user: Felarx's Devastating Attrition makes a crit
+chance curse good, and the model had it as a cost)
+- [x] Perks from Underframe's incarnon data (`tools/build-incarnons.mjs` → `src/data/incarnons.js`,
+      69 guns), applied to the gun's own numbers before anything else sees it (`src/incarnon.js`):
+      base damage to normal attacks (each type in proportion), crit / status chance (status per
+      form), crit multiplier, multishot, magazine, flat crit after mods (Elemental Excess), headshot
+      bonuses, fire rate and reload; and the non-crit bonus (`critScale` in `src/sim.js`: a 50% chance
+      of +2000% on each hit that doesn't crit, so it fades as crit chance rises).
+- [x] "Best" (the default): every combination of perks tried with the reference build (at most 81);
+      one at a time picked Brutal Edge (+10% crit) before seeing Devastating Attrition. The page
+      lists each evolution's perk and lets you change any ("Back to the best").
+- Felarx, level 200 Steel Path Heavy Gunner, room clearing: a Critical Chance curse went from -30%
+  (unevolved) to +2.9%. At level 150 the evolved Felarx one-shots, so crit stops mattering at all.
+- [ ] To check in game: Devastating Attrition's size (+2000%, x21 on the hit, as Felarx's text says,
+      or x20 as Laetum's "2000% damage" reads); whether "Increase Damage by +X" is per pellet on
+      shotguns (applied per pellet here); whether perk fire rate adds to mods (applied on its own).
+- [x] Best rivens on a shape with a curse carry one (the user, 2026-11-03: no curse is never better,
+      since a curse raises the positives and some curse is always harmless): each takes the kindest
+      curse measured on the top riven (the next one where it rolls that stat), re-scored with it;
+      "Plan" passes it on. Shapes without a curse show no curse section.
+- Felarx at level 9999 Steel Path (stripped Heavy Gunner, 6.1M health): its best build does ~8.9M
+  DPS, so kills take under a second. Status Duration does nothing (no DoT runs out first);
+  Reload Speed +15% in Normal Attack mode, 0 in Incarnon Form (no reload).
+- [ ] Conditional perks aren't applied (on headshot, per Electricity proc, Overwhelming Attrition's
+      +400% stacks…), nor perks that change other modes' numbers beyond those above.
 
 **13e — UI and checks**
 - The model block gets: scenario, faction / level, frame, companion, arcane (or "best"). Results: the

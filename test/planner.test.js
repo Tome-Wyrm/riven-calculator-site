@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { planBuild, FLAT_COST } from '../src/planner.js';
+import { pools } from '../src/cycle.js';
 
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) < tol, `${a} vs ${b}`);
 const C = (n, k) => (k === 0 ? 1 : (n * C(n - 1, k - 1)) / k);
@@ -137,4 +138,20 @@ test('a slot can take any one of several stats ("Cold or Toxin")', () => {
   // Alternatives that can't roll are dropped; a slot with none left is refused.
   assert.throws(() => planBuild({ ...base, positives: [['range', 'comboDuration']] }), /Range or Combo Duration can't roll/);
   assert.throws(() => planBuild({ ...base, positives: [['cold', 'toxin', 'heat', 'electricity'], ['zoom', 'fireRate', 'multishot']] }), /Too many alternatives/);
+});
+
+test('the curse can be any one of several too', () => {
+  const base = { cls: 'rifle', positives: ['critChance', 'critDamage'], spliced: null, shape: '++-' };
+  const one = planBuild({ ...base, negative: 'zoom' }).expectedKuva;
+  near(planBuild({ ...base, negative: ['zoom'] }).expectedKuva, one, 1e-6);
+  const either = planBuild({ ...base, negative: ['zoom', 'recoil'] }).expectedKuva;
+  assert.ok(either < one, `${either} < ${one}`);
+  // A riven with either one is done.
+  assert.equal(planBuild({ ...base, negative: ['zoom', 'recoil'] }, { stage: 'post', have: ['critChance', 'critDamage', '-recoil'], shape: '++-' }).expectedKuva, 0);
+  // Every curse but the positives' own stats: about as cheap as not caring (not quite: "don't care"
+  // also takes a -Critical Chance riven on the way, before it rolls Critical Chance as a positive).
+  const { negative } = pools('rifle');
+  const any = planBuild({ ...base, negative: negative.filter(id => !base.positives.includes(id)) }).expectedKuva;
+  const free = planBuild({ ...base, negative: null }).expectedKuva;
+  assert.ok(any >= free && any < free * 1.01, `${any} vs ${free}`);
 });

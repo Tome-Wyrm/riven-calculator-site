@@ -9,6 +9,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { pools } from '../cycle.js';
 import { VALENCE_TYPES } from '../sim.js';
+import { evolutionsOf } from '../incarnon.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
 import { targetOf } from '../enemies.js';
 import { picksFor, communityFit } from '../picks.js';
@@ -42,6 +43,8 @@ export const modelState = {
   burst: false,
   valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
   valencePct: 60,                             // and its size, 25–60%
+  perks: /** @type {number[] | null} */ (null), // an incarnon's perk per evolution; null = the best combination
+  perksOf: '',                                // the weapon those perks are for
 };
 
 /** The URL fields for the model's settings (defaults left out). */
@@ -52,6 +55,7 @@ export function modelFields() {
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
     armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '',
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
+    perks: s.perks ? s.perks.join('.') : '',
   };
 }
 
@@ -72,6 +76,8 @@ export function restoreModel(raw) {
   if (VALENCE_TYPES.includes(raw.val ?? '')) modelState.valence = raw.val;
   const pct = Number(raw.valp);
   if (raw.valp && pct >= 25 && pct <= 60) modelState.valencePct = pct;
+  // "0.2.2.0": checked against the weapon's evolutions when it's shown.
+  if (/^-?\d(\.-?\d){0,3}$/.test(raw.perks ?? '')) { modelState.perks = raw.perks.split('.').map(Number); modelState.perksOf = '?'; }
 }
 
 /** @type {Record<string, import('../data/weapon-stats.js').WeaponStats> | null} */
@@ -157,6 +163,10 @@ export function modelBlock(weapon, cls, rerender) {
   const gun = /** @type {Exclude<WeaponClass, 'melee'>} */ (cls);
   const set = (/** @type {Partial<typeof modelState>} */ patch) => { Object.assign(s, patch); rerender(); };
   if (s.mode >= w.modes.length) s.mode = -1;
+  // Chosen perks belong to one weapon (a link's to the weapon it opens with); another starts at the best.
+  const evolutions = evolutionsOf(weapon);
+  if (s.perksOf === '?') s.perksOf = weapon;
+  if (s.perksOf !== weapon || s.perks?.length !== evolutions.length) { s.perks = null; s.perksOf = weapon; }
   // The target: one of the faction's units at its level. Any faction: a Grineer unit's health and
   // armor without faction weaknesses (builds are judged by fights, src/fight.js, so there's always one).
   const group = enemies.GROUPS.find(g => g.id === s.enemy) ?? null;
@@ -228,7 +238,7 @@ export function modelBlock(weapon, cls, rerender) {
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
 
-  const result = studyOf({ weapon, cls: gun, shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative }, rerender);
+  const result = studyOf({ weapon, cls: gun, shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative, perks: s.perks ?? 'best' }, rerender);
   if (result === 'pending') return [head, controls, about, el('p', { class: 'note busy' }, ['Working out the builds…'])];
   if ('error' in result) return [head, controls, el('p', { class: 'note warn' }, [`The model failed: ${result.error}`])];
 
@@ -240,7 +250,7 @@ export function modelBlock(weapon, cls, rerender) {
   const table = (/** @type {Study['singles']} */ list, /** @type {boolean} */ negative) => {
     const max = Math.max(0.01, ...list.map(e => Math.abs(e.change)));
     return el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals model' }, [
-      el('thead', {}, [el('tr', {}, ['Stat', 'Median roll', negative ? 'DPS lost' : 'DPS gained', '', ...(rows.length ? ['Community'] : [])]
+      el('thead', {}, [el('tr', {}, ['Stat', 'Median roll', negative ? 'DPS change' : 'DPS gained', '', ...(rows.length ? ['Community'] : [])]
         .map(h => el('th', { scope: 'col' }, [h])))]),
       el('tbody', {}, list.map(e => el('tr', {}, [
         el('th', { scope: 'row' }, [name(e.id) + (STAT_BY_ID[e.id].spliced ? ' (spliced)' : '')]),
@@ -285,16 +295,39 @@ export function modelBlock(weapon, cls, rerender) {
   const setList = el('ol', { class: 'model-sets' }, result.sets.map(x => {
     const plan = el('button', { type: 'button', class: 'link-button' }, ['Plan']);
     plan.addEventListener('click', () => loadTargetIntoPlanner({
-      weapon, cls, positives: x.ids.filter(id => !STAT_BY_ID[id].spliced), spliced: x.ids.find(id => STAT_BY_ID[id].spliced) ?? null, negative: null,
+      weapon, cls, positives: x.ids.filter(id => !STAT_BY_ID[id].spliced), spliced: x.ids.find(id => STAT_BY_ID[id].spliced) ?? null, negative: x.curse?.id ?? null,
     }));
-    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')} `, plan,
+    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')}${x.curse ? `, −${name(x.curse.id)}` : ''} `, plan,
       el('details', { class: 'set-build' }, [el('summary', {}, ['Its build']), buildGrid(x.build)])]);
   }));
   const moving = result.singles.filter(e => Math.abs(e.change) >= 0.005);
   const still = result.singles.filter(e => Math.abs(e.change) < 0.005).map(e => name(e.id));
-  const out = [head, controls, about, ...valenceBlock,
+  // An incarnon's evolutions: the perks the study used (the best combination unless you chose).
+  /** @type {HTMLElement[]} */
+  const perkBlock = [];
+  if (evolutions.length) {
+    const used = result.perks;
+    const roman = ['', '', 'II', 'III', 'IV', 'V'];
+    const reset = el('button', { type: 'button', class: 'copy-link' }, ['Back to the best']);
+    reset.addEventListener('click', () => set({ perks: null }));
+    perkBlock.push(el('h4', {}, ['Incarnon evolutions']),
+      el('p', { class: 'note' }, [s.perks ? 'Your choice of perks.'
+        : 'The perks that do most together with a typical build (every combination tried); change any to see another. '
+          + 'Only what a perk always does counts; conditional parts (on headshot, while sliding…) don’t.']),
+      el('div', { class: 'controls' }, [
+        ...evolutions.map((e, i) => select(`Evolution ${roman[e.evolution]}`,
+          e.perks.map((p, k) => /** @type {[string, string]} */ ([String(k), p.name + (p.effects.length ? (p.partly ? ' (partly)' : '') : ' (no damage)')])),
+          String(used[i] ?? 0), v => set({ perks: used.map((x, j) => (j === i ? Number(v) : x)), perksOf: weapon }))),
+        ...(s.perks ? [reset] : []),
+      ]),
+      el('ul', { class: 'note perk-list' }, evolutions.flatMap((e, i) => {
+        const p = e.perks[used[i]];
+        return p ? [el('li', {}, [el('strong', {}, [`${roman[e.evolution]}: ${p.name}`]), ` ${p.text}`])] : [];
+      })));
+  }
+  const out = [head, controls, about, ...perkBlock, ...valenceBlock,
     el('h4', {}, ['Best build without a riven']), buildGrid(result.none),
-    el('h4', {}, [`Best rivens (${k} positives) over no riven`]), setList,
+    el('h4', {}, [`Best rivens (${k} positives${SHAPES[s.shape].negatives ? ' and a curse' : ''}) over no riven`]), setList,
     el('h4', {}, ['Each positive in the riven slot']),
     el('p', { class: 'note' }, ['Against the riven slot left empty, with the other seven mods re-chosen each time.']),
     table(moving, false),
@@ -302,7 +335,7 @@ export function modelBlock(weapon, cls, rerender) {
   ];
   if (SHAPES[s.shape].negatives && result.sets[0]) {
     const harmless = result.curses.filter(e => Math.abs(e.change) < 0.005).map(e => name(e.id));
-    out.push(el('h4', {}, [`Curses on the best riven (${result.sets[0].ids.map(name).join(' + ')})`]),
+    out.push(el('h4', {}, [`Curses on ${result.cursesOn.map(name).join(' + ')}`]),
       ...(harmless.length ? [el('p', { class: 'note' }, [`Harmless to damage here: ${harmless.join(', ')}.`])] : []),
       table(result.curses.filter(e => Math.abs(e.change) >= 0.005), true));
   }

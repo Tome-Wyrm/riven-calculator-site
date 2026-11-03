@@ -161,7 +161,7 @@ await writeFile(new URL('../src/data/weapon-stats.js', import.meta.url), `// @ts
 export const WEAPON_STATS_UPDATED = '${date}';
 
 /**
- * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number, hs?: number, co?: number[]}} Part
+ * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number, hs?: number, ccFlat?: number, nonCrit?: {chance: number, mult: number}, co?: number[]}} Part
  * @typedef {{name: string, rate: number, cost: number, charge?: number, parts: Part[]}} Mode
  * @typedef {{kind: string, mag: number, reload: number, ammo: number | null, trigger: string, tags: string[], adversary?: boolean, main: number, modes: Mode[]}} WeaponStats
  */

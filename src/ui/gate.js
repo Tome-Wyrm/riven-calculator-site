@@ -23,17 +23,18 @@ export function gateSection(details) {
   ]);
   const dialog = /** @type {HTMLDialogElement} */ (el('dialog', { class: 'gate' }, [form]));
   document.body.append(dialog);
-  dialog.addEventListener('close', () => {
-    if (dialog.returnValue === 'ok' && ALLOWED.has(md5(input.value.trim()))) {
-      unlocked = true;
-      details.open = true;
-    }
-    input.value = '';
+  // Checked on submit (the dialog's close event can come late in a background tab).
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const ok = /** @type {HTMLButtonElement | null} */ (/** @type {SubmitEvent} */ (e).submitter)?.value !== 'cancel'
+      && ALLOWED.has(md5(input.value.trim()));
+    dialog.close();
+    if (ok) { unlocked = true; details.open = true; }
   });
   details.querySelector('summary')?.addEventListener('click', e => {
     if (unlocked || details.open) return;
     e.preventDefault();
-    dialog.returnValue = '';
+    input.value = '';
     dialog.showModal();
   });
 }

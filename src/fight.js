@@ -31,7 +31,7 @@
 // Not modelled yet: Blast stacks, extra hits, abilities (Phase 14), random rolls (a Monte Carlo run
 // could check the averages).
 
-import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, hitByType, procsOf, ticksOf, weakPointMult } from './sim.js';
+import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
 
 /** @typedef {import('./sim.js').SimOptions} SimOptions */
 /** @typedef {import('./sim.js').Totals} Totals */
@@ -68,7 +68,7 @@ export function fight(w, t, opts) {
   const D = Math.max(0, 1 + raw('damage'));
   const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
   const rate = mode.rate * (raw('fireRateLocked') ? 1 : Math.max(0.05, 1 + raw('fireRate') * (opts.bow ? 2 : 1)));
-  const crit = (/** @type {number} */ cc, /** @type {number} */ cd) => 1 + Math.max(0, cc) * (Math.max(1, cd) - 1);
+  const crit = critScale;
   const duration = STATUS_SECONDS * Math.max(0, 1 + raw('statusDuration'));
   const stripStep = 0.5 * duration / STATUS_SECONDS;
   const statusDamage = Math.max(0, 1 + raw('statusDamage'));
@@ -83,10 +83,10 @@ export function fight(w, t, opts) {
     const typed = hitByType(p, t, raw, opts.valence);
     if (!typed) return [];
     const { base, byType, hit } = typed;
-    const cc = p.cc * (1 + raw('critChance'));
+    const cc = critChanceOf(p, raw('critChance'));
     const cd = p.cd * (1 + raw('critDamage'));
     const onWp = p.aoe ? 0 : wp;
-    const scale = (1 - onWp) * crit(cc, cd) + onWp * weakPointMult(p, enemy, opts, raw) * crit(p.cc * (1 + raw('critChance') + raw('weakpointCrit')), headcrit ? 2 * cd : cd);
+    const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) * crit(critChanceOf(p, raw('critChance') + raw('weakpointCrit')), headcrit ? 2 * cd : cd, p);
     const pellets = p.ms * (raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot')));
     const procsPerPellet = procsOf(p, byType, hit, cc, raw);
     /** @type {[string, number, number][]} per type: expected procs a shot, and a tick of its DoT per proc */

@@ -8,6 +8,7 @@ import { STAT_BY_ID, SHAPES } from './data/stats.js';
 import { rawValue, displayValue, format } from './engine.js';
 import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, SCENARIOS } from './build.js';
 import { VALENCE_TYPES } from './sim.js';
+import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('./data/stats.js').Shape} Shape */
@@ -23,6 +24,8 @@ import { VALENCE_TYPES } from './sim.js';
  *   element whose best build (no riven) does most, each one tried
  * @property {string[]} positives  stats the riven can roll as positives (spliced ones included)
  * @property {string[]} negatives  and as the curse
+ * @property {number[] | 'best'} [perks]  an incarnon's perk per evolution (index; -1 none), or 'best'
+ *   (default): the combination that does most with the reference build
  */
 
 /** A build as the page shows it: mod names in slot order (the riven as "Riven"), arcane, DPS. @param {Build} b */
@@ -33,12 +36,16 @@ const medianU = id => (STAT_BY_ID[id].spliced ? Math.SQRT1_2 : 0.5);
 
 /** @param {StudyInput} input */
 export function study(input) {
-  const w = WEAPON_STATS[input.weapon];
   const sc = SCENARIOS[input.scenario];
   const { cls, shape } = input;
   // The kind of build decides the weak point share.
   // Room clearing and weak point builds fight 20 targets in a row (src/fight.js), single target one.
   const opts = { ...input.opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1 };
+  // An incarnon: the gun as evolved (Felarx's Devastating Attrition turns crit chance into a cost).
+  const plain = WEAPON_STATS[input.weapon];
+  const perks = !evolutionsOf(input.weapon).length ? []
+    : Array.isArray(input.perks) ? input.perks : bestPerks(plain, input.weapon, cls, { ...opts, valence: undefined });
+  const w = withPerks(plain, input.weapon, perks);
   const pool = modPool(cls, w, sc, opts);
   const arcanes = arcanePool(cls, sc, opts);
   // Each Valence element, by its best build without a riven (the elements it leaves the mods to
@@ -99,6 +106,15 @@ export function study(input) {
       const b = withRiven({ ...roll, [id]: raw(id, '-') }, base);
       return { id, shown: shown(id, '-'), change: b.dps / base.dps - 1 };
     }).sort((a, b) => b.change - a.change);
+    // A shape with a curse always has one: each best riven carries the best curse it can (the
+    // kindest on the best riven, or the next for a riven that rolls that stat as a positive).
+    for (const set of sets) {
+      const c = curses.find(x => !set.ids.includes(x.id));
+      if (!c) continue;
+      const b = withRiven({ ...Object.fromEntries(set.ids.map(id => [id, raw(id, '+')])), [c.id]: raw(c.id, '-') }, empty);
+      Object.assign(set, { curse: { id: c.id, shown: c.shown }, change: b.dps / none.dps - 1, build: summary(b) });
+    }
+    sets.sort((a, b) => b.change - a.change);
   }
-  return { none: summary(none), empty: empty.dps, singles, sets, curses, valences, valence: opts.valence ?? null };
+  return { none: summary(none), empty: empty.dps, singles, cursesOn: best?.ids ?? [], sets: /** @type {(typeof sets[number] & {curse?: {id: string, shown: string}})[]} */ (sets), curses, valences, valence: opts.valence ?? null, perks };
 }
