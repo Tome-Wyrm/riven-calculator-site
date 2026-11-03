@@ -1,6 +1,7 @@
 // @ts-check
 // Recommended rolls: pick a weapon and see what the community recommends on its riven (the Rolls &
-// Resources sheet), slot by slot, then plan any of them in the build planner.
+// Resources sheet), slot by slot, then plan any of them in the build planner. Below, for guns, what
+// the damage model makes of each stat (src/ui/model.js).
 
 import { STAT_BY_ID } from '../data/stats.js';
 import { WEAPONS } from '../data/weapons.js';
@@ -10,6 +11,7 @@ import { picksFor, pickFamily, plannable, forWeapon, topRoll, toTarget, noteText
 import { el, statName, weaponPicker, copyLinkButton, ipsOf, recipeText } from './dom.js';
 import { loadState, saveState } from './state.js';
 import { loadTargetIntoPlanner } from './planner.js';
+import { modelBlock, modelFields, restoreModel } from './model.js';
 
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('../picks.js').Pick} Pick */
@@ -142,15 +144,16 @@ function render() {
     ` by Megrim, Valkyrial and Lia (based on the original by 44Bananas), copied ${PICKS_UPDATED}.`]);
   root.replaceChildren(
     el('div', { class: 'controls' }, [weaponPicker(WEAPONS, state.weapon, weapon => { setWeapon(weapon); render(); })]),
-    ...body, credit, copyLinkButton('a'));
-  saveState('a', { weapon: state.weapon });
+    ...body, credit, ...(state.weapon ? modelBlock(state.weapon, state.cls, render) : []), copyLinkButton('a'));
+  saveState('a', { weapon: state.weapon, ...(state.weapon ? modelFields() : {}) });
 }
 
 /** @param {HTMLElement} container */
 export function mountPicks(container) {
   root = container;
-  const saved = loadState('a').weapon;
-  if (saved && WEAPONS.some(w => w[0] === saved)) setWeapon(saved);
+  const raw = loadState('a');
+  if (raw.weapon && WEAPONS.some(w => w[0] === raw.weapon)) setWeapon(raw.weapon);
+  restoreModel(raw);
   render();
 }
 

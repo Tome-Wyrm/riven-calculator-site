@@ -29,5 +29,5 @@ node --test
 | `index.html`, `style.css` | Page shell and styles |
 | `src/` | Browser modules (`main.js` entry; data, engine and UI added per phase) |
 | `test/` | `node --test` suites |
-| `tools/` | One-off scripts, e.g. regenerating the weapon list (`build-weapons.mjs`) or the recommended rolls (`build-picks.mjs`) |
+| `tools/` | One-off scripts, e.g. regenerating the weapon list (`build-weapons.mjs`), the recommended rolls (`build-picks.mjs`) or the damage model's gun stats (`build-weapon-stats.mjs`); `score-sim.mjs` scores the model against the community picks |
 | `tools/data/` | Raw inputs for tools (`internal_names.csv`: internal path → display name) |

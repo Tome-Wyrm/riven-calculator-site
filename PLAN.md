@@ -351,25 +351,63 @@ and what a damage model says each stat is worth on that weapon. The grader then 
       for the negative), also on the "Splices into" rows. Planner and grader link to the weapon's picks.
 - [ ] Consider telling megrims (Discord) the sheet is used here.
 
-**12b — Weapon stats** (the model's input)
-- The wiki's `Module:Weapons/data/{primary,secondary,melee,archgun,modular}` (`?action=raw`, Lua).
-  Richer than WFCD: per-attack AmmoCost, AmmoMax, Range, PunchThrough, falloff, charge time,
-  Incarnon attacks, CompatibilityTags (BEAM, AOE…). `tools/build-weapon-stats.mjs` →
-  `src/data/weapon-stats.js`, loaded with a dynamic import only when the advisor opens (no runtime
-  fetch from other sites; the snapshot is committed).
+**12b — Weapon stats** (the model's input) — done
+- [x] `tools/build-weapon-stats.mjs` reads the wiki's `Module:Weapons/data/{primary,secondary,archwing,companion}`
+      (`?action=raw`, a small Lua table parser) into `src/data/weapon-stats.js` (~150 KB, loaded
+      with a dynamic import only when the model shows). 383 guns. Per gun: magazine, reload, max
+      ammo, trigger, a few tags (BEAM, AOE…), and fire modes: a top-level attack plus the attacks
+      hanging off it (`AttackParentIndex`: a projectile's explosion), each part with damage by type,
+      crit, status, multishot, forced procs. Incarnon forms are modes of their own.
+  - Charge weapons listing an unlimited fire rate (Lanka) get 1 / charge time. "Vinquibus (Primary)"
+    is our Vinquibus. Kitgun chambers have no stats of their own (grip and loader decide): left out.
+  - Melee isn't included (the model covers guns only).
 - Overframe has a build simulator but no open data or API: use it only to cross-check numbers by hand.
 
-**12c — Damage model** (`src/sim.js`, pure, no DOM)
-- Bucket model, per attack: base damage × (1 + damage mods) × elements (combined by mod order) ×
-  multishot × average crit 1 + CC·(CD − 1) × faction × fire rate, sustained over mag + reload;
-  status procs per second × DoT damage (Slash, Heat, Toxin, Gas, Electricity), viral/corrosive
-  assumed primed. Armor assumed stripped. Quantization left out at first.
-- A reference build per class (a fixed, editable mod template + one flex slot for the riven). The
-  answer is a riven's **DPS gain over that build**, with each stat at the shape's median roll.
-- Rank: single stats (bars), the best 3-positive sets (brute force; at most a few thousand combos),
-  spliced stats with their recipes, and negatives from harmless (−Impact on a weapon with none) to costly.
-- Check: agreement with the community picks across all 419 families as a score (like the IPS rule
-  scoring), and ~10 weapons against Overframe by hand. Disagreements are worth reading, not hiding.
+**12c — Damage model** (`src/sim.js`, pure, no DOM) — done
+- [x] Per part: (1 + Damage) × (physical × (1 + IPS) + innate elements + base × elements) × faction ×
+      average crit 1 + CC·(CD − 1) × multishot × fire rate; DoT from Slash (35%/tick), Heat, Toxin,
+      Electricity, Gas (50%) × 7 ticks × (1 + Status Duration) × (1 + Status Damage), weighted by each
+      type's share of the hit, faction twice; sustained over magazine + reload (Ammo Efficiency
+      stretches the magazine; one-arrow magazines and Incarnon modes ignore the magazine stats).
+- [x] **Viral stacks**: the build's elements are Viral; procs/s × 6 s × (1 + Status Duration), capped at
+      10, +100% then +25% each. This was the big step: before it, Viral and Status Chance counted for
+      nothing and the model agreed far less with the community (below).
+- [x] Weak points (share of hits, default a quarter; heads or any other weak point): the ×2 weak point
+      multiplier, which **Weakpoint Damage multiplies** (×2 × (1 + WPD)); **Weakpoint Critical Chance is
+      Crit Chance's bucket**, on weak point hits only, so never better than the same Crit Chance
+      (confirmed by the user, 2026-11-02; Narin changed how weak points work since the Banshee rework).
+  - As a multiplier, a median spliced WPD (+264%) roughly doubles DPS at a quarter of hits on weak
+    points: it tops 234 of 235 gun families, and agreement with the sheet falls with the share
+    (slot 1 in top 3: 78% at 0, 73% at 0.1, 69% at 0.25, 61% at 0.5). The sheet lists WPD once and may
+    predate splicing. The scenarios in Phase 13 should decide the share, not one global default.
+- [x] Optional armor (Steel Path 2700): Corrosive stacks (26% then 6% each, 80% at 10) and a burning
+      Heat proc (halves it) strip it; damage reduction 0.9·√(armor / 2700); Slash bleeds ignore it.
+- [x] Reference build per class, with a +360% Merciless/Deadhead arcane in the Damage total (without it
+      a riven's Damage topped every gun, against the community's view). Rifle: +525% Damage, +150%
+      Multishot, +150% CC, +180% CD, +180% Viral. Shotgun and pistol likewise; archgun without arcane.
+- [x] Output (Recommended rolls, under the community picks; URL fields shape, mode, enemy, wp, armor,
+      burst): the best positive sets (brute force, at most one spliced; each with "Plan"), each
+      positive alone with a bar and the community's view, stats with no effect on damage, and curses
+      from harmless to costly. Spliced stats at their median of the better of two rolls (u = √½).
+- [x] **Score against the community** (`tools/score-sim.mjs`, 235 gun families, `+++-`, median rolls):
+
+      | Model | Slot 1 first choice in the model's top 3 | All first choices in its top 6 |
+      |---|---|---|
+      | Arcane build, Viral as plain damage | 56% | 40% |
+      | + Viral stacks (current default) | **78%** | **57%** |
+      | + armor 1000 | 66% | 58% |
+      | + Steel Path armor (2700) | 43% | 57% |
+
+      With armor, Heat leads (a Heat proc halves it), which the community doesn't pick: armor stays
+      optional and off by default.
+      Still missed most: **Corrosive** (113: it's for armor, which the default strips) and **Critical
+      Damage** (94: the sheet lists MS / CD / CC on low-crit guns like Afuris at 5%, "for sale value
+      regardless of weapon CC being useless", its own note). The model's picks the community never
+      lists: Gas (47), Ammo Efficiency (29, on short-magazine guns), Electricity, Status Duration.
+- [ ] Cross-check ~10 guns against Overframe by hand.
+- [ ] Open: the reference build is fixed. A riven that supplies Viral / Corrosive lets a real build drop
+      an elemental mod; the model can't see that slot saving, which is much of why the community
+      prefers combined elements.
 
 **12d — QoL rules** (`src/data/qol.js`, a declarative table: condition on weapon data → effect on a stat)
 - Ammo economy: seconds of fire from full = (AmmoMax + Magazine) / (FireRate × AmmoCost). Tight →
@@ -386,6 +424,62 @@ and what a damage model says each stat is worth on that weapon. The grader then 
   the community's view, and an overall "how good is this riven *for this weapon*".
 - [ ] Open: Melee. The sheet's melee rows lean on builds (Melee Influence, heavy attacks, Covert
       Lethality) that a DPS model won't capture; melee may stay community-picks only at first.
+
+### Phase 13 — Build simulator (replaces 12c's fixed reference build)
+12c showed the limit of a fixed build: a riven's worth depends on **what the build can do without
+it**. A riven Viral lets the build drop its two 60/60 Viral elementals for damage mods; an arcane
+changes which bucket is crowded; a frame can bring a whole element. So:
+
+> **A riven's value = the best build with it − the best build without it**, for one scenario.
+
+Both builds are optimised over the same mod pool, so slot saving, arcanes and frame buffs show up
+by themselves instead of being guessed. 12c's bucket maths stays as the evaluator; the fixed
+`BUILDS` table goes.
+
+**13a — Mods and arcanes (`src/data/mods.js`, curated)**
+- WFCD's mod data isn't usable as is (Serration lists ranks 0–3 only; conditional mods and arcanes
+  are prose), so: a hand table of the gun mods that matter, max rank, each effect as data
+  (bucket + value + condition), checked against the wiki. Rifle first, then shotgun, pistol, archgun.
+- Effects: plain (Serration +165% Damage), dual-stat (Hammer Shot +60% CD +80% SC), elementals
+  (90% and the 60/60 dual-stats, in **slot order**, which decides combinations), conditional (Galvanized
+  on-kill stacks, Bladed Rounds / Argon Scope aiming, Hunter Munitions slash on crit), exclusive groups
+  (Serration / Amalgam Serration, Primed vs normal, one per family), exilus-only mods.
+- Arcanes: weapon (Merciless, Deadhead with its +30% headshot multiplier, Dexterity, Frostbite…) and
+  warframe ones that touch guns (Avenger…), with their stacks tied to the scenario.
+- Elemental combination rules (mod order, then the weapon's innate elements) written down with a
+  source, and tested on in-game arsenal numbers.
+
+**13b — Optimiser**
+- Pick the 8 slots (one is the riven when there is one) + exilus + arcane to maximise the scenario's
+  DPS. Too many combinations to brute-force (≈ C(40, 7)), so greedy + swap search, seeded with the
+  community's usual build; elementals searched as combination targets (Viral, Corrosive, Viral + Heat…)
+  rather than mod by mod. Must stay fast in the browser: ~30 stats × 2 builds per weapon view.
+- Show the build it picked, with and without the riven, so a reader can disagree with it.
+
+**13c — Scenarios**
+- **Single target** (a boss: no kills, so on-kill stacks decay; status stacks build over time),
+  **fodder** (kills everywhere: Galvanized / Merciless maxed, multishot and punch through count, weak
+  points rarer), **status capped** (every status type on the target: Galvanized Aptitude and similar
+  maxed). Each sets the weak point share, the stack counts and the target.
+- **Factions**: Grineer, Corpus, Infested, Corrupted, Murmur, Scaldra, Techrot… each with its health,
+  armor and shield profile and damage-type weaknesses (post-rework values, from the wiki), at a chosen
+  level / Steel Path. Faction damage on the riven then counts against its own faction only.
+
+**13d — Frames, subsumes and companions (curated buffs)**
+- Frames and subsumes that warp a build, as buffs in the same effect format: Narin (weak points, for
+  Tenet Glaxion and the like), Nourish (Toxin and Viral), Saryn and Oraxia (Toxin), Roar, Eclipse,
+  Xata's Whisper, Chroma, Harrow… Each needs its numbers at a stated ability strength.
+- **Primer companions**: statuses they keep on the target (feeding Galvanized Aptitude-style bonuses and
+  status-capped scenarios), and their own damage left out.
+- Picked in the UI next to the scenario; the optimiser then builds around them.
+
+**13e — UI and checks**
+- The model block gets: scenario, faction / level, frame, companion, arcane (or "best"). Results: the
+  riven's value per stat and the best sets, now as best-with − best-without, plus both builds.
+- Checks: arsenal numbers for a few builds (damage per shot, crit, status), Overframe by hand for ~10
+  guns, and the community score (`tools/score-sim.mjs`) per scenario.
+- Open questions for the user before 13d: Narin's exact weak point effects; which frames and
+  companions matter most; the primer companions to start with.
 
 
 
