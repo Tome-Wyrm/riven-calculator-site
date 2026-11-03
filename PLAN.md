@@ -636,6 +636,29 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
     Grineer; shielded Corpus → Magnetic; weak points → Weakpoint Damage and Weakpoint Crit Chance.
     Corrosive is the community's most missed pick against stripped armor and isn't missed at all
     against full armor: the sheet assumes armor.
+- [x] **DoT ticks now scale with their own element's mods** (2026-11-03; the wiki's Damage/Calculation:
+      Heat, Toxin and Electricity ticks x (1 + that element's mods, counted even once combined), Gas
+      ticks x (1 + Gas bonuses); the model had left it out). Re-scored: room clearing 51% / 26%, single
+      target 53% / 72% (was 59% / 84%); curses agree more (56%, 67%). Status Duration and Status
+      Damage now rank high, exposing the next bias:
+- [ ] **DoT against the time to kill.** The model gives every proc its full ticks, as if the target
+      lived forever, so Status Duration (more ticks) is overrated. Over a kill time T with procs at
+      rate r, a DoT lasting D deals r × tick × (D − D²/2T) a second when T ≥ D, r × tick × T/2 when
+      shorter; Heat (timers reset) r × tick × T/2. T comes from the target (13c: health, shields) and
+      the DPS itself, solved by iteration; room clearing and single target differ mostly here.
+      Blast procs aren't modelled either (10 stacks detonate for 3x the stored hits).
+      **Heat's armor strip takes time, and Status Duration slows it** (the user, 2026-11-03; the wiki's
+      Damage/Heat Damage): 15%, 30%, 40%, then 50% stripped, a step every 0.5 s x (1 + Status
+      Duration), so full strip takes 2 s, 4 s at +100%, 1 s with a −50% curse; when the proc ends,
+      armor comes back over 6 s. So Status Duration both helps (longer DoTs) and hurts (slower strip).
+- [ ] **So: simulate the fight, not a closed form** (the user's point from the start: these effects
+      only add up over time). Proposed: a deterministic, expected-value fight in small time steps
+      (~0.1 s) against the 13c target: shots, reloads, procs by type with their own timers, Heat
+      stacks resetting together and its stepped strip, Corrosive and Viral stacks, Blast stacks and
+      detonations, kill time when health and shields run out; Galvanized and on-kill stacks per build
+      type. Expected values keep it smooth for the optimiser (no random noise between builds) and fast
+      enough for thousands of builds a study; a random (Monte Carlo) run can check it later. The
+      closed form stays as a fast first pass if the search needs one.
 - **Decided** (the user, 2026-11-03): room clearing keeps Galvanized stacks at their maximum. They
   are up most of the time, and they decay one at a time, so getting them back is usually trivial.
 
@@ -671,22 +694,115 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 - [ ] **Not modelled yet**: Overguard and Eximus units; Narmer and Sentient units (no Bane faction
       to file them under); per-unit weak points.
 
-**13d — Frames, subsumes and companions (curated buffs)**
-- Frames and subsumes that warp a build, as buffs in the same effect format: Narin (weak points, for
-  Tenet Glaxion and the like), Nourish (Toxin and Viral), Saryn and Oraxia (Toxin), Roar, Eclipse,
-  Xata's Whisper, Chroma, Harrow… Each needs its numbers at a stated ability strength.
-- **Primer companions**: statuses they keep on the target (feeding Galvanized Aptitude-style bonuses and
-  status-capped scenarios), and their own damage left out.
-- Picked in the UI next to the scenario; the optimiser then builds around them.
+**13d — moved to Phase 14** (frames, abilities, subsumes and companions; the user, 2026-11-03).
 
 **13e — UI and checks**
 - The model block gets: scenario, faction / level, frame, companion, arcane (or "best"). Results: the
   riven's value per stat and the best sets, now as best-with − best-without, plus both builds.
 - Checks: arsenal numbers for a few builds (damage per shot, crit, status), Underframe by hand for ~10
-  guns, and the community score (`tools/score-sim.mjs`) per scenario.
-- Open questions for the user before 13d: Narin's exact weak point effects; which frames and
-  companions matter most; the primer companions to start with.
+  guns, and the community score (`tools/score-optimiser.mjs`) per scenario.
 
+### Phase 14 — Frames, abilities and companions
+
+Buffs from Warframe abilities, augments, subsumes, passives and primer companions, so the optimiser
+builds around them. Guns only; melee buffs wait for a melee model.
+
+**Sources (2026-11-03)**
+- **Underframe's `external_weapon_buffs`**: 62 abilities, 24 passives, 14 subsumes, 16 arcanes, 8
+  Archon Shards, a few set mods. Each has a buff kind, a value, what it scales with (strength or
+  duration), the augment it needs and the weapon classes it applies to. The base layer.
+- **The wiki**, cached by `tools/fetch-wiki.mjs` (`tools/data/cache/wiki-*`, not in git):
+  `Universal Weapon Bonuses` (which bucket each buff is in), `Extra Hit`, `Damage Vulnerability`,
+  `Module:Ability/data`, `Module:Warframes/data` (passives), `Module:Mods/data` (augments), and one
+  page per ability or augment the user named (45 pages): numbers per rank and the stacking notes.
+- **The user's Nova guide** (Google Doc, cached as `tools/data/cache/nova-guide.txt`).
+
+**What changes a riven's value.** A buff that multiplies all damage the same way changes the DPS, not
+which riven is best. What matters is the bucket a buff joins: the riven stat in that bucket is worth
+less, and the stats it multiplies are worth more.
+
+| Bucket | Buffs (value at 100% strength) | Effect on rivens |
+|---|---|---|
+| **Base damage** (adds with Serration) | Vex Armor Fury 275%, Amp 25–200% (sound), Shooting Gallery 25%, Toxin Elemental Ward 35%, Deathbringer 100%, Metamorphosis 25% (decays), Rift Surge + Rift Torrent 30% per enemy, Absorb up to 400%, Airburst Rounds 40% per enemy hit up to 500% (secondaries), Arcane Arachne | Damage rivens worth less |
+| **Faction** (adds with Bane mods; twice on DoT) | Roar 50% (30% subsumed) | Faction rivens worth less |
+| **Separate multipliers** | Eclipse 200% (30% subsumed), Garuda's passive up to 100%, Parasitic Link 25%, Vauban's passive and Overdriver 25% | None, except additive CO stays additive beside Eclipse |
+| **Damage vulnerability** (on the target; multiplicative; not doubled on DoT) | Molecular Prime 100%, Blazing Chakram 100%, Webbed Embrace 50%, Demonium 50%, Reap 50%, The Vast Untime 50% (Void only), Hakchum (Cold only), Paralysis (melee only); Jade's Judgments and Prey of Dynar add among themselves | None, unless type-specific (Vast Untime lifts Xata's Void) |
+| **Extra hits** (a separate hit for a share of the weapon's hit; Bane twice on it, three times on its DoT; its proc is guaranteed except Xata's) | Toxic Lash 30% Toxin; Xata's Whisper 26% Void (procs at the weapon's status chance; works on Incarnon forms); Resupply 25% any element (x2 snipers; no Incarnon, battery weapons or archguns); Silken Stride 40% Toxin (x2 wall-latched; no Incarnon); Uriel's Demonium rune 30% Heat (+30% fire rate); Narin's Sangodae 50% Cold | Everything that multiplies the hit gains, Multishot too (each pellet triggers one); one more status type |
+| **Elements** | Venom Dose, Shock Trooper, Freeze Force, Fireball Frenzy +100% (never combine; add to mods of the same element); Nourish 75% Viral (45% subsumed); Plunder up to 200% Corrosive; Valence Formation | Riven elements and status types |
+| **Crit, flat after mods** | Covenant 5% + 1.5% per 100 damage blocked (cap 50% body, 200% weak points); Shadow Haze 50%; Zephyr's passive +150% airborne; Nyx's passive +40% per confused enemy (to 200%); Yareli's +200% (secondaries, moving); Cyte-09's +300% Weakpoint Crit Chance | Crit Chance rivens worth less on low-crit guns, more on Crit Damage |
+| **Crit damage** | Tharros Lethality +100% (adds with Vital Sense; x2 spearguns), Grave Spirit 50%, Empowered Quiver 100% | Crit Damage rivens worth less |
+| **Status** | Prismatic Gem +100% status chance and +100% duration (add to mods); Saryn's passive +25% duration; Dante's +50% chance on scanned targets; Banshee's passive (max Puncture stacks on targets) | Status rivens worth less; status types up |
+| **Fire rate, multishot, reload** | Redline up to 75% fire rate; Penance 35% fire rate, 70% reload; Haste Mote 30% fire rate; Metronome's Opera 30% Multishot (adds with Split Chamber); Mesa's passive | Those riven stats worth less |
+| **Weak points** | Sonar x5 per spot (multiplies a head's own multiplier; crits on Sonar spots are never headcrits; extra hits get it too); Seek +75% (adds into the weak point formula); Cyte-09's passive | Weakpoint rivens; a weak point build without heads |
+
+**Needs its own model** (research first): Hall of Mirrors (2 clones at 40% of the weapon, crit and
+status chance cut by the same factor), Tornado (spreads each hit to every trapped enemy; crits on
+them x2), Breach Surge (sparks of 2x the proccing hit as Radiation, 100% crit at 1.5x, 20% status),
+Crystallize (sets crit chance on crystals; hitscan crits x2), Prismatic Gem's beams, Molecular Prime's
+chaining explosions (they inherit extra hits), Divine Retribution (spreads statuses, bursts the
+rest), The Lost's Gaze, Null Star, Antimatter Drop (no longer weapon-coded).
+
+**Melee only, for a melee model**: Valkyr (Warcry attack speed, Rage, Paralysis), Voruna (Shroud and
+Prey of Dynar, Lycath's Hunt's Heavy Attack Efficiency; combo needs modelling).
+
+**Primer companions** (the user's list): Diriga (close-range AoE electric), Panzer Vulpaphyla
+(Viral), and Tazicor or Helstrum on a sentinel stacking status chance, status variety (rainbow) and
+fire rate. Modelled as the statuses their weapons keep on the target (their own status chance, fire
+rate and elements), feeding status types and Viral / Corrosive stacks: the "primed (all)" switch
+becomes a choice of primer.
+
+**Steps**
+- **14a Data**: `tools/build-buffs.mjs` → `src/data/buffs.js` from Underframe's buffs, each with its
+  bucket, value per rank at 100% strength, what it scales with, its augment and the classes it
+  applies to; checked against the wiki pages, disagreements listed for in-game checks.
+- **14b Model**: the buckets above in `dpsOf` (faction-like, separate multipliers, type-specific
+  vulnerability, extra hits with their own procs, flat crit after mods with caps, weak point
+  additions, Sonar spots).
+- **14c UI**: pick a frame (its abilities, augments, a subsume), ability strength and duration; the
+  optimiser builds around them.
+- **14d Primers**: companion weapons as status sources.
+- **14e The hard ones** listed above.
+- **14f The second list** (the user's other frames with buffs): Ash, Caliban, Dagath, Dante, Ember,
+  Equinox, Excalibur, Frost, Grendel, Gyre, Hydroid, Ivara, Jade, Koumei, Kullervo, Lavos, Limbo,
+  Mag, Nidus, Nyx, Rhino, Sirius and Orion, Temple, Vauban, Volt, Yareli. Narin later (not owned yet).
+
+**Decided** (the user, 2026-11-03)
+- **Ability strength** varies per frame: the user will give the relevant builds.
+- **Conditional buffs and passives** (airborne Zephyr, moving Yareli, Nyx's confused enemies, Vex
+  Armor's Fury, Covenant's blocked damage…) are at their maximum.
+- The "weird" one is **Biting Frost** (not Freeze Force): +200% Critical Chance and +200% Critical
+  Damage against frozen enemies (10 Cold stacks), adding with Point Strike and Vital Sense, not
+  scaled by strength, on every weapon type.
+
+**Heat** (the wiki's Damage/Heat Damage and a Cool Kid video the user shared, 2026-11-03)
+- **Stacks ramp**: a Heat proc adds a stack and resets every stack's timer, and all stacks tick
+  together once a second, so Heat damage grows linearly for as long as procs keep coming. (The model
+  still gives each proc its 7 ticks.)
+- **Heat inherit**: the first Heat proc on a target fixes the Heat-mod and faction multipliers for
+  every later proc. A first proc from an ability (Ember's Fire Blast and Inferno, Temple's
+  Pyrotechnics, Uriel's Infernalis, Demonium with Infernalis and Gulphagor, Nezha's Fire Walker and
+  Blazing Chakram; Chroma, Gauss, Koumei, Protea…) or Manifold Bond carries neither, so the weapon's
+  Heat ticks lose its Heat mods, Fireball Frenzy and Ripper's Wail, and faction applies once. Status
+  Damage (Elementalist) still counts; the longest Status Duration wins. A primer that procs Heat
+  first (Tazicor) turns it around: abilities then inherit the weapon's bonuses.
+- **Extra hits are apart**: an elemental-ammo extra hit (Demonium runes, Resupply, Silken Stride,
+  Toxic Lash too) is a share of the whole hit, so every elemental mod raises it, and faction applies
+  three times (the hit, the extra hit, its tick). Under an ability's Heat inherit its ticks lose the
+  Heat and faction factors but the extra hit keeps the rest: on Uriel, non-Heat elements are worth
+  more than Heat mods.
+- Faction damage double dips on DoT (once in the hit, again in the tick); the model already does, and
+  reproduces the wiki's example exactly (100 Slash, Serration, Bane of Grineer, +90% Status Damage:
+  a bleed tick of 297.82; a test). Riven faction stats: base 45%, through the usual roll formula.
+
+**What a DoT inherits from its hit** (the wiki's Damage over Time, "DoT Damage Scaling", the user,
+2026-11-03), for 14b:
+- **Yes**: base damage buffs (Serration, Vex Armor), total multipliers (Eclipse, Furious Javelin),
+  enemy debuffs (Molecular Prime, Rest & Rage: once, not twice), crits and the stealth bonus, Status
+  Damage, combo counters, body part multipliers, faction (twice; Roar too).
+- **Matching element only**: a Heat, Toxin or Electricity tick counts that element's mods even once
+  combined (Toxic Lash's Toxin with Infected Clip in a Corrosive); Gas and Blast ticks only count
+  literal Gas or Blast (Leaded Gas, Valence Formation); physical mods (Sawtooth Clip) never count.
+- **No**: Sonar's and Detect Vulnerability's weak spots (the hit only).
 
 
 ---

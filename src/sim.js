@@ -9,9 +9,12 @@
 //   crit    = 1 + CC × (CD − 1)                         (average; holds past 100% crit chance)
 //   direct  = hit × faction × crit × multishot × fire rate
 //   DoT     = procs/s × share of DoT types × tick × ticks × (1 + Status Duration) × (1 + Status Damage)
+//             × (1 + the matching elemental mods)
 //
 // The DoT is the base damage × (1 + Damage) × faction² × crit, per tick: Slash 35%, Heat, Toxin,
-// Electricity and Gas 50%, 7 ticks. Proc types are weighted by each type's share of the modded hit.
+// Electricity and Gas 50%, 7 ticks, each x (1 + its own element's mods: the wiki's Damage/Calculation;
+// a Heat, Toxin or Electricity mod counts even once combined, Gas only counts Gas bonuses). Proc types
+// are weighted by each type's share of the modded hit.
 // Viral procs stack (6 s each, up to 10): the first adds +100% damage, each more +25%. The build's
 // elements are Viral, so a riven's Viral or Status Chance adds stacks until they cap.
 // Weak point hits (a chosen share of the direct hits; explosions never count) follow the wiki's Enemy
@@ -176,6 +179,9 @@ export function dpsOf(w, t, opts = {}) {
   const crit = (/** @type {number} */ cc, /** @type {number} */ cd) => 1 + Math.max(0, cc) * (Math.max(1, cd) - 1);
   const statusMult = TICKS * Math.max(0, 1 + m('statusDuration')) * Math.max(0, 1 + m('statusDamage'));
 
+  /** @type {Record<string, number>} the build's elemental mods by element, uncombined: they scale DoT ticks */
+  const matching = {};
+  for (const e of t.elements) matching[e.type] = (matching[e.type] ?? 0) + e.value;
   /** @type {Record<string, number>} damage per second by type (direct hits and DoT), before the target */
   const dealt = {};
   let bleed = 0;                                            // Slash DoT: True damage, past armor and shields
@@ -205,7 +211,7 @@ export function dpsOf(w, t, opts = {}) {
     const dotScale = statusMult * base * faction * faction * D * scale * pellets * rate;
     for (const [type, v] of Object.entries(byType)) dealt[type] = (dealt[type] ?? 0) + v * direct;
     for (const [type, tick] of Object.entries(DOT)) {
-      const dot = procsPerPellet(type) * tick * dotScale;
+      const dot = procsPerPellet(type) * tick * dotScale * (1 + (matching[type] ?? 0));
       if (type === 'slash') bleed += dot; else dealt[type] = (dealt[type] ?? 0) + dot;
     }
     for (const type of Object.keys(procs)) procs[type] += procsPerPellet(type) * pellets * rate;

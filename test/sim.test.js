@@ -140,3 +140,23 @@ test('Felarx +++- (the community: MS, then Viral / Corrosive / Ammo Efficiency):
   assert.ok(sets[0].ids.includes('multishot'), sets[0].ids.join());
   assert.ok(sets.every(s => s.ids.filter(id => SPLICED.some(x => x.id === id)).length <= 1));
 });
+
+test('DoT ticks scale with their own element’s mods (the wiki’s Supra Vandal: +60% Heat, ticks x1.6)', async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  const heatGun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+    modes: [{ name: 'Normal Attack', rate: 1, cost: 1, parts: [{ name: 'Normal Attack', dmg: { heat: 40 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
+  // A hit of 40 x 1.6 = 64 a second; a Heat proc a second, 7 ticks of 0.5 x 40, x1.6: 224.
+  const heat = { stats: {}, elements: [{ type: 'heat', value: 0.6 }] };
+  assert.ok(Math.abs(dpsOf(heatGun, heat) - (64 + 224)) < 1e-6, String(dpsOf(heatGun, heat)));
+});
+
+test('a Slash proc per tick: the wiki’s Damage over Time example (faction twice)', async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  // 100 Slash, Serration (+165%), Bane of Grineer (+30%), +90% Status Damage, against Grineer:
+  // a bleed tick is 100 x 2.65 x 0.35 x 1.3² x 1.9 = 297.8202; the hit 100 x 2.65 x 1.3 = 344.5.
+  const slashGun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+    modes: [{ name: 'Normal Attack', rate: 1, cost: 1, parts: [{ name: 'Normal Attack', dmg: { slash: 100 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
+  const build = { stats: { damage: 1.65, grineer: 0.3, statusDamage: 0.9 }, elements: [] };
+  // One proc a second, 7 ticks each.
+  assert.ok(Math.abs(dpsOf(slashGun, build, { enemy: 'grineer' }) - (344.5 + 7 * 297.8202)) < 1e-3);
+});
