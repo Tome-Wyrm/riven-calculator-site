@@ -104,5 +104,15 @@
    "stats": "confirmed",
    "note": "100% Critical and Status Chance for 4s after landing from a Double or Bullet Jump at max (rank 0: 25% for 1s); set bonus: +33% chance to become immune to Knockdown while airborne"
   }
+ },
+ "weapons": {
+  "Felarx": {
+   "checked": "2026-11-02",
+   "note": "'Auto / Semi' trigger: can't take the Semi- Cannonades (no SEMI_AUTO tag)"
+  },
+  "Laetum": {
+   "checked": "2026-11-02",
+   "note": "'Auto / Semi' trigger: can't take the Semi- Cannonades (no SEMI_AUTO tag)"
+  }
  }
 }

@@ -15,3 +15,5 @@ review-server.cmd
 
 # Local snapshots of upstream data (tools/lib/cache.mjs): a fallback if a source changes or goes away
 tools/data/cache/
+# Wiki pages saved by hand as sources (read by the tools/ builders when present)
+tools/data/*.wiki

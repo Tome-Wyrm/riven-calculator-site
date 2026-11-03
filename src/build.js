@@ -131,7 +131,8 @@ function totalsOf(pieces) {
 
 /**
  * A weapon's compatibility tags, as mods ask for them. The wiki tags few weapons SEMI_AUTO, so a
- * weapon whose only trigger is semi-auto counts too ("Auto / Semi" doesn't: check in game).
+ * weapon whose only trigger is semi-auto counts too. "Auto / Semi" doesn't: Felarx and Laetum can't
+ * take the Semi- Cannonades (the user, in game, 2026-11-02).
  * @param {WeaponStats} w
  */
 export function weaponTags(w) {

@@ -109,6 +109,7 @@ test('weapon tags: Semi- Cannonades need a semi-auto trigger; beam mods need a b
   const names = (w, cls) => modPool(cls, w, SCENARIOS.room, opts).map(p => p.name);
   // Felarx is "Auto / Semi": no Semi-Shotgun Cannonade. Lex Prime is semi-auto: Semi-Pistol Cannonade fits.
   assert.ok(!weaponTags(WEAPON_STATS.Felarx).has('SEMI_AUTO'));
+  assert.ok(!weaponTags(WEAPON_STATS.Laetum).has('SEMI_AUTO'));    // checked in game too
   assert.ok(!names(WEAPON_STATS.Felarx, 'shotgun').includes('Semi-Shotgun Cannonade'));
   assert.ok(names(WEAPON_STATS['Lex Prime'], 'pistol').includes('Semi-Pistol Cannonade'));
   // Beam-only mods (needs BEAM) aren't offered to Rubico Prime.

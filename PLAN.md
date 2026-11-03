@@ -589,10 +589,22 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 - What changed in practice: Weakpoint Damage only leads in the weak point build (Rubico Prime there
   adds Galvanized Scope and Target Acquired); against the Murmur's 1.5x weak points the build takes
   Primary Acuity (+5.25 on the multiplier) and Multishot on the riven becomes worthless (Acuity locks it).
-- [ ] **To check**: whether "Auto / Semi" weapons (Felarx, Laetum) take the Semi- Cannonades; weapons
-      with no weak point bonus (Ignis, Arca Plasmor, Catchmoon…: 1x, Acuity does nothing, Deadhead
-      does); per-unit weak points (MOA rears 3x non-head, Bursa consoles, Juggernaut maws) are averaged
-      away by the faction profile; Cernos Prime's own +50% on headshots; Sonar.
+- [x] **CO cross-checked against the wiki's Condition Overload (Mechanic) catalogue** (a local copy
+      at `tools/data/ConditionOverload.wiki`, git-ignored with any `tools/data/*.wiki`;
+      `tools/lib/co-wiki.mjs` reads it, `build-weapon-stats` prints the comparison): 162 rows agree, 13
+      differ, none changing the data (Underframe's rows are newer; each difference is explained in the
+      build script). Worth an in-game look: Burston (Prime)'s incarnon radial attack (wiki 24%,
+      Underframe 100%).
+- [x] "Auto / Semi" weapons (Felarx, Laetum) **can't** take the Semi- Cannonades (the user, in game,
+      2026-11-02; recorded in `in-game-checks.json`). That's what `weaponTags` already did.
+- Sonar is left out on purpose (the user: whoever uses Sonar knows to build for weak points).
+- [ ] **CO not modelled**: Secondary Shiver (+45% Direct Damage per Cold stack, pistols and archguns:
+      needs Cold stacks on the target); Tenet Detron's CO at 65% on multishot projectiles; incarnon
+      evolutions that raise base damage without raising CO (the wiki: Atomos, Cestra, Despair…: the
+      share isn't in Underframe's table for every one); melee Condition Overload (guns only so far).
+- [ ] **To check**: weapons with no weak point bonus (Ignis, Arca Plasmor, Catchmoon…: 1x, Acuity
+      does nothing, Deadhead does); per-unit weak points (MOA rears 3x non-head, Bursa consoles,
+      Juggernaut maws) are averaged away by the faction profile; Cernos Prime's own +50% on headshots.
 - [ ] `tools/score-sim.mjs` still scores the reference build; score the optimiser against the
       community too.
 

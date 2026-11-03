@@ -6,6 +6,7 @@
 
 import { writeFile } from 'node:fs/promises';
 import { cachedText, cachedJson } from './lib/cache.mjs';
+import { readWikiCo, crossCheckCo } from './lib/co-wiki.mjs';
 import { WEAPONS } from '../src/data/weapons.js';
 
 const WIKI = 'https://wiki.warframe.com/w/Module:Weapons/data/';
@@ -99,7 +100,12 @@ function compact(w) {
  * How Galvanized's "Direct Damage" (gun Condition Overload) applies to an attack, from Underframe's
  * per-attack CO table: [share that applies, 1 if it multiplies instead of adding]. Left out when it's
  * the usual full, additive bonus. An explosion Underframe doesn't list gets none (its notes: direct-hit
- * CO isn't copied to explosions).
+ * CO isn't copied to explosions; the wiki's Condition Overload (Mechanic): "Projectile Explosion
+ * Radius" doesn't apply CO). Multiplying: base x (1 + damage mods) x (1 + CO); adding: base x
+ * (1 + damage mods + CO), so CO competes with Serration. A share under 1 is mostly a charged shot
+ * (CO uses the uncharged damage: 50% on bows) or an incarnon whose evolution raised base damage.
+ * Underframe is the source (its rows are newer, some audited against Update 44); the wiki's page is a
+ * cross-check (below).
  * @param {string} weapon @param {any} a
  */
 function coOf(weapon, a) {
@@ -178,6 +184,22 @@ for (const [name, cls] of WEAPONS) {
   out[name] = compact(w);
 }
 if (missing.length) console.warn(`Guns with no wiki stats (${missing.length}): ${missing.join(', ')}`);
+
+// Cross-check: the wiki's Condition Overload (Mechanic) catalogue, from a local copy of the page
+// (tools/data/ConditionOverload.wiki, not tracked in git; save the page's source there to run it).
+// Known differences (2026-11-02), none changing the data:
+// - incarnon radial attacks (Braton, Burston, Zylok), where the page's figures predate Underframe's
+//   (Zylok Prime's is audited against Update 44; Burston's 24% vs 100% is the one worth a check);
+// - Kulstar's cluster bombs: the page says 257%, but its own 200 of 75 is 267%, as Underframe has;
+// - Ballistica Prime's charged shot: 38 vs 40 of 76, a base damage difference;
+// - Vulcax: the page's 167% is the impact and explosion together (1000 of 600), which is
+//   Underframe's 100% of 500 plus 500% of 100;
+// - alt-fires the model doesn't have (Zenith's disk bonk, Scyotid's grab).
+const wikiCo = readWikiCo(new URL('./data/ConditionOverload.wiki', import.meta.url));
+if (wikiCo) {
+  const { agree, differ } = crossCheckCo(wikiCo, underframe.data.co_data, new Set(Object.keys(out)));
+  console.log(`CO against the wiki's catalogue: ${agree} agree, ${differ.length} differ${differ.map(d => `\n  ${d}`).join('')}`);
+} else console.log('CO: no local copy of the wiki page, so no cross-check');
 
 const date = new Date().toISOString().slice(0, 10);
 await writeFile(new URL('../src/data/weapon-stats.js', import.meta.url), `// @ts-check
