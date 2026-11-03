@@ -38,7 +38,7 @@
 // could check the averages).
 
 import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
-import { comboTier, swingOf, MAX_COMBO } from './melee.js';
+import { comboTier, swingOf, MAX_COMBO, MAX_TIER, TIER_POINTS } from './melee.js';
 
 /** The elemental statuses Melee Influence spreads (not physical, Void or Tau). */
 const ELEMENTAL = new Set(['cold', 'electricity', 'heat', 'toxin', 'blast', 'corrosive', 'gas', 'magnetic', 'radiation', 'viral']);
@@ -92,8 +92,12 @@ export function fight(w, t, opts) {
 
   // What one shot carries, before Galvanized's per-status Direct Damage (which depends on the target).
   // Melee: at each combo tier (Blood Rush's crit chance, Weeping Wounds' status chance per tier).
+  /** @type {Map<import('./sim.js').Part, ReturnType<typeof hitByType>>} */
+  const hitOf = new Map();
   const volleysAt = (/** @type {(id: string) => number} */ raw) => mode.parts.flatMap(p => {
-    const typed = hitByType(p, t, raw, opts.valence);
+    // (The same at every tier: only crit and status chance change with it.)
+    let typed = hitOf.get(p);
+    if (typed === undefined) hitOf.set(p, typed = hitByType(p, t, raw, opts.valence));
     if (!typed) return [];
     const { base, byType, hit } = typed;
     const cc = critChanceOf(p, raw('critChance'));
@@ -122,9 +126,16 @@ export function fight(w, t, opts) {
   const melee = w.melee && opts.melee ? opts.melee : null;
   /** @type {Map<number, ReturnType<typeof volleysAt>>} */
   const byTier = new Map();
+  // The stats that change with the tier: without any, every tier is the same.
+  const perTier = Object.keys(t.stats).filter(k => k.endsWith('PerTier') && t.stats[k]);
   const volleysOf = (/** @type {number} */ tier) => {
-    let v = byTier.get(tier);
-    if (!v) byTier.set(tier, v = volleysAt(tier <= 1 ? raw : id => raw(id) + raw(`${id}PerTier`) * (tier - 1)));
+    const key = perTier.length ? tier : 1;
+    let v = byTier.get(key);
+    if (!v) {
+      const stats = { ...t.stats };
+      for (const k of perTier) { const id = k.slice(0, -'PerTier'.length); stats[id] = (stats[id] ?? 0) + t.stats[k] * (key - 1); }
+      byTier.set(key, v = volleysAt(id => stats[id] ?? 0));
+    }
     return v;
   };
   const swings = melee ? melee.attacks.map(swingOf) : [];
@@ -160,6 +171,7 @@ export function fight(w, t, opts) {
   const ehp = target.health + target.shields;
   let perShot = 0;
   let lastTier = 1;
+  let lastCombo = 0;                                        // the combo count at the last swing
 
   // One target, from its first shot until the gun is ready for the next, reloading or not; melee
   // starts at a combo count (carried from the last target when it builds up).
@@ -338,8 +350,10 @@ export function fight(w, t, opts) {
         buffUp = influence * lambda / (1 + influence * lambda);
       }
       shots++;
+      const swungAt = combo;
       if (sw && melee?.combo === 'build') combo += (sw.mult + sw.hits * comboChance) * nearby;
       lastTier = tier;
+      lastCombo = swungAt;
       if (shots === 1) perShot = ehp - health - shields;
       if (dead >= 0) {
         // Killed by this shot: it counts for the share of it that was needed (crits make the real
@@ -362,19 +376,25 @@ export function fight(w, t, opts) {
     return { dps: ehp / Math.max(1e-9, r.time), timePerKill: r.time, shotsPerKill: r.shots, perShot, ...(melee ? { tier: lastTier } : {}) };
   }
   if (melee) {
-    // A room of melee kills: the combo carries from target to target when it builds up (once it's at
-    // the max, every target is alike); the enemies inside each swing fall together.
+    // A room of melee kills: the combo carries from target to target when it builds up; the enemies
+    // inside each swing fall together. Targets fought wholly within one tier are alike (only the tier
+    // changes a fight), each adding the same combo: the next ones up to the tier's end aren't re-fought.
     let time = 0, shots = 0, combo = initial, first = 0, spreadAll = 0;
     for (let k = 0; k < targets; k++) {
       spread = 0;
       const r = one(false, combo);
       if (k === 0) first = perShot;
-      if (melee.combo !== 'build' || combo >= MAX_COMBO) {
-        const left = targets - k;
-        time += r.time * left; shots += r.shots * left; spreadAll += spread * left;
-        break;
-      }
-      time += r.time; shots += r.shots; spreadAll += spread; combo = r.combo;
+      const gain = r.combo - combo;
+      const left = targets - k;
+      const tier = comboTier(combo);
+      const steady = !perTier.length || tier >= MAX_TIER || gain <= 0;
+      const alike = melee.combo !== 'build' || steady ? left
+        : comboTier(lastCombo) !== tier ? 1
+        : Math.min(left, Math.ceil((tier * TIER_POINTS - lastCombo) / gain));
+      time += r.time * alike; shots += r.shots * alike; spreadAll += spread * alike;
+      if (melee.combo === 'build') lastTier = comboTier(lastCombo + (alike - 1) * gain);
+      combo += gain * alike;
+      k += alike - 1;
     }
     // Each kill also brings down the others in the swing, and the spread damage counts as more kills
     // (at most the close enemies' share of the room).
