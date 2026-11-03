@@ -934,6 +934,42 @@ becomes a choice of primer.
 
 ---
 
+### Phase 15 — Melee model (started 2026-11-03)
+The damage model for melee: normal attacks first, judged by fights like the guns (src/fight.js).
+Decisions (the user's, 2026-11-03):
+- **Attacks**: normal attacks (light combo hits). Heavy attacks, slams and finishers later.
+- **Stances**: their damage multipliers and hit counts count, their timing doesn't (each attack of
+  a combo takes one swing at the weapon's attack speed). Disclosed in the "swings to kill" hover.
+  Data: the wiki's Module:Stances/data (tools/build-stances.mjs → src/data/stances.js: per weapon
+  type, each stance's combos, each attack's hits as [multiplier, hits, knockdown/lifted proc?]).
+- **Combo counter**: a toggle: clamped to the initial combo, clamped to the max, or built up over
+  the fight (each hit counts; room clearing carries it from kill to kill within the combo duration).
+- **Crowd** (for follow through and Melee Influence):
+  - *Nearby*: enemies inside the swing. Follow through (most melee: each further enemy keeps a share)
+    or falloff (glaive throws, gunblade shots, Corufell's projectile: their attacks' own falloff).
+  - *Close*: enemies within 20 m of the target, where Melee Influence can spread.
+  - *Clumping*: how tightly they stand. An enemy that Influence reaches spreads to everyone within
+    20 m of it too, so tight groups chain: damage climbs fast with clumping.
+- **Arcane selector** (melee and guns): "Best (searched)" or a named arcane. Melee Influence and
+  Melee Afflictions change how a weapon works, so they're modelled, not just their stats:
+  - *Melee Influence*: an Electricity proc has a 20% chance to grant 18 s (rank 5; not refreshed) in
+    which every elemental proc (Cold, Electricity, Heat, Toxin, Blast, Corrosive, Gas, Magnetic,
+    Radiation, Viral; not physical) spreads to enemies within 20 m, dealing that element's damage
+    from the original hit (after quantization, crits and Condition Overload on the struck target).
+  - *Melee Afflictions*: on enemies knocked down or flung by melee (the stance's knockdown / lifted /
+    ragdoll / knockback hits), +6 stacks (rank 5) of every status already on them.
+- Data so far: melee weapons in src/data/weapon-stats.js (every attack a mode, the normal attack the
+  default; a `melee` block: follow through, range, sweep radius, combo duration, heavy attack damage
+  and wind up; attacks' falloff). Zaws, like kitguns, have no stats of their own (their parts decide);
+  Dark Split-Sword is missing from the wiki module.
+- [x] Melee weapon stats and stances
+- [ ] Melee mods (Melee Damage → damage, Attack Speed → fireRate; Blood Rush, Weeping Wounds and
+      Gladiator's per-combo-multiplier stats; the "(x2 for Heavy Attacks)" crit mods; initial combo)
+- [ ] Melee arcanes and the arcane selector (guns too)
+- [ ] Melee in sim and fight: attack speed, stance multipliers, combo counter, follow through
+- [ ] Melee Influence (crowd: nearby, close, clumping) and Melee Afflictions
+- [ ] The page: melee in the model, the combo toggle, crowd settings, "swings to kill"
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

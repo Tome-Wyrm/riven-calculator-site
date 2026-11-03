@@ -34,6 +34,10 @@ export function parseLua(src, at = 'return') {
     if (c === '{') return table();
     if (c === '"' || c === "'") return string();
     const m = src.slice(i, i + 40).match(/^(-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|true|false|nil|math\.huge)/);
+    // A bare word is a typo for a string (the stance module's `Procs = { "", Knockdown, "" }`): Lua
+    // would read nil, but the author meant the name.
+    const word = !m && src.slice(i, i + 40).match(/^[A-Za-z_]\w*(?=\s*[,}])/);
+    if (word) { i += word[0].length; return word[0]; }
     if (!m) fail('Unexpected value');
     i += m[0].length;
     return { true: true, false: false, nil: null, 'math.huge': Infinity }[m[0]] ?? Number(m[0]);
