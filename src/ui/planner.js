@@ -10,6 +10,7 @@ import { pools } from '../cycle.js';
 import { planBuild, OP_TEXT, splicedRollWindow } from '../planner.js';
 import { CLASS_LABEL, el, statName, segmented, select, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf } from './state.js';
+import { picksLink } from './picks.js';
 
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('../data/stats.js').Shape} Shape */
@@ -216,6 +217,7 @@ function controls() {
       weaponPicker(WEAPONS, state.weapon, (weapon, cls) => set({ weapon, cls })),
       segmented('Weapon class', CLASSES, state.cls, v => set({ cls: /** @type {WeaponClass} */ (v), weapon: '' }),
         v => CLASS_LABEL[/** @type {WeaponClass} */ (v)]),
+      ...picksLink(state.weapon),
     ]),
     el('div', { class: 'controls' }, [
       select('Spliced', splicedOptions, state.spliced, v => set({ spliced: v })),
@@ -599,6 +601,37 @@ export function mountPlanner(container) {
   render();
 }
 
+/** Opens the planner and scrolls to it. */
+function reveal() {
+  const details = /** @type {HTMLDetailsElement | null} */ (root.closest('details'));
+  if (details) details.open = true;
+  root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Sets the target (from the recommended rolls): the weapon, positives, spliced stat and negative,
+ * with no value goals and the cheapest shape. The riven you have is kept if it's the same weapon.
+ * @param {{weapon: string, cls: WeaponClass, positives: string[], spliced: string | null, negative: string | null}} target
+ */
+export function loadTargetIntoPlanner(target) {
+  if (target.weapon !== state.weapon) state.from = 'fresh';
+  Object.assign(state, {
+    weapon: target.weapon,
+    cls: target.cls,
+    want: [...target.positives, NONE, NONE, NONE].slice(0, 3),
+    mins: ['', '', ''],
+    ops: ['gte', 'gte', 'gte'],
+    spliced: target.spliced ?? NONE,
+    splicedMin: '',
+    recipe: NONE,
+    negative: target.negative ?? NONE,
+    negMin: '',
+    shape: 'any',
+  });
+  render();
+  reveal();
+}
+
 /**
  * Starts the plan from a riven the user has (from the grader): its weapon and stats. The target
  * itself is kept.
@@ -615,7 +648,5 @@ export function loadIntoPlanner(riven) {
     myLocks: riven.locked ?? [],
   });
   render();
-  const details = /** @type {HTMLDetailsElement | null} */ (root.closest('details'));
-  if (details) details.open = true;
-  root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  reveal();
 }

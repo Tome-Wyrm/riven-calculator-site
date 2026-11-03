@@ -326,6 +326,67 @@ it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL 
 - [ ] Reject impossible combos (same stat twice, more stats than the shape has slots, spliced +
       its own parents)
 
+### Phase 12 — Riven advisor ("which stats should I want on this weapon?")
+Asked on Discord: "a site where you can see what people recommend for riven stats / which spliced
+stat to go for". Two answers side by side, so each checks the other: what the community recommends,
+and what a damage model says each stat is worth on that weapon. The grader then rates the stat
+*picks* on a riven, not just the rolls.
+
+**12a — Community picks (first; answers the question as asked)** — done
+- Source: the Rolls & Resources sheet's main tab (gid 0, same sheet as the IPS/Vintage tabs): 419
+  families, each with one or more rows "ordered by usability": positive slots 1–3, negatives, notes.
+  Abbreviations are defined at the top of the tab (MS, CD, COR, EFF = Ammo Efficiency, WPC, SDMG…).
+- [x] `tools/build-picks.mjs` fetches the tab's CSV and writes `src/data/picks.js`: the cells as
+      written, by family, plus weapon → family where the names differ. 630 of 631 weapons matched
+      (Dex Nikana isn't in the sheet). "[Vinquibus] (Melee)" is our "Vinquibus (melee)".
+- [x] `src/picks.js` reads the shorthand at runtime: `>` priority, `/` equal (not inside brackets:
+      "ANY (not AS/CCC)"), codes run together ("IMP Z"), `ANY` / `NONE`, notes in brackets (`infl`,
+      `inc`, `0%`, and variants: "IMP(Vandal)" is for the Vandal only), `*` footnote marks. EFF is
+      Ammo Efficiency on guns, Heavy Attack Efficiency on melee. Every code in the sheet is known (tested).
+- [x] "Recommended rolls" section (URL prefix `a.`): each row's slots as chips, best first; the top
+      roll is pre-chosen (rollable on the weapon, one spliced stat at most); click to choose
+      another; "Plan this roll" fills the build planner's target. Spliced picks are dashed, with their
+      recipes on hover; picks the weapon can't roll are struck through. Credits the sheet's authors.
+- [x] Grader: a "Community" column (Top pick / Listed / Splices into Viral / Not listed; Top curse
+      for the negative), also on the "Splices into" rows. Planner and grader link to the weapon's picks.
+- [ ] Consider telling megrims (Discord) the sheet is used here.
+
+**12b — Weapon stats** (the model's input)
+- The wiki's `Module:Weapons/data/{primary,secondary,melee,archgun,modular}` (`?action=raw`, Lua).
+  Richer than WFCD: per-attack AmmoCost, AmmoMax, Range, PunchThrough, falloff, charge time,
+  Incarnon attacks, CompatibilityTags (BEAM, AOE…). `tools/build-weapon-stats.mjs` →
+  `src/data/weapon-stats.js`, loaded with a dynamic import only when the advisor opens (no runtime
+  fetch from other sites; the snapshot is committed).
+- Overframe has a build simulator but no open data or API: use it only to cross-check numbers by hand.
+
+**12c — Damage model** (`src/sim.js`, pure, no DOM)
+- Bucket model, per attack: base damage × (1 + damage mods) × elements (combined by mod order) ×
+  multishot × average crit 1 + CC·(CD − 1) × faction × fire rate, sustained over mag + reload;
+  status procs per second × DoT damage (Slash, Heat, Toxin, Gas, Electricity), viral/corrosive
+  assumed primed. Armor assumed stripped. Quantization left out at first.
+- A reference build per class (a fixed, editable mod template + one flex slot for the riven). The
+  answer is a riven's **DPS gain over that build**, with each stat at the shape's median roll.
+- Rank: single stats (bars), the best 3-positive sets (brute force; at most a few thousand combos),
+  spliced stats with their recipes, and negatives from harmless (−Impact on a weapon with none) to costly.
+- Check: agreement with the community picks across all 419 families as a score (like the IPS rule
+  scoring), and ~10 weapons against Overframe by hand. Disagreements are worth reading, not hiding.
+
+**12d — QoL rules** (`src/data/qol.js`, a declarative table: condition on weapon data → effect on a stat)
+- Ammo economy: seconds of fire from full = (AmmoMax + Magazine) / (FireRate × AmmoCost). Tight →
+  Fire Rate marked down (empties the reserve faster), Ammo Max / Ammo Efficiency / Reload While
+  Holstered marked up.
+- Beams (BEAM tag): Fire Rate also burns ammo; Punch Through / Projectile Speed do nothing.
+- Charge weapons and bows: Fire Rate is charge speed (feel, not just DPS); bow Fire Rate doubled (exists).
+- Negatives with no effect: −Magazine on one-arrow bows, −Ammo Max / −Magazine in Incarnon mode,
+  −Zoom on snipers (often wanted), −Projectile Speed on hitscan.
+- Each rule shows its reason as a note, so a mark-down is explained, not silent.
+
+**12e — Grader + importer**
+- Next to each stat's roll grade, a "pick" mark (core / good / filler / dead) from the model, with
+  the community's view, and an overall "how good is this riven *for this weapon*".
+- [ ] Open: Melee. The sheet's melee rows lean on builds (Melee Influence, heavy attacks, Covert
+      Lethality) that a DPS model won't capture; melee may stay community-picks only at first.
+
 
 
 ---

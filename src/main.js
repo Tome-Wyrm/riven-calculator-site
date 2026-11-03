@@ -8,6 +8,7 @@ import { mountGrader } from './ui/grader.js';
 import { mountImporter } from './ui/importer.js';
 import { mountOcr } from './ui/ocr.js';
 import { mountPlanner } from './ui/planner.js';
+import { mountPicks } from './ui/picks.js';
 
 const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
@@ -16,6 +17,7 @@ const linked = new Set([...new URLSearchParams(location.hash.slice(1)).keys()].m
 
 mountRanges(byId('ranges-body'));
 mountCalculator(byId('calculator-body'));
+mountPicks(byId('advisor-body'));
 mountPlanner(byId('planner-body'));
 mountGrader(byId('grader-body'));
 mountImporter(byId('import-body'));
@@ -24,7 +26,7 @@ byId('weapons-updated').textContent = WEAPONS_UPDATED;
 
 // Collapsible sections: remember which are closed (a per-viewer convenience, so failures are fine).
 // A shared link to one section opens that section and scrolls to it.
-const SECTIONS = { r: 'ranges', g: 'calculator', p: 'planner', v: 'grader' };
+const SECTIONS = { r: 'ranges', g: 'calculator', a: 'advisor', p: 'planner', v: 'grader' };
 const CLOSED_KEY = 'closedSections';
 /** @type {string[]} */
 let closed = [];

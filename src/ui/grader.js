@@ -8,6 +8,8 @@ import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
 import { loadIntoPlanner } from './planner.js';
+import { picksLink } from './picks.js';
+import { picksFor, communityFit, noteText } from '../picks.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
@@ -54,6 +56,7 @@ function controls() {
     el('div', { class: 'field' }, [el('span', {}, ['Curse grading']),
       segmented('Curse grading', ['size', 'mild'], state.curse, v => set({ curse: /** @type {'size' | 'mild'} */ (v) }),
         v => CURSE_LABEL[/** @type {'size' | 'mild'} */ (v)], v => CURSE_TIP[/** @type {'size' | 'mild'} */ (v)])]),
+    ...picksLink(state.weapon),
   ]);
 }
 
@@ -138,16 +141,17 @@ function results() {
     const name = el('th', { scope: 'row', ...(can === 'v' ? { class: 'vintage', title: 'Vintage: no longer rolls on this weapon' } : {}) },
       [statName(stat, cls), ...(can === 'v' ? [el('span', { class: 'sub' }, ['Vintage: cycling won\u2019t bring it back'])] : [])]);
     const shownCell = el('td', {}, [format(stat, /** @type {number} */ (shown))]);
+    const comm = communityCell(stat, sign === '-');
     if (!canRoll(stat, cls, shape, sign)) {
       oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} can't be ${sign === '+' ? 'positive' : 'negative'} on a ${shape} riven`);
-      return el('tr', {}, [name, shownCell, el('td', { class: 'miss', colspan: '3' }, [`Can't be ${sign === '+' ? 'positive' : 'negative'} on a ${shape} riven`])]);
+      return el('tr', {}, [name, shownCell, el('td', { class: 'miss', colspan: '3' }, [`Can't be ${sign === '+' ? 'positive' : 'negative'} on a ${shape} riven`]), ...comm]);
     }
     const r = range(stat, cls, shape, sign, rank);
     const g = gradeRoll(stat, cls, shape, sign, /** @type {number} */ (shown), rank);
     const rangeCell = el('td', {}, [`${format(stat, r.at0)} to ${format(stat, r.at1)}`]);
     if (!g.possible) {
       oddities.push(`${format(stat, /** @type {number} */ (shown))} ${statName(stat, cls)} is outside the range ${format(stat, r.at0)} to ${format(stat, r.at1)} (${shape}, rank ${rank})`);
-      return el('tr', {}, [name, shownCell, rangeCell, el('td', { class: 'miss', colspan: '2' }, ['Outside the range: check the value or the rank'])]);
+      return el('tr', {}, [name, shownCell, rangeCell, el('td', { class: 'miss', colspan: '2' }, ['Outside the range: check the value or the rank']), ...comm]);
     }
     // By default the curse is scored by size, like the positives: a curse can be a splice parent,
     // and a big one makes a big spliced stat. Flipped, a mild curse scores high. Either way it
@@ -160,11 +164,12 @@ function results() {
     if (into.length) name.prepend(spliceToggle(stat.id), ' ');
     return [el('tr', {}, [name, shownCell, rangeCell,
       el('td', { class: curse ? 'neg' : 'pos' }, [scoreText(sLo, sHi)]),
-      el('td', { class: 'grade' }, [gradeText(sLo, sHi)])]),
+      el('td', { class: 'grade' }, [gradeText(sLo, sHi)]), ...comm]),
     ...(open.has(stat.id) ? into : [])];
   }).flat();
 
-  const head = el('thead', {}, [el('tr', {}, ['Stat', 'Shown', `Range (${shape}, rank ${rank})`, 'Roll', 'Grade']
+  const head = el('thead', {}, [el('tr', {}, ['Stat', 'Shown', `Range (${shape}, rank ${rank})`, 'Roll', 'Grade',
+    ...(picksFor(state.weapon, cls).length ? ['Community'] : [])]
     .map(h => el('th', { scope: 'col' }, [h])))]);
   const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   return el('div', {}, [
@@ -180,6 +185,24 @@ function results() {
     el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals' }, [head, el('tbody', {}, rows)])]),
     ...(oddities.length ? [reportLink(oddities)] : []),
   ]);
+}
+
+/**
+ * How the community rates a stat on this weapon (the recommended rolls): a cell, or none when the
+ * weapon has no recommendations.
+ * @param {Stat} stat @param {boolean} negative
+ */
+function communityCell(stat, negative) {
+  const rows = picksFor(state.weapon, state.cls);
+  if (!rows.length) return [];
+  const fit = communityFit(rows, stat.id, negative, state.weapon);
+  const text = !fit ? 'Not listed' : fit.fit === 'top' ? (negative ? 'Top curse' : 'Top pick') : fit.fit === 'listed' ? 'Listed'
+    : `Splices into ${statName(STAT_BY_ID[/** @type {string} */ (fit.pick.stat)], state.cls)}`;
+  const note = fit && fit.fit !== 'parent' && fit.pick.note ? noteText(fit.pick.note) : '';
+  return [el('td', {
+    class: `community ${fit?.fit ?? 'none'}`,
+    title: `Whether the community recommends this ${negative ? 'curse' : 'stat'} for ${state.weapon} (see Recommended rolls)`,
+  }, [text, ...(note ? [el('span', { class: 'sub' }, [note])] : [])])];
 }
 
 /** Stats whose "Splices into" rows are open (not saved: a view toggle). */
@@ -223,6 +246,7 @@ function splicesInto(stat, g, parsed, shape) {
         ...(exact && best.from !== stat ? [el('span', { class: 'sub' }, [`${statName(best.from, cls)}'s roll is better`])] : [])]),
       el('td', { colspan: '2' }, [`${statName(stat, cls)} + ${others.map(id => statName(STAT_BY_ID[id], cls)).join(' or ')}`]),
       el('td', { class: 'grade' }, [gradeText(rollScore(best.lo), rollScore(best.hi))]),
+      ...communityCell(s, false),
     ]);
   });
 }

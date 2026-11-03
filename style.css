@@ -333,3 +333,35 @@ table.ranges.compact { width: auto; max-width: 100%; }
 .splice-toggle { font-size: 0.75rem; padding: 0 6px; margin-right: 4px; }
 .splice-row th, .splice-row td { font-size: 0.85rem; color: var(--muted); }
 .splice-row th { padding-left: 2em; font-weight: 400; }
+
+/* Recommended rolls */
+.pick-row { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; }
+.pick-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.pick-head h3 { margin: 0; font-size: 1rem; }
+.pick-head .plan-roll { margin-top: 0; }
+.plan-roll:disabled { opacity: 0.5; cursor: default; }
+table.picks { border-collapse: collapse; margin: 6px 0; }
+.picks th { text-align: left; font-weight: 500; color: var(--muted); font-size: 0.85rem; padding: 4px 12px 4px 0; white-space: nowrap; vertical-align: top; }
+.picks td { padding: 3px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.pick-chip {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.pick-chip:hover:not(:disabled) { background: var(--bg); }
+.pick-chip.spliced { border-style: dashed; }
+.pick-chip[aria-pressed="true"] { background: var(--pos-bg); color: var(--pos-text); border-color: var(--pos-text); }
+.pick-chip.neg[aria-pressed="true"] { background: var(--neg-bg); color: var(--neg-text); border-color: var(--neg-text); }
+.pick-chip:disabled { opacity: 0.45; cursor: default; text-decoration: line-through; }
+.pick-chip.open { cursor: default; color: var(--muted); font-style: italic; }
+.tier-sep { color: var(--muted); padding: 0 2px; }
+.picks-link { font-size: 0.85rem; color: var(--accent); }
+
+/* Grader: the community's view of each stat */
+.goals td.community.top { color: var(--accent); font-weight: 600; }
+.goals td.community.none { color: var(--muted); }
