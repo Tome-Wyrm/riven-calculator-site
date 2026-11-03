@@ -460,7 +460,7 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
     with `sources.json` saying when each was fetched): a build uses the cached copy when a fetch
     fails or the data no longer looks right, and `--offline` uses only the copies. An outdated copy
     beats nothing, and it's something to compare against.
-- [x] `tools/build-mods.mjs` → `src/data/mods.js`: 289 class-level gun mods (Rifle, Assault Rifle,
+- [x] `tools/build-mods.mjs` → `src/data/mods.js`: class-level gun mods (Rifle, Assault Rifle,
       Sniper, Bow, PRIMARY, Shotgun, Pistol, Archgun) at max rank, Conclave / Flawed / riven entries
       left out. `tools/lib/mod-text.mjs` reads the stat text into effects: plain and dual-stat, faction
       multipliers, elements (colour tags stripped), triggers with duration / stacks / aiming / per
@@ -476,6 +476,30 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
   - WFCD's level lists can run past the max rank: the max rank's entry is used, not the last.
   - WFCD writes line breaks as the two characters "\n"; Underframe calls Orokin "corrupted" and the
     Murmur "murmurs", and spells "Bane of" where DE spells "Bane Of" (names match ignoring case).
+- [x] **Checked in game** (2026-11-02, the 13 Underframe couldn't check), recorded in
+      `tools/data/in-game-checks.json` (committed; overrides every source): **Primed Blunderbuss and
+      Primed Charged Chamber don't exist** (more unreleased Expert entries, this time under "Primed"
+      names). Confirmed at our values: Tainted Mag, Spring-Loaded Chamber, Guided Ordnance, Rifle Ammo
+      Mutation, Primed Rifle Ammo Mutation, Primed Chamber, Split Flights (+100% Multishot and −180%
+      Accuracy per stack: +400% / −720% at 4), Narrow Barrel, Targeting Subsystem, Resolute Focus.
+      Tainted Mag really is a 10-rank Assault Rifle mod; Spring-Loaded Chamber is +75% at max. Charged
+      Chamber exists, stats unchecked (not owned). Confirmed mods carry `ingame: 1` in the table.
+- [x] **Released or not**: PE++ marks both fakes (`isFrivolous`, no `introducedAt`), but those flags
+      alone would also drop real mods (Thunderbolt is frivolous; Primed Deadly Efficiency has no date).
+      Rule: dropped only when PE++ flags it **and** Underframe doesn't list it; flagged ones Underframe
+      lists are kept and printed as worth a look in game. The first five were checked (2026-11-02):
+      Magnetic Strafe, Primed Deadly Efficiency, Primed Stabilizer and Primed Steady Hands exist, but
+      **plain "Cannonade" doesn't** (only the Semi-Rifle / Semi-Shotgun / Semi-Pistol Cannonades do),
+      though Underframe lists it: Underframe's list isn't proof a mod exists either. Only the in-game
+      check is final. 286 mods now; nothing flagged is left unchecked.
+- [x] **No disagreements left with Underframe.** The last, Motus Setup, was settled in game (2026-11-02):
+      "100% Critical and Status Chance for 4s after landing from a Double or Bullet Jump" at max
+      (25% for 1s at rank 0), i.e. +100% to each, as Underframe has it. The parser now reads unsigned
+      bonuses, "Critical and Status Chance" as two stats, and triggers written after the stat (jump
+      landing) or before it (Proton Jet's wall latch). Also confirmed in game (screenshots): Magnetic
+      Strafe, Primed Deadly Efficiency, Primed Stabilizer, Primed Steady Hands, Charged Chamber (+40% on
+      the first shot; Primed Chamber is the same effect, +25% a rank, an old rank-3 event "Primed").
+      Only Proton Jet is left unchecked by anything (Underframe has no numbers for it).
 - [ ] Arcanes (PE++ ExportArcanes, structured per-rank) and the elemental combination rules.
 - [ ] Put the other builders (weapons, weapon stats, picks) on the same local cache.
 - Effects: plain (Serration +165% Damage), dual-stat (Hammer Shot +60% CD +80% SC), elementals

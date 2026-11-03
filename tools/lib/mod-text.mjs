@@ -96,13 +96,22 @@ export function readLine(line) {
     const first = t.match(/^(.*) on first shot in Magazine$/);
     if (first) { extra.on = 'first shot'; t = first[1]; }
     if (/ while Invisible$/.test(t)) { extra.on = 'invisible'; t = t.replace(/ while Invisible$/, ''); }
+    // Movement triggers written around the stat: Motus Setup "100% Critical and Status Chance for 4s
+    // after landing from a Double or Bullet Jump.", Proton Jet "During a Wall Latch gain +120% …".
+    if (/ after landing from a Double or Bullet Jump\.?$/.test(t)) { extra.on = 'landing from a double or bullet jump'; t = t.replace(/ after landing from a Double or Bullet Jump\.?$/, ''); }
+    if (/^During a Wall Latch gain /.test(t)) { extra.on = 'wall latch'; t = t.replace(/^During a Wall Latch gain /, ''); }
+    // No sign means a bonus: "100% Critical and Status Chance" is +100% to each.
+    t = t.replace(/^(\d)/, '+$1');
     // Acuity: "+350% Weak Point Critical Chance. Multishot cannot be modified." (a lock, as its own effect)
     /** @type {Effect[]} */
     const also = [];
     if (/\. Multishot cannot be modified\.?$/.test(t)) { also.push({ stat: 'multishotLocked', value: 1 }); t = t.replace(/\. Multishot cannot be modified\.?$/, ''); }
     t = t.replace(/\.$/, '').trim();
     // "+60% Critical Chance and Damage" (Critical Focus) is two stats.
-    t = t.replace(/^([+-]\d+(?:\.\d+)?%) Critical Chance and Damage$/, '$1 Critical Chance and $1 Critical Damage');
+    t = t.replace(/^([+-]\d+(?:\.\d+)?%) Critical Chance and Damage$/, '$1 Critical Chance and $1 Critical Damage')
+      // …and so are "100% Critical and Status Chance" and "+120% Status Chance and Critical Chance".
+      .replace(/^([+-]\d+(?:\.\d+)?%) Critical and Status Chance$/, '$1 Critical Chance and $1 Status Chance')
+      .replace(/^([+-]\d+(?:\.\d+)?%) Status Chance and Critical Chance$/, '$1 Status Chance and $1 Critical Chance');
     // "+20% Projectile Speed and +20% Beam Range": both halves must read.
     const whole = phrase(t);
     const read = [...(whole ? [whole] : t.split(/ and (?=[+-]\d)/).map(phrase)), ...also];

@@ -3,12 +3,15 @@
 //
 // Sources (each cached locally by tools/lib/cache.mjs, in case it changes or goes away):
 //  - Numbers: DE's Public Export via WFCD warframe-items (Mods.json keeps every rank's stat text).
-//    (warframe-public-export-plus, our structured source elsewhere, has no stat values for mods.)
+//  - Released or not: warframe-public-export-plus (calamity-inc) flags entries as frivolous or leaves
+//    out their introduction date; such a mod is dropped unless Underframe has it too (a live build
+//    site only lists real mods). PE++ has no stat values for mods.
 //  - Which mods can't be equipped together: Underframe's game data (incompatible_mods).
 //  - Check: Underframe's per-rank upgrade values, × (max rank + 1), against the text we read.
-//    Disagreements are printed; settle them in game.
+//    Disagreements are printed; settle them in game, and record the answer in
+//    tools/data/in-game-checks.json, which overrides every source.
 
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { cachedJson } from './lib/cache.mjs';
 import { readStats } from './lib/mod-text.mjs';
 
@@ -22,17 +25,44 @@ const uf = await cachedJson('underframe', 'https://www.underframe.site/api/data'
   validate: d => (Array.isArray(d?.mods) && Array.isArray(d?.incompatible_mods) ? null : 'no mods / incompatible_mods'),
 });
 
-// Conclave, Flawed (Beginner / Intermediate) and riven entries aren't part of a real build. Nor are
-// the export's 10-rank "Expert" copies under an ordinary name (".../Expert/WeaponFireIterationsModExpert"
-// is "Split Chamber" at +165%): unreleased. Released Expert mods are named "Primed …".
-const mods = /** @type {any[]} */ (wfcd.data).filter(m => CLASS_COMPAT.includes(m.compatName)
-  && !/PvP|Conclave|Beginner|Intermediate|Riven/i.test(m.uniqueName) && m.levelStats?.length
-  && !(/\/Expert\//.test(m.uniqueName) && !/^Primed /.test(m.name)));
+const pepp = await cachedJson('pepp-upgrades', 'https://raw.githubusercontent.com/calamity-inc/warframe-public-export-plus/senpai/ExportUpgrades.json', {
+  validate: d => (d && typeof d === 'object' && Object.keys(d).length > 1000 ? null : 'too few upgrades'),
+});
+/** @type {{mods: Record<string, {checked: string, exists: boolean, stats?: 'confirmed' | 'unconfirmed', note?: string}>}} */
+const inGame = JSON.parse(await readFile(new URL('./data/in-game-checks.json', import.meta.url), 'utf8'));
 
 /** Underframe's mods by "name|compat", and incompatibilities by name. */
 // Names are matched ignoring case: DE writes "Bane Of Grineer", Underframe "Bane of Grineer".
 const lc = (/** @type {string} */ s) => s.toLowerCase();
 const ufMods = new Map(/** @type {any[]} */ (uf.data.mods).map(m => [lc(`${m['Local Name']}|${m['Compat Name']}`), m]));
+const ufNames = new Set(/** @type {any[]} */ (uf.data.mods).map(m => lc(m['Local Name'])));
+
+// Conclave, Flawed (Beginner / Intermediate) and riven entries aren't part of a real build. Nor are
+// the export's 10-rank "Expert" copies under an ordinary name (".../Expert/WeaponFireIterationsModExpert"
+// is "Split Chamber" at +165%): unreleased. Released Expert mods are named "Primed …", but not every
+// "Primed …" is released (Primed Blunderbuss isn't): see released().
+const candidates = /** @type {any[]} */ (wfcd.data).filter(m => CLASS_COMPAT.includes(m.compatName)
+  && !/PvP|Conclave|Beginner|Intermediate|Riven/i.test(m.uniqueName) && m.levelStats?.length
+  && !(/\/Expert\//.test(m.uniqueName) && !/^Primed /.test(m.name)));
+
+const unreleased = [];
+const doubtful = [];
+/**
+ * Whether a mod is in the game: the in-game record if there is one; otherwise unless PE++ flags it
+ * (frivolous, or no introduction date) and Underframe doesn't list it. Flagged ones Underframe has
+ * are kept, and listed as worth a look.
+ * @param {any} m
+ */
+function released(m) {
+  const seen = inGame.mods[m.name];
+  if (seen) return seen.exists;
+  const p = /** @type {any} */ (pepp.data)[m.uniqueName];
+  const flagged = !p || p.isFrivolous || !p.introducedAt;
+  if (!flagged) return true;
+  if (ufNames.has(lc(m.name))) { doubtful.push(m.name); return true; }
+  return false;
+}
+const mods = candidates.filter(m => released(m) || (unreleased.push(m.name), false));
 const ufIncompat = new Map(/** @type {any[]} */ (uf.data.incompatible_mods).map(x => [lc(x['Local Name']), x['Incompatible Mods']]));
 
 // Underframe's upgrade types → our stat ids. Elements and factions are told apart by damage type / text.
@@ -101,7 +131,7 @@ for (const m of mods) {
   if (unread.length) notes.push(`${m.name}: ${unread.join(' / ')}`);
 
   const other = ufMods.get(lc(key));
-  if (!other) unchecked.push(m.name);
+  if (!other) { if (inGame.mods[m.name]?.stats !== 'confirmed') unchecked.push(m.name); }
   else {
     const { out, unknown } = ufStats(other);
     const plainFx = effects.filter(e => !e.on && !e.aim);
@@ -127,7 +157,7 @@ for (const m of mods) {
     const cond = ufCond.get(lc(m.name));
     for (const e of condFx) {
       if (Object.prototype.hasOwnProperty.call(out, e.stat) && (near(e.value, out[e.stat]) || near(e.value * (e.stacks ?? 1), out[e.stat]))) continue;
-      if (!cond?.bonus_per_rank) { condUnchecked.push(`${m.name} (${e.stat})`); continue; }
+      if (!cond?.bonus_per_rank) { if (inGame.mods[m.name]?.stats !== 'confirmed') condUnchecked.push(`${m.name} (${e.stat})`); continue; }
       const value = cond.bonus_per_rank * (m.fusionLimit + 1);
       const fits = condFx.some(x => near(x.value, value)
         && (!cond.max_stacks || !x.stacks || x.stacks === cond.max_stacks)
@@ -143,12 +173,16 @@ for (const m of mods) {
     name: m.name, compat: m.compatName, drain: m.baseDrain, rank: m.fusionLimit,
     effects, ...(unread.length ? { notes: unread } : {}), ...(excl.length ? { excl } : {}),
     ...(m.isExilus ? { exilus: 1 } : {}),
+    ...(inGame.mods[m.name]?.stats === 'confirmed' ? { ingame: 1 } : {}),
   });
 }
 rows.sort((a, b) => a.compat.localeCompare(b.compat) || a.name.localeCompare(b.name));
 
 console.log(`${rows.length} mods (DE export ${wfcd.fromCache ? `cached ${wfcd.fetched}` : 'fresh'}; Underframe ${uf.fromCache ? `cached ${uf.fetched}` : 'fresh'})`);
-console.log(`Not in Underframe's data (unchecked): ${unchecked.length}${unchecked.length ? `: ${unchecked.join(', ')}` : ''}`);
+console.log(`Dropped as unreleased (${unreleased.length}): ${unreleased.join(', ')}`);
+console.log(`Flagged by PE++ but listed by Underframe, kept (worth a look in game) (${doubtful.length}): ${doubtful.join(', ')}`);
+console.log(`Confirmed in game: ${Object.values(inGame.mods).filter(x => x.stats === 'confirmed').length}`);
+console.log(`Not in Underframe's data and not confirmed in game (unchecked): ${unchecked.length}${unchecked.length ? `: ${unchecked.join(', ')}` : ''}`);
 console.log(`Conditional stats Underframe has nothing on (unchecked): ${condUnchecked.length}${condUnchecked.length ? `: ${condUnchecked.join(', ')}` : ''}`);
 console.log(`Disagreements with Underframe (${mismatches.length}):\n  ${mismatches.join('\n  ')}`);
 console.log(`Lines not read (${notes.length}), kept as notes:\n  ${notes.join('\n  ')}`);

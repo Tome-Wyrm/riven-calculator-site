@@ -1,0 +1,108 @@
+{
+ "about": "Mods checked in game (the user's account). exists: whether the mod is in the game; stats: 'confirmed' (max-rank values match src/data/mods.js) or 'unconfirmed'. Overrides every data source in tools/build-mods.mjs.",
+ "mods": {
+  "Primed Blunderbuss": {
+   "checked": "2026-11-02",
+   "exists": false
+  },
+  "Primed Charged Chamber": {
+   "checked": "2026-11-02",
+   "exists": false
+  },
+  "Cannonade": {
+   "checked": "2026-11-02",
+   "exists": false,
+   "note": "a search for 'cannon' shows only Semi-Rifle / Semi-Shotgun / Semi-Pistol Cannonade; Underframe lists plain Cannonade anyway"
+  },
+  "Tainted Mag": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "really a 10-rank Assault Rifle mod"
+  },
+  "Spring-Loaded Chamber": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "+75% Fire Rate at max"
+  },
+  "Guided Ordnance": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed"
+  },
+  "Rifle Ammo Mutation": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed"
+  },
+  "Primed Rifle Ammo Mutation": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed"
+  },
+  "Charged Chamber": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "+40% Damage on first shot in Magazine at max; does what it says"
+  },
+  "Primed Chamber": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "+25% Damage on first shot in Magazine at rank 0, so +100% at rank 3; an oddity: a rank-3 Rare \"Primed\" (an old event mod), not an Expert one"
+  },
+  "Split Flights": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "+100% Multishot and -180% Accuracy per stack: +400% / -720% at 4 stacks"
+  },
+  "Narrow Barrel": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed"
+  },
+  "Targeting Subsystem": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed"
+  },
+  "Resolute Focus": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed"
+  },
+  "Magnetic Strafe": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "+60% Magnetic, +40% Fire Rate at max"
+  },
+  "Primed Deadly Efficiency": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "On Reload From Empty: +220% Damage for 17s at max (rank 0: +40% for 3s)"
+  },
+  "Primed Stabilizer": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "-85% Weapon Recoil at max"
+  },
+  "Primed Steady Hands": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "-85% Weapon Recoil at max"
+  },
+  "Motus Setup": {
+   "checked": "2026-11-02",
+   "exists": true,
+   "stats": "confirmed",
+   "note": "100% Critical and Status Chance for 4s after landing from a Double or Bullet Jump at max (rank 0: 25% for 1s); set bonus: +33% chance to become immune to Knockdown while airborne"
+  }
+ }
+}

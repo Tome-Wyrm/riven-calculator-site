@@ -34,6 +34,12 @@ test('odd phrasings: two stats in one, a lock, invisibility', () => {
   assert.deepEqual(readLine('+350% Weak Point Critical Chance. Multishot cannot be modified.').effects,
     [{ stat: 'weakpointCrit', value: 3.5 }, { stat: 'multishotLocked', value: 1 }]);
   assert.deepEqual(readLine('+330% Damage while Invisible').effects, [{ stat: 'damage', value: 3.3, on: 'invisible' }]);
+  // Motus Setup (checked in game): no sign, two stats, the trigger after them.
+  assert.deepEqual(readLine('100% Critical and Status Chance for 4s after landing from a Double or Bullet Jump.').effects, [
+    { stat: 'critChance', value: 1, on: 'landing from a double or bullet jump', seconds: 4 },
+    { stat: 'statusChance', value: 1, on: 'landing from a double or bullet jump', seconds: 4 }]);
+  assert.deepEqual(readLine('During a Wall Latch gain +120% Status Chance and Critical Chance.').effects, [
+    { stat: 'statusChance', value: 1.2, on: 'wall latch' }, { stat: 'critChance', value: 1.2, on: 'wall latch' }]);
   // What it can't read is kept, not dropped.
   assert.deepEqual(readLine('Reduces the chance an enemy will hear gunfire by 100%.').notes, ['Reduces the chance an enemy will hear gunfire by 100%.']);
 });
@@ -49,6 +55,19 @@ test('the table: max-rank values as the game shows them (Underframe agrees)', ()
   assert.equal(value('Hunter Munitions', 'slashOnCrit'), 0.3);
   const chamber = mod('Galvanized Chamber')?.effects.find(e => e.on === 'kill');
   assert.deepEqual(chamber, { stat: 'multishot', value: 0.3, on: 'kill', seconds: 20, stacks: 5 });
+});
+
+test('the table: unreleased entries are out; in-game confirmations are marked', () => {
+  // Not in the game (checked 2026-11-02), though DE's export lists them.
+  assert.equal(mod('Primed Blunderbuss'), undefined);
+  assert.equal(mod('Primed Charged Chamber'), undefined);
+  // Plain Cannonade (explosion chance) isn't in the game, though Underframe lists it; the three
+  // Semi- Cannonades are.
+  assert.equal(mod('Cannonade'), undefined);
+  assert.ok(mod('Semi-Rifle Cannonade') && mod('Semi-Shotgun Cannonade') && mod('Semi-Pistol Cannonade'));
+  assert.equal(mod('Tainted Mag')?.ingame, 1);
+  assert.equal(mod('Charged Chamber')?.ingame, 1);
+  assert.equal(mod('Serration')?.ingame, undefined);              // not checked in game: not marked
 });
 
 test('the table: one entry per mod, and mods that exclude each other', () => {
