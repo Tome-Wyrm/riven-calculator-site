@@ -6,7 +6,7 @@
 import { WEAPON_STATS } from './data/weapon-stats.js';
 import { STAT_BY_ID, SHAPES } from './data/stats.js';
 import { rawValue, displayValue, format } from './engine.js';
-import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, SCENARIOS } from './build.js';
+import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, fightOf, SCENARIOS } from './build.js';
 import { VALENCE_TYPES } from './sim.js';
 import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
 
@@ -28,8 +28,15 @@ import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
  *   (default): the combination that does most with the reference build
  */
 
-/** A build as the page shows it: mod names in slot order (the riven as "Riven"), arcane, DPS. @param {Build} b */
-const summary = b => ({ mods: b.slots.map(p => (p.riven ? 'Riven' : p.name)), arcane: b.arcane?.name ?? null, dps: b.dps });
+/**
+ * A build as the page shows it: mod names in slot order (the riven as "Riven"), arcane, DPS, and its
+ * fight against the target when there is one (shots a kill takes, seconds, the first shot's damage).
+ * @param {Build} b @param {import('./fight.js').FightResult | null} [f]
+ */
+const summary = (b, f = null) => ({
+  mods: b.slots.map(p => (p.riven ? 'Riven' : p.name)), arcane: b.arcane?.name ?? null, dps: b.dps,
+  fight: f && { shots: f.shotsPerKill, seconds: f.timePerKill, perShot: f.perShot },
+});
 
 /** A spliced stat keeps the better of two parents' rolls: its median roll is √½. @param {string} id */
 const medianU = id => (STAT_BY_ID[id].spliced ? Math.SQRT1_2 : 0.5);
@@ -68,6 +75,7 @@ export function study(input) {
   const withRiven = (roll, from) => optimise(w, pool, arcanes, opts, { riven: rivenPiece(roll), start: from.slots });
 
   const none = found ?? optimise(w, pool, arcanes, opts);
+  const shownBuild = (/** @type {Build} */ b) => summary(b, fightOf(w, b, opts));
   const empty = withRiven({}, none);
 
   // Each positive alone in the riven's slot, against the slot empty.
@@ -92,7 +100,7 @@ export function study(input) {
   pick(0, []);
   const sets = combos.map(ids => {
     const b = withRiven(Object.fromEntries(ids.map(id => [id, raw(id, '+')])), empty);
-    return { ids, change: b.dps / none.dps - 1, build: summary(b) };
+    return { ids, change: b.dps / none.dps - 1, build: shownBuild(b) };
   }).sort((a, b) => b.change - a.change).slice(0, 5);
 
   // Each curse on the best riven, against that riven without it.
@@ -112,9 +120,9 @@ export function study(input) {
       const c = curses.find(x => !set.ids.includes(x.id));
       if (!c) continue;
       const b = withRiven({ ...Object.fromEntries(set.ids.map(id => [id, raw(id, '+')])), [c.id]: raw(c.id, '-') }, empty);
-      Object.assign(set, { curse: { id: c.id, shown: c.shown }, change: b.dps / none.dps - 1, build: summary(b) });
+      Object.assign(set, { curse: { id: c.id, shown: c.shown }, change: b.dps / none.dps - 1, build: shownBuild(b) });
     }
     sets.sort((a, b) => b.change - a.change);
   }
-  return { none: summary(none), empty: empty.dps, singles, cursesOn: best?.ids ?? [], sets: /** @type {(typeof sets[number] & {curse?: {id: string, shown: string}})[]} */ (sets), curses, valences, valence: opts.valence ?? null, perks };
+  return { none: shownBuild(none), empty: empty.dps, singles, cursesOn: best?.ids ?? [], sets: /** @type {(typeof sets[number] & {curse?: {id: string, shown: string}})[]} */ (sets), curses, valences, valence: opts.valence ?? null, perks };
 }

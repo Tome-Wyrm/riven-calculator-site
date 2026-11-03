@@ -48,6 +48,7 @@ const TARGET_SECONDS = 20;
  * @property {number} dps          the targets' health and shields over the time taken
  * @property {number} timePerKill  seconds, from the first shot until the gun is ready for the next target
  * @property {number} shotsPerKill
+ * @property {number} perShot      the first shot's damage to a fresh target (health and shields; overkill counts)
  */
 
 /** Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more. @param {number} n */
@@ -108,6 +109,7 @@ export function fight(w, t, opts) {
   const shotsPerMag = reloads ? mag / (mode.cost * Math.max(0.01, 1 + raw('ammoEfficiency'))) : Infinity;
   const reload = w.reload / Math.max(0.05, 1 + raw('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
   const ehp = target.health + target.shields;
+  let perShot = 0;
 
   // One target, from its first shot until the gun is ready for the next, reloading or not.
   const one = (/** @type {boolean} */ reloading) => {
@@ -244,6 +246,7 @@ export function fight(w, t, opts) {
         }
       }
       shots++;
+      if (shots === 1) perShot = ehp - health - shields;
       if (dead >= 0) {
         // Killed by this shot: it counts for the share of it that was needed (crits make the real
         // count a spread; this is its smooth average), but a kill always takes at least one shot.
@@ -262,11 +265,11 @@ export function fight(w, t, opts) {
 
   if (targets <= 1) {
     const r = one(true);
-    return { dps: ehp / Math.max(1e-9, r.time), timePerKill: r.time, shotsPerKill: r.shots };
+    return { dps: ehp / Math.max(1e-9, r.time), timePerKill: r.time, shotsPerKill: r.shots, perShot };
   }
   // A room: every target is the same, so one fight without reloads gives the shots a kill takes;
   // the reloads come every magazine, each in place of a shot's interval.
   const r = one(false);
   const time = r.time + (Number.isFinite(shotsPerMag) ? (r.shots / shotsPerMag) * Math.max(0, reload - 1 / rate) : 0);
-  return { dps: ehp / Math.max(1e-9, time), timePerKill: time, shotsPerKill: r.shots };
+  return { dps: ehp / Math.max(1e-9, time), timePerKill: time, shotsPerKill: r.shots, perShot };
 }

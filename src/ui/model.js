@@ -136,6 +136,20 @@ const weakText = weak => {
 /** A bar for a DPS change, scaled to the largest. @param {number} x @param {number} max */
 const bar = (x, max) => el('span', { class: `dps-bar${x < 0 ? ' neg' : ''}`, style: `width: ${(Math.min(1, Math.abs(x) / max) * 100).toFixed(1)}%` });
 
+/**
+ * A build's shots to kill, with its DPS, kill time and per-shot damage on hover; nothing without a fight.
+ * @param {{dps: number, fight: {shots: number, seconds: number, perShot: number} | null}} b
+ */
+const killText = b => {
+  const f = b.fight;
+  if (!f) return [];
+  const shots = f.shots < 10 ? f.shots.toFixed(1).replace(/\.0$/, '') : String(Math.round(f.shots));
+  return [el('span', {
+    class: 'kill-shots',
+    title: `DPS: ${big(b.dps)}\nDamage per shot: ${big(f.perShot)} (the first, on a fresh target)\nTime per kill: ${f.seconds.toFixed(2)} s (reloads included)`,
+  }, [`${shots} shot${shots === '1' ? '' : 's'} to kill`])];
+};
+
 /** A build as a grid of its eight slots (in order: top row, then bottom) and its arcane. @param {{mods: string[], arcane: string | null}} b */
 const buildGrid = b => el('div', { class: 'build' }, [
   el('ol', { class: 'build-grid' }, b.mods.map(m => el('li', m === 'Riven' ? { class: 'riven' } : {}, [m]))),
@@ -297,7 +311,7 @@ export function modelBlock(weapon, cls, rerender) {
     plan.addEventListener('click', () => loadTargetIntoPlanner({
       weapon, cls, positives: x.ids.filter(id => !STAT_BY_ID[id].spliced), spliced: x.ids.find(id => STAT_BY_ID[id].spliced) ?? null, negative: x.curse?.id ?? null,
     }));
-    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')}${x.curse ? `, −${name(x.curse.id)}` : ''} `, plan,
+    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')}${x.curse ? `, −${name(x.curse.id)}` : ''} `, ...killText(x.build), ' ', plan,
       el('details', { class: 'set-build' }, [el('summary', {}, ['Its build']), buildGrid(x.build)])]);
   }));
   const moving = result.singles.filter(e => Math.abs(e.change) >= 0.005);
@@ -326,7 +340,7 @@ export function modelBlock(weapon, cls, rerender) {
       })));
   }
   const out = [head, controls, about, ...perkBlock, ...valenceBlock,
-    el('h4', {}, ['Best build without a riven']), buildGrid(result.none),
+    el('h4', {}, ['Best build without a riven']), ...(result.none.fight ? [el('p', {}, killText(result.none))] : []), buildGrid(result.none),
     el('h4', {}, [`Best rivens (${k} positives${SHAPES[s.shape].negatives ? ' and a curse' : ''}) over no riven`]), setList,
     el('h4', {}, ['Each positive in the riven slot']),
     el('p', { class: 'note' }, ['Against the riven slot left empty, with the other seven mods re-chosen each time.']),

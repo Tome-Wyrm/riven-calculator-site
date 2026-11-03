@@ -174,6 +174,14 @@ const fitsWith = (p, others) => others.every(o => o.name !== p.name && !o.excl.i
  */
 
 /**
+ * A build's fight against the target (src/fight.js), or null without one.
+ * @param {WeaponStats} w @param {Build} b @param {SimOptions} opts
+ */
+export function fightOf(w, b, opts) {
+  return opts.target ? fight(w, totalsOf(b.arcane ? [...b.slots, b.arcane] : b.slots), { ...opts, target: opts.target }) : null;
+}
+
+/**
  * The best build the search finds.
  * @param {WeaponStats} w @param {Piece[]} pool @param {Piece[]} arcanes @param {SimOptions} opts
  * @param {{riven?: Piece, start?: Piece[], slots?: number}} [o]  a riven to build around; a build to start from
