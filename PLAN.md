@@ -541,12 +541,60 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 - Elemental combination rules (mod order, then the weapon's innate elements) written down with a
   source, and tested on in-game arsenal numbers.
 
-**13b — Optimiser**
-- Pick the 8 slots (one is the riven when there is one) + exilus + arcane to maximise the scenario's
-  DPS. Too many combinations to brute-force (≈ C(40, 7)), so greedy + swap search, seeded with the
-  community's usual build; elementals searched as combination targets (Viral, Corrosive, Viral + Heat…)
-  rather than mod by mod. Must stay fast in the browser: ~30 stats × 2 builds per weapon view.
-- Show the build it picked, with and without the riven, so a reader can disagree with it.
+**13b — Optimiser** — done (2026-11-02)
+- [x] The damage maths takes a build's **totals** (`dpsOf` in `src/sim.js`): each stat summed, elements in
+      slot order, combined with the weapon's own by `combineElements`. The old reference build is now
+      just one set of totals (`dps`), so 12c's numbers and the community score are unchanged (79%).
+      New stats: Galvanized's **Direct Damage** (added to Damage on direct hits only, not DoT),
+      Hunter Munitions' **Slash on crit**, **multishot / fire-rate locks** (Acuity, Semi- Cannonades),
+      Deadhead's **headshot multiplier**.
+- [x] `src/build.js`: which mods fit (Rifle mods on every rifle-class primary; Assault Rifle mods on the
+      wiki's "Rifle" kind only; Sniper, Bow (bows and crossbows) and PRIMARY mods; and the **weapon tags**
+      a mod needs or can't go with, from PE++: SEMI_AUTO, BEAM, ASSAULT_AMMO, NO_AIM…). Weapon stats now
+      keep every wiki tag and the wiki's class; a weapon whose only trigger is semi-auto counts as
+      SEMI_AUTO (the wiki tags only 2).
+- [x] **Scenarios** (a first cut of 13c): **fodder** (kills keep on-kill stacks at max: Galvanized,
+      Merciless) and **single target** (no kill stacks); aiming bonuses count; 4 status types on the
+      target for "per status type" bonuses. Triggers not followed (reload from empty, first shot,
+      invisibility, ability cast, movement, chance procs) count as off.
+- [x] **Search**: fill the 8 slots greedily, then the single best change until none helps: swap a mod,
+      **swap two slots** (slot order decides elements), or **put in two elemental mods at once** (a
+      combined element needs both halves: without this, Laetum's build without a riven never found
+      Viral, and a lone Toxin riven looked worth +308%). Then the arcane, then the mods again around it.
+      Exilus left empty: no gun exilus mod changes damage. About 17 ms a build.
+- [x] **Riven worth** (`src/study.js`, run in a worker, ~1-1.5 s a gun): the best build without a
+      riven; each positive alone in the riven slot (against the slot empty, the other 7 re-chosen);
+      the best rivens (sets from the top 7 singles, at most one spliced) against no riven; each curse
+      on the best riven. The page shows the builds (8 slots + arcane) and a scenario picker (URL `sc`).
+- What the first runs caught: the Laetum local optimum (the pair move); crossbows missing Bow mods (a
+  case-sensitive match); Semi- Cannonades offered to Felarx (their "Only compatible with Semi-Auto
+  Trigger. Fire Rate cannot be modified." is in the description and PE++'s tags, not the stat lines).
+- [x] **Build types instead of a weak point share** (the user, 2026-11-02: hitting weak points is
+      hard, so it's a build of its own): **room clearing** (kills keep stacks up, body shots), **single
+      target** (no kill stacks, body shots), **weak points** (every direct hit on one, weak point kills
+      keep stacks up). Weak point triggers (Galvanized Scope, Argon Scope, Deadhead's stacks) only live
+      in the weak point build. URL `sc` = room / single / weak; the weak point slider is gone.
+- [x] **Weak point maths from the wiki** (Enemy Body Parts, Update 44, Narin's Sonar rework): the
+      target's own multiplier (3x for most heads; 1.5x for the Murmur and Techrot) **plus 1.5 x Weakpoint
+      Damage** (heads; 1x on a non-head weak point, not modelled), then **x (1 + headshot multiplier
+      bonuses)** (Deadhead, Target Acquired); the **critical headshot bonus doubles the crit multiplier**
+      where the enemy allows it (not Corpus humanoids, the Murmur, Techrot); **explosions are never weak
+      point hits**. Enemy profiles by faction (`HEADS` in `src/sim.js`; the Murmur added to the enemy
+      list). Tested on the page's examples: Acuity + Seek on a 3x head = 9.375x; with Deadhead and Prowl
+      15.9375x. Before this: x2 x (1 + WPD), no headcrit, explosions counted.
+- [x] **Gun CO per attack, from Underframe's `co_data`** (kept in `weapon-stats.js` as `co`: [share,
+      1 if it multiplies]): Galvanized's Direct Damage adds to Damage by default, **multiplies** on 114
+      attacks (Coda Bassocyst's normal attack, Tenet Arca Plasmor, Cinta…), applies at a partial share on
+      38, and not at all on 164 (explosions mostly; one Underframe doesn't list gets none, per its notes).
+- What changed in practice: Weakpoint Damage only leads in the weak point build (Rubico Prime there
+  adds Galvanized Scope and Target Acquired); against the Murmur's 1.5x weak points the build takes
+  Primary Acuity (+5.25 on the multiplier) and Multishot on the riven becomes worthless (Acuity locks it).
+- [ ] **To check**: whether "Auto / Semi" weapons (Felarx, Laetum) take the Semi- Cannonades; weapons
+      with no weak point bonus (Ignis, Arca Plasmor, Catchmoon…: 1x, Acuity does nothing, Deadhead
+      does); per-unit weak points (MOA rears 3x non-head, Bursa consoles, Juggernaut maws) are averaged
+      away by the faction profile; Cernos Prime's own +50% on headshots; Sonar.
+- [ ] `tools/score-sim.mjs` still scores the reference build; score the optimiser against the
+      community too.
 
 **13c — Scenarios**
 - **Single target** (a boss: no kills, so on-kill stacks decay; status stacks build over time),

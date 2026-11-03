@@ -167,11 +167,20 @@ for (const m of mods) {
   }
 
   // In our spelling where we have the mod (Underframe's otherwise); Flawed mods aren't in the table.
+  // Weapon tags it needs (any one of) or can't go with (PE++), and locks its description states
+  // ("Only compatible with Semi-Auto Trigger. Fire Rate cannot be modified.").
+  const tags = /** @type {any} */ (pepp.data)[m.uniqueName] ?? {};
+  for (const lock of String(m.description ?? '').matchAll(/(Fire Rate|Multishot|Magazine Capacity) cannot be modified/g)) {
+    const stat = { 'Fire Rate': 'fireRateLocked', Multishot: 'multishotLocked', 'Magazine Capacity': 'magazineLocked' }[/** @type {'Fire Rate'} */ (lock[1])];
+    if (!effects.some(e => e.stat === stat)) effects.push({ stat, value: 1 });
+  }
   const excl = (ufIncompat.get(lc(m.name)) ?? []).filter((/** @type {string} */ n) => !/^Flawed /.test(n))
     .map((/** @type {string} */ n) => ourName.get(lc(n)) ?? n);
   rows.push({
     name: m.name, compat: m.compatName, drain: m.baseDrain, rank: m.fusionLimit,
     effects, ...(unread.length ? { notes: unread } : {}), ...(excl.length ? { excl } : {}),
+    ...(tags.compatibilityTags?.length ? { needs: tags.compatibilityTags } : {}),
+    ...(tags.incompatibilityTags?.length ? { notWith: tags.incompatibilityTags } : {}),
     // Exilus-slot mods: WFCD calls them utility mods (isUtility). None of them adds an element.
     ...(m.isUtility ? { exilus: 1 } : {}),
     ...(inGame.mods[m.name]?.stats === 'confirmed' ? { ingame: 1 } : {}),
@@ -196,13 +205,14 @@ await writeFile(new URL('../src/data/mods.js', import.meta.url), `// @ts-check
 //
 // effects: raw values (+165% → 1.65, x1.55 faction → 0.55); conditional ones say when:
 // on (trigger), aim (only while aiming), seconds, stacks, per ("status type").
-// notes: stat lines not read into effects. excl: mods it can't be equipped with.
+// notes: stat lines not read into effects. excl: mods it can't be equipped with. needs: weapon tags it
+// needs (any one); notWith: weapon tags it can't go on (warframe-public-export-plus).
 
 export const MODS_UPDATED = '${date}';
 
 /**
  * @typedef {import('../../tools/lib/mod-text.mjs').Effect} Effect
- * @typedef {{name: string, compat: string, drain: number, rank: number, effects: Effect[], notes?: string[], excl?: string[], exilus?: 1}} Mod
+ * @typedef {{name: string, compat: string, drain: number, rank: number, effects: Effect[], notes?: string[], excl?: string[], exilus?: 1, ingame?: 1, needs?: string[], notWith?: string[]}} Mod
  */
 
 /** @type {Mod[]} */

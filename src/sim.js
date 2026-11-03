@@ -14,10 +14,14 @@
 // Electricity and Gas 50%, 7 ticks. Proc types are weighted by each type's share of the modded hit.
 // Viral procs stack (6 s each, up to 10): the first adds +100% damage, each more +25%. The build's
 // elements are Viral, so a riven's Viral or Status Chance adds stacks until they cap.
-// Weak point hits (a chosen share of them, heads or any other weak point) take the weak point
-// multiplier, x2, which Weakpoint Damage multiplies: x2 x (1 + Weakpoint Damage). Weakpoint Critical
-// Chance adds to Critical Chance (the same bucket), on weak point hits only. Sustained DPS adds the reload: a magazine
-// of shots (Ammo Efficiency stretches it) then the reload time.
+// Weak point hits (a chosen share of the direct hits; explosions never count) follow the wiki's Enemy
+// Body Parts page (Update 44): the head's own multiplier (x3 for most factions, x1.5 for the Murmur
+// and Techrot) plus 1.5 x Weakpoint Damage, then x (1 + headshot multiplier bonuses: Deadhead, Target
+// Acquired); a critical headshot doubles the crit multiplier where the enemy allows it (not Corpus
+// humanoids, the Murmur, Techrot). Weakpoint Critical Chance adds to Critical Chance, on weak point
+// hits only. Galvanized's Direct Damage (gun Condition Overload) adds to Damage on direct hits, or
+// multiplies on the attacks Underframe marks so (Coda Bassocyst), at the share it lists.
+// Sustained DPS adds the reload: a magazine of shots (Ammo Efficiency stretches it) then the reload time.
 //
 // Armor is optional (stripped by default): Corrosive and Heat procs take it down, Slash bleeds ignore it.
 // Not modelled: shields, health types,
@@ -25,6 +29,7 @@
 
 import { STAT_BY_ID, SHAPES } from './data/stats.js';
 import { rawValue, displayValue, format } from './engine.js';
+import { combineElements } from './elements.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('./data/stats.js').Shape} Shape */
@@ -56,15 +61,34 @@ const TICKS = 7;
 /** The build's two elementals combine into this. */
 const BUILD_ELEMENT = 'viral';
 const STATUS_SECONDS = 6;
-export const FACTIONS = ['grineer', 'corpus', 'infested', 'orokin', 'scaldra', 'techrot'];
+export const FACTIONS = ['grineer', 'corpus', 'infested', 'orokin', 'scaldra', 'techrot', 'murmur'];
 
-/** @typedef {'' | 'grineer' | 'corpus' | 'infested' | 'orokin' | 'scaldra' | 'techrot'} Enemy */
+/** @typedef {'' | 'grineer' | 'corpus' | 'infested' | 'orokin' | 'scaldra' | 'techrot' | 'murmur'} Enemy */
+
+/**
+ * Each faction's usual weak point (the wiki's Enemy Body Parts, Update 44): its multiplier, and
+ * whether its heads take the critical headshot bonus. Typical units; many differ (MOA rears, Bursa
+ * consoles, Juggernaut maws…). Any faction: a Grineer-like 3x head.
+ * @type {Record<Enemy, {headMult: number, headcrit: boolean}>}
+ */
+export const HEADS = {
+  '': { headMult: 3, headcrit: true },
+  grineer: { headMult: 3, headcrit: true },
+  corpus: { headMult: 3, headcrit: false },               // humanoids: no headcrit (Ospreys do)
+  infested: { headMult: 3, headcrit: true },
+  orokin: { headMult: 3, headcrit: true },                // Corrupted (Grineer-like heads)
+  scaldra: { headMult: 3, headcrit: true },
+  techrot: { headMult: 1.5, headcrit: false },
+  murmur: { headMult: 1.5, headcrit: false },
+};
 
 /**
  * @typedef {object} SimOptions
  * @property {number} [mode]       fire mode index (default: the weapon's main one)
  * @property {Enemy} [enemy]       faction fought ('' = none: faction damage counts for nothing)
- * @property {number} [weakpoint]  share of hits on weak points, 0–1 (default 0.25)
+ * @property {number} [weakpoint]  share of direct hits on weak points, 0–1 (default 0: body shots)
+ * @property {number} [headMult]   the target's weak point multiplier (default: its faction's, HEADS)
+ * @property {boolean} [headcrit]  whether the target takes the critical headshot bonus (default: its faction's)
  * @property {boolean} [burst]     ignore reloads (default: sustained)
  * @property {boolean} [bow]       a bow: Fire Rate rolls count double
  * @property {number} [armor]      the enemy's armor (default 0: stripped); Steel Path enemies reach 2700
@@ -74,19 +98,53 @@ export const FACTIONS = ['grineer', 'corpus', 'infested', 'orokin', 'scaldra', '
 export const NO_DPS = new Set(['ammoMax', 'punchThrough', 'projectileSpeed', 'zoom', 'recoil', 'reloadWhileHolstered']);
 
 /**
- * Damage per second with riven modifiers `mods` (stat id → raw value, as rawValue gives it).
+ * A build's totals: each stat summed over its mods, arcane and riven (raw: +165% → 1.65), faction
+ * stats by faction id, and the elements in slot order (each a share of the base damage) for
+ * combineElements.
+ * @typedef {{stats: Record<string, number>, elements: {type: string, value: number}[]}} Totals
+ */
+
+/**
+ * The reference build plus riven modifiers, as totals (the old fixed-build model; 13b replaces it
+ * with real builds). Its elements are one Viral, already combined; the riven's come after.
+ * @param {Exclude<WeaponClass, 'melee'>} cls @param {Record<string, number>} mods @returns {Totals}
+ */
+export function referenceTotals(cls, mods) {
+  const b = BUILDS[cls];
+  /** @type {Record<string, number>} */
+  const stats = { ...mods };
+  for (const k of /** @type {const} */ (['damage', 'multishot', 'critChance', 'critDamage'])) stats[k] = (stats[k] ?? 0) + b[k];
+  const elements = [{ type: BUILD_ELEMENT, value: b.element },
+    ...ELEMENTS.filter(id => (mods[id] ?? 0) > 0).map(id => ({ type: id, value: mods[id] }))];
+  for (const id of ELEMENTS) delete stats[id];
+  return { stats, elements };
+}
+
+/**
+ * Damage per second with riven modifiers `mods` (stat id → raw value, as rawValue gives it) on the
+ * reference build.
  * @param {WeaponStats} w @param {Exclude<WeaponClass, 'melee'>} cls @param {Record<string, number>} mods @param {SimOptions} [opts]
  */
 export function dps(w, cls, mods, opts = {}) {
-  const b = BUILDS[cls];
-  const m = (/** @type {string} */ id) => mods[id] ?? 0;
+  return dpsOf(w, referenceTotals(cls, mods), opts);
+}
+
+/**
+ * Damage per second of a build, from its totals.
+ * @param {WeaponStats} w @param {Totals} t @param {SimOptions} [opts]
+ */
+export function dpsOf(w, t, opts = {}) {
+  const m = (/** @type {string} */ id) => t.stats[id] ?? 0;
   const mode = w.modes[opts.mode ?? w.main] ?? w.modes[0];
-  const wp = opts.weakpoint ?? 0.25;
+  const wp = opts.weakpoint ?? 0;
   const enemy = opts.enemy ?? '';
   const faction = enemy ? Math.max(0, 1 + m(enemy)) : 1;
-  const D = Math.max(0, 1 + b.damage + m('damage'));
-  const wpMult = 2 * Math.max(0, 1 + m('weakpointDamage'));
-  const rate = mode.rate * Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1));
+  const D = Math.max(0, 1 + m('damage'));
+  // A weak point: its multiplier plus 1.5 x Weakpoint Damage (heads), then x headshot bonuses.
+  const wpMult = Math.max(0, (opts.headMult ?? HEADS[enemy].headMult) + 1.5 * m('weakpointDamage')) * Math.max(0, 1 + m('headshotMultiplier'));
+  const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
+  // A fire-rate lock (the Semi- Cannonades) keeps the weapon's own rate.
+  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1)));
   const crit = (/** @type {number} */ cc, /** @type {number} */ cd) => 1 + Math.max(0, cc) * (Math.max(1, cd) - 1);
   const statusMult = TICKS * Math.max(0, 1 + m('statusDuration')) * Math.max(0, 1 + m('statusDamage'));
 
@@ -97,39 +155,52 @@ export function dps(w, cls, mods, opts = {}) {
   for (const p of mode.parts) {
     const base = Object.values(p.dmg).reduce((s, v) => s + v, 0);
     if (base <= 0) continue;
-    // The hit before Damage mods, by type: physical types scaled by their own stats, the
-    // build's and riven's elements added as a share of the base.
+    // The hit before Damage mods, by type: physical types scaled by their own stats; the build's
+    // elements (shares of the base, in slot order) combined with the weapon's own (combineElements).
     /** @type {Record<string, number>} */
     const byType = {};
-    for (const [t, v] of Object.entries(p.dmg)) byType[t] = PHYSICAL.includes(t) ? v * Math.max(0, 1 + m(t)) : v;
-    // The build's elements and the riven's, each to its own type.
-    byType[BUILD_ELEMENT] = (byType[BUILD_ELEMENT] ?? 0) + base * b.element;
-    for (const id of ELEMENTS) if (m(id) > 0) byType[id] = (byType[id] ?? 0) + base * m(id);
-    const hit = Object.values(byType).reduce((s, v) => s + v, 0);
-
-    const cc = p.cc * (1 + b.critChance + m('critChance'));
-    const ccWp = p.cc * (1 + b.critChance + m('critChance') + m('weakpointCrit'));
-    const cd = p.cd * (1 + b.critDamage + m('critDamage'));
-    // Body and weak point hits: their damage scale (Damage mods × headshot × crit) mixed by share.
-    const scale = (1 - wp) * D * crit(cc, cd) + wp * wpMult * D * crit(ccWp, cd);
-    const pellets = p.ms * Math.max(0, 1 + b.multishot + m('multishot'));
-    const direct = hit * faction * scale * pellets * rate;
-
-    // Status: chance per pellet (plus forced procs), type weighted by share of the hit.
-    const chance = Math.max(0, p.sc * (1 + m('statusChance')));
-    const procsPerPellet = (/** @type {string} */ t) => chance * (byType[t] ?? 0) / hit + (p.forced?.includes(t) ? 1 : 0);
-    // DoT ticks are a share of the base damage (not the elements or IPS mods), faction twice.
-    const dotScale = statusMult * base * faction * faction * scale * pellets * rate;
-    armored += direct;
-    for (const [t, tick] of Object.entries(DOT)) {
-      const dot = procsPerPellet(t) * tick * dotScale;
-      if (t === 'slash') bleed += dot; else armored += dot;
+    /** @type {Record<string, number>} */
+    const innate = {};
+    for (const [type, v] of Object.entries(p.dmg)) {
+      if (PHYSICAL.includes(type)) byType[type] = v * Math.max(0, 1 + m(type));
+      else if (ELEMENTS.includes(type)) innate[type] = v;
+      else byType[type] = v;                                // Tau, Void, True: as they are
     }
-    for (const t of Object.keys(procs)) procs[t] += procsPerPellet(t) * pellets * rate;
+    const combined = combineElements(t.elements.map(e => ({ type: e.type, value: e.value * base })), innate);
+    for (const [type, v] of Object.entries(combined)) byType[type] = (byType[type] ?? 0) + v;
+    const hit = Object.values(byType).reduce((s, v) => s + v, 0);
+    if (hit <= 0) continue;
+
+    const cc = p.cc * (1 + m('critChance'));
+    const ccWp = p.cc * (1 + m('critChance') + m('weakpointCrit'));
+    const cd = p.cd * (1 + m('critDamage'));
+    // Body and weak point hits: their scale (weak point × crit) mixed by share; Damage mods apart.
+    // Explosions are never weak point hits.
+    const onWp = p.aoe ? 0 : wp;
+    const scale = (1 - onWp) * crit(cc, cd) + onWp * wpMult * crit(ccWp, headcrit ? 2 * cd : cd);
+    // Galvanized's Direct Damage: added to Damage, or multiplying it, at this attack's share.
+    const [coShare, coMult] = p.co ?? [1, 0];
+    const Ddirect = Math.max(0, coMult ? D * (1 + coShare * m('directDamage')) : D + coShare * m('directDamage'));
+    const pellets = p.ms * (m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot')));
+    const direct = hit * faction * Ddirect * scale * pellets * rate;
+
+    // Status: chance per pellet (plus forced procs), type weighted by share of the hit; Hunter
+    // Munitions adds a Slash proc chance on each critical hit.
+    const chance = Math.max(0, p.sc * (1 + m('statusChance')));
+    const onCrit = (/** @type {string} */ type) => Math.min(1, Math.max(0, cc)) * m(`${type}OnCrit`);
+    const procsPerPellet = (/** @type {string} */ type) => chance * (byType[type] ?? 0) / hit + (p.forced?.includes(type) ? 1 : 0) + onCrit(type);
+    // DoT ticks are a share of the base damage (not the elements or IPS mods), faction twice.
+    const dotScale = statusMult * base * faction * faction * D * scale * pellets * rate;
+    armored += direct;
+    for (const [type, tick] of Object.entries(DOT)) {
+      const dot = procsPerPellet(type) * tick * dotScale;
+      if (type === 'slash') bleed += dot; else armored += dot;
+    }
+    for (const type of Object.keys(procs)) procs[type] += procsPerPellet(type) * pellets * rate;
   }
   const uptime = opts.burst ? 1 : sustained(w, mode, rate, m);
   // Average stacks up: procs per second over the time each lasts, capped.
-  const stacks = (/** @type {string} */ t, cap = 10) => Math.min(cap, procs[t] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration')));
+  const stacks = (/** @type {string} */ type, cap = 10) => Math.min(cap, procs[type] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration')));
   // Below one stack on average, an effect ramps up with the share of time it's there.
   const v = stacks('viral');
   const viral = v < 1 ? 1 + v : 1.75 + 0.25 * v;

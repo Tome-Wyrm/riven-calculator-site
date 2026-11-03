@@ -51,13 +51,45 @@ test('faction damage counts only against that faction', () => {
   near(gain(gun(), { grineer: 0.5 }, { weakpoint: 0, enemy: 'grineer' }), 0.5);
 });
 
-test('weak points: Weakpoint Damage multiplies the x2; Weakpoint Crit Chance is Crit Chance on weak points only', () => {
+test('weak points (the wiki, Update 44): head multiplier + 1.5 x Weakpoint Damage, x headshot bonuses', () => {
+  // Body shots: weak point stats do nothing.
   near(gain(gun(), { weakpointDamage: 2 }), 0);
-  // Every hit on a weak point: x2 becomes x6, so damage triples.
-  near(gain(gun(), { weakpointDamage: 2 }, { weakpoint: 1 }), 2);
-  // Same bucket as Crit Chance: equal on all-weak-point hits, worse otherwise.
+  // Every hit on a 3x head: 3 + 1.5 x 2 = 6, so damage doubles.
+  near(gain(gun(), { weakpointDamage: 2 }, { weakpoint: 1 }), 1);
+  // The page's example: 3x head, Primary Acuity (+350%) and Seek (+75%): 3 + 1.5 x 4.25 = 9.375;
+  // with Deadhead and Prowl (+30% +40% headshot multiplier): x 1.7 = 15.9375.
+  const t = { weakpoint: 1, headcrit: false };
+  const at = mods => dps(gun({ cc: 0 }), 'rifle', mods, t);
+  near(at({ weakpointDamage: 4.25 }) / at({}), 9.375 / 3, 1e-9);
+  near(at({ weakpointDamage: 4.25, headshotMultiplier: 0.7 }) / at({}), 15.9375 / 3, 1e-9);
+  // A Murmur / Techrot weak point (1.5x): 1.5 + 1.5 x 2 = 4.5, three times the bare 1.5.
+  near(dps(gun({ cc: 0 }), 'rifle', { weakpointDamage: 2 }, { weakpoint: 1, headMult: 1.5 }) / dps(gun({ cc: 0 }), 'rifle', {}, { weakpoint: 1, headMult: 1.5 }), 3);
+  // Weakpoint Crit Chance is Crit Chance's bucket on weak point hits: equal when every hit is one.
   near(gain(gun(), { weakpointCrit: 1 }, { weakpoint: 1 }), gain(gun(), { critChance: 1 }, { weakpoint: 1 }));
   assert.ok(gain(gun(), { weakpointCrit: 1 }, { weakpoint: 0.5 }) < gain(gun(), { critChance: 1 }, { weakpoint: 0.5 }));
+});
+
+test('critical headshots double the crit multiplier, where the enemy allows it', () => {
+  const g = gun({ cc: 1, cd: 2 });                          // every shot crits, x2 crit multiplier
+  const head = headcrit => dps(g, 'rifle', {}, { weakpoint: 1, headcrit });
+  // With the reference build's +180% CD: crit multiplier 2 x 2.8 = 5.6, doubled to 11.2.
+  near(head(true) / head(false), (1 + 2.5 * (11.2 - 1)) / (1 + 2.5 * (5.6 - 1)), 1e-9);
+});
+
+test('explosions are never weak point hits', () => {
+  const blast = gun({ aoe: 1 });
+  near(dps(blast, 'rifle', { weakpointDamage: 2 }, { weakpoint: 1 }) / dps(blast, 'rifle', {}, { weakpoint: 1 }), 1);
+});
+
+test("Galvanized's Direct Damage: added to Damage, or multiplying on the attacks that do (Coda Bassocyst)", async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  const t = stats => ({ stats, elements: [] });
+  const ratio = part => dpsOf(gun(part), t({ damage: 3, directDamage: 1 })) / dpsOf(gun(part), t({ damage: 3 }));
+  near(ratio({}), 5 / 4);                                   // (1 + 3 + 1) / (1 + 3)
+  near(ratio({ co: [1, 1] }), 2);                           // (1 + 3) x (1 + 1)
+  near(ratio({ co: [0.5] }), 4.5 / 4);                      // half of it
+  near(ratio({ co: [0] }), 1);                              // none (explosions)
+  assert.deepEqual(WEAPON_STATS['Coda Bassocyst'].modes[0].parts[0].co, [1, 1]);
 });
 
 test('sustained: reloads dilute Fire Rate; Magazine, Reload Speed and Ammo Efficiency help', () => {

@@ -3,7 +3,7 @@
 // two disagree on most. A check, not a target: read the disagreements.
 //   node tools/score-sim.mjs [top] [armor] [weakpoint]
 //   top: how many of the model's best stats count (default 6); armor: the enemy's (default 0);
-//   weakpoint: the share of hits on weak points (default 0.25)
+//   weakpoint: the share of direct hits on weak points (default 0: body shots)
 
 import { WEAPONS } from '../src/data/weapons.js';
 import { WEAPON_STATS } from '../src/data/weapon-stats.js';
@@ -15,7 +15,7 @@ import { statEffects } from '../src/sim.js';
 
 const TOP = Number(process.argv[2] ?? 6);
 const ARMOR = Number(process.argv[3] ?? 0);
-const WEAKPOINT = Number(process.argv[4] ?? 0.25);
+const WEAKPOINT = Number(process.argv[4] ?? 0);
 let picks = 0, hits = 0, slot1 = 0, slot1Hits = 0, families = 0;
 /** @type {Map<string, number>} community first choices the model ranks low */
 const missed = new Map();

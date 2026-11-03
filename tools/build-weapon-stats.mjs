@@ -1,10 +1,11 @@
 // Regenerates src/data/weapon-stats.js (what the damage model needs about each gun) from the wiki's
 // weapon data modules. Run by hand when weapons change:
-//   node tools/build-weapon-stats.mjs
+//   node tools/build-weapon-stats.mjs [--offline]
 // The output is committed, so the site never fetches at runtime. Melee isn't included: the damage
 // model covers guns only.
 
 import { writeFile } from 'node:fs/promises';
+import { cachedText, cachedJson } from './lib/cache.mjs';
 import { WEAPONS } from '../src/data/weapons.js';
 
 const WIKI = 'https://wiki.warframe.com/w/Module:Weapons/data/';
@@ -88,6 +89,30 @@ const round = (/** @type {number} */ x) => Math.round(x * 1e4) / 1e4;
 function compact(w) {
   const attacks = /** @type {any[]} */ (w.Attacks ?? []);
   const part = (/** @type {any} */ a) => ({
+    ...partOf(a),
+    ...coOf(w.Name ?? '', a),
+  });
+  return compactModes(w, attacks, part);
+}
+
+/**
+ * How Galvanized's "Direct Damage" (gun Condition Overload) applies to an attack, from Underframe's
+ * per-attack CO table: [share that applies, 1 if it multiplies instead of adding]. Left out when it's
+ * the usual full, additive bonus. An explosion Underframe doesn't list gets none (its notes: direct-hit
+ * CO isn't copied to explosions).
+ * @param {string} weapon @param {any} a
+ */
+function coOf(weapon, a) {
+  const row = coTable.get(`${weapon}|${a.AttackName}`);
+  if (!row) return a.ShotType === 'AoE' ? { co: [0] } : {};
+  const share = Math.round(parseFloat(row.co_factor)) / 100;
+  const mult = row.effect === 'Multiplies';
+  return share === 1 && !mult ? {} : { co: mult ? [share, 1] : [share] };
+}
+
+/** An attack's own numbers. @param {any} a */
+function partOf(a) {
+  return ({
     name: a.AttackName,
     dmg: Object.fromEntries(Object.entries(lower(a.Damage)).map(([k, v]) => [k, round(v)])),
     cc: round(a.CritChance ?? 0), cd: round(a.CritMultiplier ?? 1), sc: round(a.StatusChance ?? 0),
@@ -95,6 +120,10 @@ function compact(w) {
     ...(a.ForcedProcs?.length ? { forced: a.ForcedProcs.map((/** @type {string} */ p) => p.toLowerCase()) } : {}),
     ...(a.ShotType === 'AoE' ? { aoe: 1 } : {}),
   });
+}
+
+/** The fire modes, each a top-level attack and its parts. @param {any} w @param {any[]} attacks @param {(a: any) => any} part */
+function compactModes(w, attacks, part) {
   // A charge weapon can list its fire rate as unlimited (math.huge): the charge time sets it.
   const rateOf = (/** @type {any} */ a) => {
     const r = a.FireRate ?? w.FireRate;
@@ -112,18 +141,29 @@ function compact(w) {
   const main = Math.max(0, modes.findIndex(m => m.name === (shown?.AttackParentIndex
     ? attacks.find(a => a.AttackIndex === shown.AttackParentIndex)?.AttackName : shown?.AttackName)));
   return {
+    // The wiki's class ("Rifle", "Sniper Rifle", "Bow", "Shotgun", "Launcher"…): which mods fit.
+    kind: w.Class ?? '',
     mag: w.Magazine ?? 1, reload: round(w.Reload ?? 0), ammo: w.AmmoMax ?? null, trigger: w.Trigger ?? '',
-    tags: (w.CompatibilityTags ?? []).filter((/** @type {string} */ t) => ['BEAM', 'AOE', 'PROJECTILE', 'SNIPER', 'SINGLESHOT'].includes(t)),
+    tags: w.CompatibilityTags ?? [],
     main, modes,
   };
 }
 
+/** Underframe's per-attack CO table, by "weapon|attack". */
+const underframe = await cachedJson('underframe', 'https://www.underframe.site/api/data', {
+  validate: d => (Array.isArray(d?.co_data) ? null : 'no co_data'),
+});
+const coTable = new Map(/** @type {any[]} */ (underframe.data.co_data).map(r => [`${r.weapon_name}|${r.fire_mode_name}`, r]));
+
 /** @type {Record<string, any>} */
 const wiki = {};
 for (const m of MODULES) {
-  const res = await fetch(`${WIKI}${m}?action=raw`, { headers: { 'User-Agent': 'riven-calculator data build' } });
-  const data = parseLua(await res.text());
-  for (const [key, w] of Object.entries(data)) wiki[(w.Name ?? key).toLowerCase()] = w;
+  // Kept locally (tools/lib/cache.mjs): used when the wiki can't be reached or its module no longer parses.
+  const { data } = await cachedText(`wiki-weapons-${m}`, 'lua', `${WIKI}${m}?action=raw`, {
+    validate: text => { try { parseLua(text); return null; } catch (e) { return e instanceof Error ? e.message : String(e); } },
+  });
+  const parsed = parseLua(data);
+  for (const [key, w] of Object.entries(parsed)) wiki[(w.Name ?? key).toLowerCase()] = w;
 }
 
 /** @type {Record<string, any>} */
@@ -152,9 +192,9 @@ await writeFile(new URL('../src/data/weapon-stats.js', import.meta.url), `// @ts
 export const WEAPON_STATS_UPDATED = '${date}';
 
 /**
- * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number}} Part
+ * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number, co?: number[]}} Part
  * @typedef {{name: string, rate: number, cost: number, charge?: number, parts: Part[]}} Mode
- * @typedef {{mag: number, reload: number, ammo: number | null, trigger: string, tags: string[], main: number, modes: Mode[]}} WeaponStats
+ * @typedef {{kind: string, mag: number, reload: number, ammo: number | null, trigger: string, tags: string[], main: number, modes: Mode[]}} WeaponStats
  */
 
 /** @type {Record<string, WeaponStats>} */

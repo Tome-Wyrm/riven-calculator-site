@@ -376,3 +376,12 @@ table.picks { border-collapse: collapse; margin: 6px 0; }
 .model .bar-cell { width: 10em; min-width: 6em; }
 .dps-bar { display: block; height: 8px; border-radius: 4px; background: var(--accent); }
 .dps-bar.neg { background: var(--neg-text); opacity: 0.7; }
+
+/* Recommended rolls: the damage model's builds */
+.build-grid { list-style: none; margin: 0 0 4px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; max-width: 46em; }
+.build-grid li { font-size: 0.8rem; padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow-wrap: anywhere; }
+.build-grid li.riven { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.set-build { margin: 2px 0 8px; font-size: 0.85rem; }
+.set-build summary { cursor: pointer; color: var(--muted); }
+.note.busy { font-style: italic; }
+@media (max-width: 600px) { .build-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
