@@ -105,15 +105,20 @@ export function study(input) {
 
   // Each curse on the best riven, against that riven without it.
   const best = sets[0];
-  /** @type {{id: string, shown: string, change: number}[]} */
+  /** @type {{id: string, shown: string, change: number, shot: number}[]} */
   let curses = [];
   if (best && SHAPES[shape].negatives) {
     const roll = Object.fromEntries(best.ids.map(id => [id, raw(id, '+')]));
     const base = withRiven(roll, empty);
+    // Ties in kill speed (a gun that already kills in one shot) go to the curse that leaves the most
+    // damage per shot: Felarx's −Critical Chance (Devastating Attrition) beats a harmless faction curse,
+    // as it would on a tougher target.
+    const baseShot = fightOf(w, base, opts)?.perShot ?? 0;
     curses = input.negatives.filter(id => !best.ids.includes(id)).map(id => {
       const b = withRiven({ ...roll, [id]: raw(id, '-') }, base);
-      return { id, shown: shown(id, '-'), change: b.dps / base.dps - 1 };
-    }).sort((a, b) => b.change - a.change);
+      const shot = fightOf(w, b, opts)?.perShot ?? 0;
+      return { id, shown: shown(id, '-'), change: b.dps / base.dps - 1, shot: baseShot ? shot / baseShot - 1 : 0 };
+    }).sort((a, b) => (Math.abs(b.change - a.change) > 1e-9 ? b.change - a.change : b.shot - a.shot));
     // A shape with a curse always has one: each best riven carries the best curse it can (the
     // kindest on the best riven, or the next for a riven that rolls that stat as a positive).
     for (const set of sets) {
