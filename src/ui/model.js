@@ -8,7 +8,7 @@ import { STAT_BY_ID, SPLICED, SHAPES } from '../data/stats.js';
 import { WEAPONS } from '../data/weapons.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { pools } from '../cycle.js';
-import { FACTIONS, VALENCE_TYPES } from '../sim.js';
+import { VALENCE_TYPES } from '../sim.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
 import { targetOf } from '../enemies.js';
 import { picksFor, communityFit } from '../picks.js';
@@ -18,7 +18,6 @@ import { loadTargetIntoPlanner } from './planner.js';
 
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('../data/stats.js').Shape} Shape */
-/** @typedef {import('../sim.js').Enemy} Enemy */
 /** @typedef {ReturnType<typeof import('../study.js').study>} Study */
 
 /** The kinds of build (src/build.js SCENARIOS). Weak points are a build of their own: hitting them is hard. */
@@ -29,13 +28,12 @@ const SCENARIO = /** @type {[string, string][]} */ ([
 /** A damage type's name: "heat" → "Heat". @param {string} id */
 const typeName = id => id[0].toUpperCase() + id.slice(1);
 /** @type {Record<string, string>} */
-const ENEMY_NAME = { grineer: 'Grineer', corpus: 'Corpus', infested: 'Infested', orokin: 'Corrupted (Orokin)', scaldra: 'Scaldra', techrot: 'Techrot', murmur: 'The Murmur' };
 
 export const modelState = {
   shape: /** @type {Shape} */ ('+++-'),
   mode: -1,                                   // fire mode index, -1 = the weapon's main one
   scenario: /** @type {'room' | 'single' | 'weak'} */ ('room'),
-  enemy: /** @type {Enemy} */ (''),
+  enemy: '',                                  // the target's faction group (src/data/enemies.js GROUPS; '' = any)
   unit: '',                                   // the faction's unit ('' = its default)
   level: 150,
   steelPath: false,
@@ -63,7 +61,7 @@ export function restoreModel(raw) {
   if (shape) modelState.shape = shape;
   if (raw.mode && Number.isInteger(Number(raw.mode))) modelState.mode = Number(raw.mode);
   if (raw.sc === 'single' || raw.sc === 'weak') modelState.scenario = raw.sc;
-  if (FACTIONS.includes(raw.enemy ?? '')) modelState.enemy = /** @type {Enemy} */ (raw.enemy);
+  if (/^[a-z]+$/.test(raw.enemy ?? '')) modelState.enemy = raw.enemy;      // checked against the groups when they're in
   if (raw.armor) modelState.armor = Number(raw.armor) > 0 ? 2700 : 0;
   modelState.unit = raw.unit ?? '';                        // checked against the faction's units when they're in
   const level = Number(raw.lvl);
@@ -161,12 +159,13 @@ export function modelBlock(weapon, cls, rerender) {
   if (s.mode >= w.modes.length) s.mode = -1;
   // The target: one of the faction's units at its level. Any faction: a Grineer unit's health and
   // armor without faction weaknesses (builds are judged by fights, src/fight.js, so there's always one).
-  const pick = s.enemy || 'grineer';
+  const group = enemies.GROUPS.find(g => g.id === s.enemy) ?? null;
+  const pick = group?.id ?? 'grineer';
   const units = enemies.UNITS[pick] ?? [];
   const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies.DEFAULT_UNIT[pick]) ?? null;
-  const target = unit ? targetOf(s.enemy ? unit : { ...unit, types: '' }, s.level, s.steelPath, !s.armor, enemies) : null;
+  const target = unit ? targetOf(group ? unit : { ...unit, types: '' }, s.level, s.steelPath, !s.armor, enemies) : null;
   const opts = {
-    mode: s.mode < 0 ? w.main : s.mode, enemy: s.enemy, burst: s.burst, primed: s.primed,
+    mode: s.mode < 0 ? w.main : s.mode, enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
     ...(target ? { target } : { armor: s.armor }),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
     ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
@@ -194,8 +193,8 @@ export function modelBlock(weapon, cls, rerender) {
       el('label', { class: 'field' }, [el('span', {}, ['Bonus %']), valencePct]),
     ] : []),
     select('Build', SCENARIO, s.scenario, v => set({ scenario: /** @type {'room' | 'single' | 'weak'} */ (v) })),
-    select('Enemy', [['', 'Any (no faction bonus)'], ...FACTIONS.map(id => /** @type {[string, string]} */ ([id, ENEMY_NAME[id] ?? id]))], s.enemy,
-      v => set({ enemy: /** @type {Enemy} */ (v), unit: '' })),
+    select('Enemy', [['', 'Any (no faction bonus)'], ...enemies.GROUPS.map(g => /** @type {[string, string]} */ ([g.id, g.name]))], group?.id ?? '',
+      v => set({ enemy: v, unit: '' })),
     ...(unit ? [
       select('Target', units.map(u => /** @type {[string, string]} */ ([u.name, u.name])), unit.name, v => set({ unit: v })),
       el('label', { class: 'field' }, [el('span', {}, ['Level']), level]),
@@ -223,7 +222,7 @@ export function modelBlock(weapon, cls, rerender) {
       : ''}${s.primed
       ? 'Primed target: every status type on it (a primer companion’s or the squad’s work), Viral and Corrosive at 10 stacks, Heat burning. '
       : 'Per status type bonuses (Galvanized) count the status types the weapon keeps up by itself. '}`
-    + (unit && target ? `Target: ${unit.name}${s.enemy ? '' : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
+    + (unit && target ? `Target: ${unit.name}${group ? (group.bane ? '' : ` (${group.name}: no riven faction stat applies)`) : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
       + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'

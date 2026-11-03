@@ -75,3 +75,17 @@ test('per status type bonuses count the status types up: none without status, al
   // Primed: all 13 types (and Viral at 10 stacks: +100% then 9 x 25%, x4.25).
   near(dpsOf(gun({ impact: 100 }), galvanized, { target, primed: true }), 100 * (1 + 0.8 * 13) * 4.25);
 });
+
+test('every faction group: its default unit, its Bane faction, and the codex’s weaknesses (in game, 2026-11-03)', () => {
+  const byId = Object.fromEntries(E.GROUPS.map(g => [g.id, g]));
+  assert.deepEqual(E.GROUPS.map(g => g.id), ['grineer', 'kuva', 'corpus', 'amalgam', 'infested', 'deimos', 'orokin', 'sentient', 'narmer', 'zariman', 'scaldra', 'techrot', 'murmur', 'anarchs']);
+  assert.deepEqual(['kuva', 'amalgam', 'deimos', 'sentient', 'anarchs'].map(id => byId[id].bane), ['grineer', 'corpus', 'infested', '', '']);
+  // The codex: Anarch Grineer Lancer, Narmer Flameblade, Conculyst, Scaldra Jaeger, Techrot Skuzzi.
+  assert.deepEqual(E.WEAKNESSES.Anarchs, { impact: 0.5, electricity: 0.5, radiation: -0.5 });
+  assert.deepEqual(E.WEAKNESSES.Narmer, { slash: 0.5, toxin: 0.5, magnetic: -0.5 });
+  assert.deepEqual(E.WEAKNESSES.Sentient, { cold: 0.5, corrosive: -0.5, radiation: 0.5 });
+  assert.deepEqual(E.WEAKNESSES.Scaldra, { impact: 0.5, corrosive: 0.5, gas: -0.5 });
+  assert.deepEqual(E.WEAKNESSES.Techrot, { cold: -0.5, gas: 0.5, magnetic: 0.5 });
+  const lancer = E.UNITS.anarchs.find(u => u.name === 'Anarch Grineer Lancer');
+  assert.deepEqual([lancer?.health, lancer?.armor], [125, 100]);
+});

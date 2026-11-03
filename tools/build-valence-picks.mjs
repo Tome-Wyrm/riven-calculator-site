@@ -18,7 +18,7 @@ const SHEET = new URL('./data/ValenceElements.xlsx', import.meta.url);
 /** The adversary weapons the site knows, by lower-case name. */
 const KNOWN = new Map(WEAPONS.filter(w => /^(Kuva|Tenet|Coda|Dual Coda) /.test(w[0])).map(w => [w[0].toLowerCase(), w[0]]));
 /** Names the sources spell their own way. @type {Record<string, string>} */
-const ALIASES = { 'kuva chakkurr': 'Kuva Chakkhurr', 'kuva chakkhuur': 'Kuva Chakkhurr', 'coda torxica': 'Dual Coda Torxica' };
+const ALIASES = { 'kuva chakkurr': 'Kuva Chakkhurr', 'coda torxica': 'Dual Coda Torxica' };
 /** @param {string} name */
 const weaponOf = name => {
   const key = name.replace(/\s*\(.*?\)\s*/g, ' ').trim().toLowerCase();

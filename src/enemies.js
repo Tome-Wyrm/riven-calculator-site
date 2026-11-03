@@ -37,6 +37,9 @@ const GROUP = /** @type {Record<string, {health: string, shields: string}>} */ (
   Corpus: { health: 'corpus', shields: 'corpus' }, 'Corpus Amalgam': { health: 'corpus', shields: 'corpus' },
   Infested: { health: 'infested', shields: 'grineer' }, 'Infested Deimos': { health: 'infested', shields: 'grineer' },
   Orokin: { health: 'corrupted', shields: 'corrupted' },
+  // The page's tabs put Anarchs with Corrupted (its health text also names them with the Murmur).
+  Anarchs: { health: 'corrupted', shields: 'corrupted' },
+  Sentient: { health: 'murmur', shields: 'grineer' },
   'The Murmur': { health: 'murmur', shields: 'grineer' },
   Techrot: { health: 'techrot', shields: 'techrot' },
 });

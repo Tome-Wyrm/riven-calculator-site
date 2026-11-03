@@ -1,7 +1,7 @@
 // Regenerates src/data/enemies.js (what the damage model needs about its targets): each faction's
 // damage weaknesses from the wiki's Module:DamageTypes/data (Update 36's faction types), and the
 // units, with base level, health, shields, armor and Overguard, from Underframe's codex-based
-// presets. Run by hand when enemies change:
+// presets (the Anarchs, which Underframe doesn't have, from the wiki's Module:Enemies/data/anarchs). Run by hand when enemies change:
 //   node tools/build-enemies.mjs [--offline]
 // Level scaling lives in src/enemies.js; this checks its coefficients against the wiki's Enemy
 // Level Scaling page.
@@ -11,23 +11,34 @@ import { cachedText, cachedJson } from './lib/cache.mjs';
 import { parseLua } from './lib/lua.mjs';
 import { SCALING } from '../src/enemies.js';
 
-/** The faction (for Bane mods and weak points, src/sim.js FACTIONS) of each of Underframe's faction names. */
-const BANE = /** @type {Record<string, string>} */ ({
-  grineer: 'grineer', 'kuva grineer': 'grineer', corpus: 'corpus', 'corpus amalgam': 'corpus',
-  infested: 'infested', 'infested deimos': 'infested', orokin: 'orokin', scaldra: 'scaldra',
-  techrot: 'techrot', 'the murmur': 'murmur',
-});
-// Left out: Narmer, Sentient, Zariman and the odd one-offs (no Bane mod of their own).
+/**
+ * The targets' factions, as the page lists them: id, name shown, the wiki's faction (its weaknesses
+ * and scaling) and the Bane faction whose riven stat and weak points apply ('' for none: Sentient,
+ * Narmer, Zariman and the Anarchs have no Bane mod), with each one's default unit.
+ */
+const GROUPS = [
+  ['grineer', 'Grineer', 'Grineer', 'grineer', 'Heavy Gunner'],
+  ['kuva', 'Kuva Grineer', 'Kuva Grineer', 'grineer', 'Kuva Heavy Gunner'],
+  ['corpus', 'Corpus', 'Corpus', 'corpus', 'Elite Crewman'],
+  ['amalgam', 'Corpus Amalgam', 'Corpus Amalgam', 'corpus', 'Amalgam Machinist'],
+  ['infested', 'Infested', 'Infested', 'infested', 'Ancient Healer'],
+  ['deimos', 'Infested Deimos', 'Infested Deimos', 'infested', 'Deimos Saxum'],
+  ['orokin', 'Corrupted (Orokin)', 'Orokin', 'orokin', 'Corrupted Heavy Gunner'],
+  ['sentient', 'Sentient', 'Sentient', '', 'Conculyst'],
+  ['narmer', 'Narmer', 'Narmer', '', 'Narmer Heavy Gunner'],
+  ['zariman', 'Zariman', 'Zariman', '', 'Thrax Centurion'],
+  ['scaldra', 'Scaldra', 'Scaldra', 'scaldra', 'Scaldra Screamer'],
+  ['techrot', 'Techrot', 'Techrot', 'techrot', 'Techrot Scaart'],
+  ['murmur', 'The Murmur', 'The Murmur', 'murmur', 'Lumbering Fragment'],
+  ['anarchs', 'Anarchs', 'Anarchs', '', 'Anarch Libritor'],
+].map(([id, name, types, bane, unit]) => ({ id, name, types, bane, unit }));
+/** Underframe's faction names (lower case) by group. Left out: the odd one-offs (Spectral Thrax). */
+const GROUP_OF = Object.fromEntries(GROUPS.map(g => [g.types.toLowerCase(), g]));
 
 /** The wiki's damage types we model, by its names. */
 const TYPES = ['Impact', 'Puncture', 'Slash', 'Cold', 'Electricity', 'Heat', 'Toxin', 'Blast', 'Corrosive', 'Gas',
   'Magnetic', 'Radiation', 'Viral', 'Void', 'Tau'];
 
-/** Each Bane faction's usual unit, the default target. */
-const DEFAULT_UNIT = {
-  grineer: 'Heavy Gunner', corpus: 'Elite Crewman', infested: 'Ancient Healer', orokin: 'Corrupted Heavy Gunner',
-  scaldra: 'Scaldra Screamer', techrot: 'Techrot Scaart', murmur: 'Lumbering Fragment',
-};
 
 // Weaknesses: each damage type lists the health types it does more (Positives) or less (Negatives)
 // to. Since Update 36 those are factions, and the module's own script reads a bare name as 50%.
@@ -66,20 +77,27 @@ const presets = underframe.data.dummy_presets;
 /** @type {Record<string, any[]>} */
 const units = {};
 for (const [name, p] of Object.entries(presets)) {
-  const faction = BANE[String(p.faction).toLowerCase()];
-  if (!faction || !(p.base_hp > 0)) continue;
-  // The wiki's faction for weaknesses: "Kuva Grineer", "Infested Deimos"… differ from their Bane faction.
-  const types = { grineer: 'Grineer', 'kuva grineer': 'Kuva Grineer', corpus: 'Corpus', 'corpus amalgam': 'Corpus Amalgam',
-    infested: 'Infested', 'infested deimos': 'Infested Deimos', orokin: 'Orokin', scaldra: 'Scaldra', techrot: 'Techrot',
-    'the murmur': 'The Murmur' }[String(p.faction).toLowerCase()];
-  (units[faction] ??= []).push({
-    name, types, level: p.base_level ?? 1, health: p.base_hp, shields: p.base_shields ?? 0, armor: p.base_armor ?? 0,
+  const g = GROUP_OF[String(p.faction).toLowerCase()];
+  if (!g || !(p.base_hp > 0)) continue;
+  (units[g.id] ??= []).push({
+    name, types: g.types, level: p.base_level ?? 1, health: p.base_hp, shields: p.base_shields ?? 0, armor: p.base_armor ?? 0,
     ...(p.base_overguard ? { overguard: p.base_overguard } : {}),
   });
 }
-for (const [f, list] of Object.entries(units)) {
+// The Anarchs (Update 41): the wiki's enemy data (Underframe has none yet).
+const { data: anarchsLua } = await cachedText('wiki-module-enemies--data--anarchs', 'lua', 'https://wiki.warframe.com/w/Module:Enemies/data/anarchs?action=raw', {
+  validate: text => { try { return Object.keys(parseLua(text)).length ? null : 'no units'; } catch (e) { return String(e); } },
+});
+for (const [name, e] of Object.entries(parseLua(anarchsLua))) {
+  const st = e.Stats ?? {};
+  if (!(st.Health > 0)) continue;
+  (units.anarchs ??= []).push({ name, types: 'Anarchs', level: st.BaseLevel ?? 1, health: st.Health, shields: st.Shield ?? 0, armor: st.Armor ?? 0,
+    ...(st.Overguard ? { overguard: st.Overguard } : {}) });
+}
+for (const g of GROUPS) {
+  const list = units[g.id] ?? [];
   list.sort((a, b) => a.name.localeCompare(b.name));
-  if (!list.some(u => u.name === DEFAULT_UNIT[/** @type {keyof typeof DEFAULT_UNIT} */ (f)])) throw new Error(`No default unit for ${f}`);
+  if (!list.some(u => u.name === g.unit)) throw new Error(`No default unit for ${g.id}`);
 }
 const used = new Set(Object.values(units).flat().map(u => u.types));
 
@@ -90,7 +108,9 @@ await writeFile(new URL('../src/data/enemies.js', import.meta.url), `// @ts-chec
 //
 // WEAKNESSES: per faction type, the extra (or, negative, the lost) share of damage each damage type
 // does to its health. Shields: Heat does 50% less to them, Toxin skips them.
-// UNITS: per Bane faction, its units at their base level (src/enemies.js scales them).
+// GROUPS: the targets' factions in the page's order: the wiki's faction (weaknesses, scaling) and the
+// Bane faction whose riven stat and weak points apply ('' for none). UNITS: per group, its units at
+// their base level (src/enemies.js scales them).
 
 export const ENEMIES_UPDATED = '${date}';
 
@@ -104,12 +124,17 @@ ${Object.entries(weak).filter(([k]) => used.has(k)).map(([k, v]) => `  ${JSON.st
 /** Damage types against shields. @type {Record<string, number>} */
 export const SHIELD_WEAKNESSES = ${JSON.stringify(weak.Shield ?? {})};
 
-/** Each faction's default target. @type {Record<string, string>} */
-export const DEFAULT_UNIT = ${JSON.stringify(DEFAULT_UNIT)};
+/** @type {{id: string, name: string, types: string, bane: import('../sim.js').Enemy}[]} */
+export const GROUPS = [
+${GROUPS.map(g => `  ${JSON.stringify({ id: g.id, name: g.name, types: g.types, bane: g.bane })},`).join('\n')}
+];
+
+/** Each group's default target. @type {Record<string, string>} */
+export const DEFAULT_UNIT = ${JSON.stringify(Object.fromEntries(GROUPS.map(g => [g.id, g.unit])))};
 
 /** @type {Record<string, Unit[]>} */
 export const UNITS = {
-${Object.entries(units).map(([k, list]) => `  ${k}: [\n${list.map(u => `    ${JSON.stringify(u)},`).join('\n')}\n  ],`).join('\n')}
+${GROUPS.map(g => [g.id, units[g.id]]).map(([k, list]) => `  ${k}: [\n${list.map(u => `    ${JSON.stringify(u)},`).join('\n')}\n  ],`).join('\n')}
 };
 `);
 console.log(`Wrote ${Object.values(units).flat().length} units; weaknesses for ${[...used].join(', ')}`);
