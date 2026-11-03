@@ -500,7 +500,37 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
       Strafe, Primed Deadly Efficiency, Primed Stabilizer, Primed Steady Hands, Charged Chamber (+40% on
       the first shot; Primed Chamber is the same effect, +25% a rank, an old rank-3 event "Primed").
       Only Proton Jet is left unchecked by anything (Underframe has no numbers for it).
-- [ ] Arcanes (PE++ ExportArcanes, structured per-rank) and the elemental combination rules.
+- [x] **Arcanes** (`tools/build-arcanes.mjs` → `src/data/arcanes.js`): 36 that change gun damage
+      (primary, secondary, and warframe arcanes whose bonus goes to guns: Avenger, Rage, Precision,
+      Velocity, Acceleration, Tempo, Awakening, Momentum, Arachne, Pistoleer). PE++'s ExportArcanes keeps
+      each rank as a text template plus values; dict.en fills the template, and the mods' reader reads
+      the text. The reader now also takes a trigger's chance ("21% chance for …"), the weapons a bonus
+      goes to ("to Primary Weapons (Excludes Shotguns)" → `to`), and a trigger sharing its line
+      (Primary Crux). **Underframe agrees on every one**; its Pistoleer text ("Infinite Ammo") just
+      can't be compared. 15 special mechanics stay as notes, for hand-written rules in the simulator:
+      Bulwark, Compression, Debilitate, Obstruct, Overcharge, Plated Round, Cryogenic, Encumber,
+      Enervate, Fortifier, Irradiate, Kinship, Outburst, Shiver, Surge.
+- [x] **Element combination** (`src/elements.js`, tested): mods in slot order; a repeated base element
+      adds into its first place; base elements pair in order (1st + 2nd, 3rd + 4th), a leftover stays;
+      combined elements from mods (a spliced riven's Viral) stay as they are; the weapon's innate
+      elements join after every mod. From the wiki: **to check in the arsenal**.
+  - **Slot order**: the eight main slots in reading order, top row left to right (1-4), then the
+    bottom row (5-8). The exilus slot can't matter: none of the 37 gun exilus mods adds an element
+    (tested). Nor can the stance slot (melee) or the arcane slot. The mods' `exilus` flag was empty
+    until now (it read WFCD's `isExilus`; the field is `isUtility`), which the optimiser will need.
+  - **A riven with several elements** puts them in bottom-up (the user, 2026-11-02, from the wiki's
+    riven page): a mod before it pairs with its last-listed element; a mod after it pairs only with an
+    odd one out (1 or 3 elements: the first listed). Heat + riven (Electricity, Cold) = Blast +
+    Electricity; riven + Heat keeps Magnetic. `rivenOrder()`, tested on those examples.
+  - **Every non-mod base element goes into a fixed "third row" after the mods, in Heat, Cold,
+    Electricity, Toxin order ("Harrow Chassis Every Time")**: the weapon's own elements, a progenitor /
+    Valence bonus, ability buffs (even an augment's, like Shock Trooper, since the mod isn't on the
+    weapon). Its order doesn't depend on the source or timing. Combined elements from anywhere never
+    combine or split; Toxic Lash's Toxin stays apart from it all. From The Engineer's "Elemental
+    priority" video (youtube.com/watch?v=74LM3QPOkOw, tested in the Simulacrum). Before this the
+    function added innate elements in the data's order: wrong whenever two non-mod elements meet
+    (Tenet Envoy: innate Cold + Toxin progenitor + a Heat mod + Shock Trooper = Blast + Corrosive).
+    The video's examples are tests.
 - [ ] Put the other builders (weapons, weapon stats, picks) on the same local cache.
 - Effects: plain (Serration +165% Damage), dual-stat (Hammer Shot +60% CD +80% SC), elementals
   (90% and the 60/60 dual-stats, in **slot order**, which decides combinations), conditional (Galvanized

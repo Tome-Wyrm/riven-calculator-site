@@ -172,7 +172,8 @@ for (const m of mods) {
   rows.push({
     name: m.name, compat: m.compatName, drain: m.baseDrain, rank: m.fusionLimit,
     effects, ...(unread.length ? { notes: unread } : {}), ...(excl.length ? { excl } : {}),
-    ...(m.isExilus ? { exilus: 1 } : {}),
+    // Exilus-slot mods: WFCD calls them utility mods (isUtility). None of them adds an element.
+    ...(m.isUtility ? { exilus: 1 } : {}),
     ...(inGame.mods[m.name]?.stats === 'confirmed' ? { ingame: 1 } : {}),
   });
 }

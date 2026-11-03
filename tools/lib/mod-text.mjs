@@ -18,6 +18,8 @@ const STATS = {
   'Direct Damage': 'directDamage', 'Accuracy': 'accuracy', 'Blast Range': 'blastRange',
   'Beam Range': 'beamRange', 'Range': 'range', 'Fire/Charge Rate': 'fireRate',
   'Combo Duration': 'comboDuration', 'Chance to Explode (Use with Caution)': 'explodeChance',
+  'Ammo Efficiency': 'ammoEfficiency', 'Melee Damage': 'meleeDamage', 'Attack Speed': 'attackSpeed',
+  'Energy Regen/s': 'energyRegen', 'Armor': 'armor',
 };
 
 /**
@@ -29,6 +31,9 @@ const STATS = {
  * @property {number} [seconds]
  * @property {number} [stacks]
  * @property {string} [per]   "status type": the value counts once per status type on the target
+ * @property {number} [chance]  arcanes: the chance the trigger gives it ("21% chance for …")
+ * @property {string} [to]    arcanes: the weapons it applies to ("pistols", "primary", "primary no shotguns",
+ *                            "shotguns", "snipers", "secondary", "melee")
  */
 
 /** The damage type a bare colour tag stands for, where no word follows it. */
@@ -42,6 +47,13 @@ const TAG_NAME = { SLASH: 'Slash', IMPACT: 'Impact', PUNCTURE: 'Puncture', FIRE:
 const plain = s => s
   .replace(/<DT_(\w+?)_COLOR>(?=\s+on\b|\s*$)/g, (m, t) => TAG_NAME[/** @type {keyof typeof TAG_NAME} */ (t)] ?? m)
   .replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+
+/** Which weapons an arcane's bonus goes to, as its text says. */
+const APPLIES_TO = /** @type {[RegExp, string][]} */ ([
+  [/ to Primary Weapons \(Excludes Shotguns\)/, 'primary no shotguns'], [/ to Primary Weapons/, 'primary'],
+  [/ to Pistols/, 'pistols'], [/ to Shotguns/, 'shotguns'], [/ to Sniper Rifles/, 'snipers'],
+  [/ to Melee Weapons/, 'melee'], [/ on Secondary Weapon/, 'secondary'], [/ to Primary and Secondary weapons/, 'guns'],
+]);
 
 /**
  * One stat phrase, without trigger: "+90% Heat", "x1.55 Damage to Grineer", "-20% Fire Rate (x2 for Bows)".
@@ -69,22 +81,26 @@ function phrase(text) {
  */
 export function readLine(line) {
   // Line breaks come as real ones (DE's export) or as the two characters "\n" (WFCD's copy).
-  const parts = line.split(/\r?\n|\\n/).map(s => s.trim()).filter(Boolean);
+  const parts = line.split(/\r?\n|\\n/).map(s => s.trim()).filter(Boolean)
+    // A trigger can share its line: "On Weak Point Hit: Gain +30% Status Chance …" (Primary Crux).
+    .flatMap(p => { const m = p.match(/^((?:On|While) [^:]+):\s+(?:Gain )?(.+)$/); return m ? [`${m[1]}:`, m[2]] : [p]; });
   /** @type {Effect[]} */
   const effects = [];
   const notes = [];
   /** @type {Partial<Effect>} */
   let ctx = {};
   let blockStart = 0;                                            // first effect under the current trigger
+  let trigger = '';                                              // the trigger line as written, for notes
   for (const raw of parts) {
     if (/:$/.test(raw)) {                                        // "On Weak Point Kill:"
       ctx = { on: raw.slice(0, -1).replace(/^On /, '').toLowerCase() };
+      trigger = plain(raw);
       blockStart = effects.length;
       continue;
     }
     if (/^\(.*\)$/.test(raw)) { notes.push(plain(raw)); continue; }   // "(Non-AOE Bows)"
     // Modifiers after the stat: "when Aiming", "for 20s", ". Stacks up to 2x.", "per Status Type…".
-    let t = plain(raw);
+    let t = plain(raw).replace(/^Gain (?=[+-]?\d)/, '');
     /** @type {Partial<Effect>} */
     const extra = {};
     const seconds = t.match(/ for (\d+(?:\.\d+)?)s\b/);
@@ -96,6 +112,10 @@ export function readLine(line) {
     const first = t.match(/^(.*) on first shot in Magazine$/);
     if (first) { extra.on = 'first shot'; t = first[1]; }
     if (/ while Invisible$/.test(t)) { extra.on = 'invisible'; t = t.replace(/ while Invisible$/, ''); }
+    // Arcanes: "21% chance for +45% Critical Chance", "… to Pistols", "… on Secondary Weapon".
+    const chance = t.match(/^(\d+(?:\.\d+)?)% chance for (.+)$/);
+    if (chance) { extra.chance = Number(chance[1]) / 100; t = chance[2]; }
+    for (const [re, to] of APPLIES_TO) if (re.test(t)) { extra.to = to; t = t.replace(re, ''); }
     // Movement triggers written around the stat: Motus Setup "100% Critical and Status Chance for 4s
     // after landing from a Double or Bullet Jump.", Proton Jet "During a Wall Latch gain +120% …".
     if (/ after landing from a Double or Bullet Jump\.?$/.test(t)) { extra.on = 'landing from a double or bullet jump'; t = t.replace(/ after landing from a Double or Bullet Jump\.?$/, ''); }
@@ -125,7 +145,8 @@ export function readLine(line) {
         }
       }
     } else {
-      notes.push(plain(raw));
+      // With its trigger, so the note reads whole ("On Weapon Magnetic Status Effect: Enemy weapons jam…").
+      notes.push(ctx.on && trigger ? `${trigger} ${plain(raw)}` : plain(raw));
     }
     // A trigger covers the lines under it until the next "…:" line, except the rank-scaled
     // "Stacks up to" line ends its block.

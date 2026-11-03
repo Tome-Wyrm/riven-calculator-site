@@ -77,3 +77,26 @@ test('the table: one entry per mod, and mods that exclude each other', () => {
   assert.ok(mod('Primed Bane Of Grineer')?.excl?.includes('Bane Of Grineer'));
   assert.ok(GUN_MODS.length > 250, String(GUN_MODS.length));
 });
+
+test('arcane phrasings: chance, the weapons it goes to, a trigger on the same line', () => {
+  assert.deepEqual(readLine('On Damaged:\r\n21% chance for +45% Critical Chance for 12s').effects,
+    [{ stat: 'critChance', value: 0.45, on: 'damaged', seconds: 12, chance: 0.21 }]);
+  assert.deepEqual(readLine('On Critical Hit:\r\n60% chance for +90% Fire Rate to Primary Weapons (Excludes Shotguns) for 6s').effects,
+    [{ stat: 'fireRate', value: 0.9, on: 'critical hit', seconds: 6, chance: 0.6, to: 'primary no shotguns' }]);
+  assert.deepEqual(readLine('On Weak Point Hit: Gain +30% Status Chance and +6% Ammo Efficiency for 10s. Stacks up to 10x.').effects, [
+    { stat: 'statusChance', value: 0.3, on: 'weak point hit', seconds: 10, stacks: 10 },
+    { stat: 'ammoEfficiency', value: 0.06, on: 'weak point hit', seconds: 10, stacks: 10 }]);
+  // An unread line keeps its trigger in the note.
+  assert.deepEqual(readLine('On Status Effect: +24% chance to trigger a second random Status Effect.').notes,
+    ['On Status Effect: +24% chance to trigger a second random Status Effect.']);
+});
+
+test('exilus mods are marked; none adds an element, so the exilus slot never changes element order', () => {
+  assert.equal(mod('Primed Steady Hands')?.exilus, 1);
+  assert.equal(mod('Vigilante Supplies')?.exilus, 1);
+  assert.equal(mod('Serration')?.exilus, undefined);
+  const ELEMENTS = ['heat', 'cold', 'electricity', 'toxin', 'blast', 'corrosive', 'gas', 'magnetic', 'radiation', 'viral'];
+  const exilus = GUN_MODS.filter(m => m.exilus);
+  assert.ok(exilus.length > 30, String(exilus.length));
+  assert.deepEqual(exilus.filter(m => m.effects.some(e => ELEMENTS.includes(e.stat))).map(m => m.name), []);
+});
