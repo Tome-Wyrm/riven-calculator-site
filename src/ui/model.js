@@ -8,7 +8,8 @@ import { STAT_BY_ID, SPLICED, SHAPES } from '../data/stats.js';
 import { WEAPONS } from '../data/weapons.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { pools } from '../cycle.js';
-import { FACTIONS } from '../sim.js';
+import { FACTIONS, VALENCE_TYPES } from '../sim.js';
+import { VALENCE_PICKS } from '../data/valence-picks.js';
 import { targetOf } from '../enemies.js';
 import { picksFor, communityFit } from '../picks.js';
 import { el, statName, segmented, select, ipsOf } from './dom.js';
@@ -25,6 +26,9 @@ const SCENARIO = /** @type {[string, string][]} */ ([
   ['room', 'Room clearing (kills keep stacks up)'], ['single', 'Single target (no kill stacks)'],
   ['weak', 'Weak points (every direct hit)']]);
 /** @type {Record<string, string>} */
+/** A damage type's name: "heat" → "Heat". @param {string} id */
+const typeName = id => id[0].toUpperCase() + id.slice(1);
+/** @type {Record<string, string>} */
 const ENEMY_NAME = { grineer: 'Grineer', corpus: 'Corpus', infested: 'Infested', orokin: 'Corrupted (Orokin)', scaldra: 'Scaldra', techrot: 'Techrot', murmur: 'The Murmur' };
 
 export const modelState = {
@@ -38,6 +42,8 @@ export const modelState = {
   armor: 0,                                   // 0 = stripped; else full (2700 without a faction)
   primed: false,                              // every status type on the target
   burst: false,
+  valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
+  valencePct: 60,                             // and its size, 25–60%
 };
 
 /** The URL fields for the model's settings (defaults left out). */
@@ -47,6 +53,7 @@ export function modelFields() {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
     armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '',
+    val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
   };
 }
 
@@ -64,6 +71,9 @@ export function restoreModel(raw) {
   modelState.steelPath = raw.sp === '1';
   modelState.primed = raw.primed === '1';
   modelState.burst = raw.burst === '1';
+  if (VALENCE_TYPES.includes(raw.val ?? '')) modelState.valence = raw.val;
+  const pct = Number(raw.valp);
+  if (raw.valp && pct >= 25 && pct <= 60) modelState.valencePct = pct;
 }
 
 /** @type {Record<string, import('../data/weapon-stats.js').WeaponStats> | null} */
@@ -159,11 +169,17 @@ export function modelBlock(weapon, cls, rerender) {
     mode: s.mode < 0 ? w.main : s.mode, enemy: s.enemy, burst: s.burst, primed: s.primed,
     ...(target ? { target } : { armor: s.armor }),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
+    ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
   };
   const level = /** @type {HTMLInputElement} */ (el('input', { type: 'number', min: '1', max: '9999', step: '1', value: String(s.level), inputmode: 'numeric' }));
   level.addEventListener('change', () => {
     const v = Math.round(Number(level.value));
     if (v >= 1 && v <= 9999) set({ level: v }); else level.value = String(s.level);
+  });
+  const valencePct = /** @type {HTMLInputElement} */ (el('input', { type: 'number', min: '25', max: '60', step: '0.1', value: String(s.valencePct), inputmode: 'decimal' }));
+  valencePct.addEventListener('change', () => {
+    const v = Math.round(Number(valencePct.value) * 10) / 10;
+    if (v >= 25 && v <= 60) set({ valencePct: v }); else valencePct.value = String(s.valencePct);
   });
   const pool = pools(cls, ipsOf(weapon));
   const positives = [...pool.positive, ...SPLICED.filter(x => x.b[cls] !== undefined).map(x => x.id)];
@@ -173,6 +189,10 @@ export function modelBlock(weapon, cls, rerender) {
   const controls = el('div', { class: 'controls model-controls' }, [
     el('div', { class: 'field' }, [el('span', {}, ['Shape']), segmented('Shape', SHAPE_ORDER, s.shape, v => set({ shape: /** @type {Shape} */ (v) }))]),
     ...(w.modes.length > 1 ? [select('Fire mode', w.modes.map((m, i) => /** @type {[string, string]} */ ([String(i), m.name])), String(opts.mode), v => set({ mode: Number(v) }))] : []),
+    ...(w.adversary ? [
+      select('Valence bonus', [['best', 'Best (each tried)'], ...VALENCE_TYPES.map(v => /** @type {[string, string]} */ ([v, typeName(v)]))], s.valence, v => set({ valence: v })),
+      el('label', { class: 'field' }, [el('span', {}, ['Bonus %']), valencePct]),
+    ] : []),
     select('Build', SCENARIO, s.scenario, v => set({ scenario: /** @type {'room' | 'single' | 'weak'} */ (v) })),
     select('Enemy', [['', 'Any (no faction bonus)'], ...FACTIONS.map(id => /** @type {[string, string]} */ ([id, ENEMY_NAME[id] ?? id]))], s.enemy,
       v => set({ enemy: /** @type {Enemy} */ (v), unit: '' })),
@@ -198,7 +218,9 @@ export function modelBlock(weapon, cls, rerender) {
       weak: 'Weak points: every direct hit lands on one (explosions never do), and weak point kills keep stacks up. '
         + 'The weak point multiplier is the target\u2019s own (3x for most heads, 1.5x for the Murmur and Techrot) plus 1.5x Weakpoint Damage, '
         + 'times headshot bonuses; critical headshots double the crit multiplier where the enemy allows it (not Corpus humanoids)',
-    }[s.scenario]}; aiming bonuses count. ${s.primed
+    }[s.scenario]}; aiming bonuses count. ${w.adversary
+      ? `The Valence bonus (${s.valencePct}%${s.valence === 'best' ? ', the element whose best build does most' : ` ${typeName(s.valence)}`}) is the weapon’s own damage: elemental mods scale from the base with it, and a base element joins after the mods (Heat, Cold, Electricity, Toxin order), so it changes which elements the mods can make. `
+      : ''}${s.primed
       ? 'Primed target: every status type on it (a primer companion’s or the squad’s work), Viral and Corrosive at 10 stacks, Heat burning. '
       : 'Per status type bonuses (Galvanized) count the status types the weapon keeps up by itself. '}`
     + (unit && target ? `Target: ${unit.name}${s.enemy ? '' : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
@@ -231,6 +253,35 @@ export function modelBlock(weapon, cls, rerender) {
     ])]);
   };
 
+  // The Valence elements, each by its best build without a riven, beside the usual picks.
+  /** @type {HTMLElement[]} */
+  const valenceBlock = [];
+  if (w.adversary) {
+    const picks = VALENCE_PICKS[weapon];
+    const listed = (/** @type {string[] | undefined} */ l) => (l ? l.map(typeName).join(' or ') : 'none listed');
+    const usual = el('p', { class: 'note' }, [`Brozime’s pick: ${listed(picks?.brozime)}${picks?.tier ? ` (his tier: ${picks.tier})` : ''}; the community’s: ${listed(picks?.community)}.`]);
+    if (result.valences) {
+      const ties = result.valences.filter(v => v.change > -0.005).map(v => typeName(v.type));
+      const max = Math.max(0.01, ...result.valences.map(v => Math.abs(v.change)));
+      const mark = (/** @type {string[] | undefined} */ l, /** @type {string} */ type) => (l?.includes(type) ? 'Yes' : '');
+      valenceBlock.push(el('h4', {}, ['Valence element']),
+        el('p', { class: 'note' }, [ties.length > 1
+          ? `${ties.join(', ')} do about as well (within 0.5%); the study below uses ${typeName(result.valence?.type ?? '')}.`
+          : `${ties[0]} does best; the study below uses it.`]),
+        usual,
+        el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals model' }, [
+          el('thead', {}, [el('tr', {}, ['Element', 'Against the best', '', 'Brozime', 'Community'].map(h => el('th', { scope: 'col' }, [h])))]),
+          el('tbody', {}, result.valences.map(v => el('tr', {}, [
+            el('th', { scope: 'row' }, [typeName(v.type)]),
+            el('td', { class: v.change < -0.005 ? 'neg-text' : '' }, [pct(v.change)]),
+            el('td', { class: 'bar-cell' }, [bar(v.change, max)]),
+            el('td', {}, [mark(picks?.brozime, v.type)]),
+            el('td', {}, [mark(picks?.community, v.type)]),
+          ]))),
+        ])]));
+    } else valenceBlock.push(el('h4', {}, ['Valence element']), usual);
+  }
+
   const k = SHAPES[s.shape].positives;
   const setList = el('ol', { class: 'model-sets' }, result.sets.map(x => {
     const plan = el('button', { type: 'button', class: 'link-button' }, ['Plan']);
@@ -242,7 +293,7 @@ export function modelBlock(weapon, cls, rerender) {
   }));
   const moving = result.singles.filter(e => Math.abs(e.change) >= 0.005);
   const still = result.singles.filter(e => Math.abs(e.change) < 0.005).map(e => name(e.id));
-  const out = [head, controls, about,
+  const out = [head, controls, about, ...valenceBlock,
     el('h4', {}, ['Best build without a riven']), buildGrid(result.none),
     el('h4', {}, [`Best rivens (${k} positives) over no riven`]), setList,
     el('h4', {}, ['Each positive in the riven slot']),

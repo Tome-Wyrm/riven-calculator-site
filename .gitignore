@@ -17,3 +17,5 @@ review-server.cmd
 tools/data/cache/
 # Wiki pages saved by hand as sources (read by the tools/ builders when present)
 tools/data/*.wiki
+# Hand-kept workbooks read by the builders (tools/build-valence-picks.mjs: ValenceElements.xlsx)
+tools/data/*.xlsx

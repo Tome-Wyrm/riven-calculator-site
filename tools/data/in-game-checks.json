@@ -106,6 +106,10 @@
   }
  },
  "weapons": {
+  "Coda Bassocyst": {
+   "checked": "2026-11-03",
+   "note": "60% Heat Valence bonus: 484.8 Heat, 1292.8 in all (808 + 60%); Incendiary Coat (+90% Heat) makes 1648.3 Heat, 2456.3 in all, so elemental mods scale from the base with the bonus. Alt-fire: 181.8 Heat, 484.8; with the Coat 618.1, 921.1"
+  },
   "Felarx": {
    "checked": "2026-11-02",
    "note": "'Auto / Semi' trigger: can't take the Semi- Cannonades (no SEMI_AUTO tag)"

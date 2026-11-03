@@ -738,6 +738,24 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 
 **13d — moved to Phase 14** (frames, abilities, subsumes and companions; the user, 2026-11-03).
 
+**13f — Valence bonus (adversary weapons: Kuva, Tenet, Coda)** — done 2026-11-03
+- [x] The bonus is the weapon's own damage: a share of its listed damage (25–60%) of one element,
+      joining after the mods (HCET); it's part of the base that elemental mods and DoTs scale from
+      (in game: Coda Bassocyst, 60% Heat, with and without Incendiary Coat; `in-game-checks.json`).
+- [x] Adversary guns marked from the wiki's traits (40, as Underframe's `is_progenitor` has).
+- [x] "Best" (the default): the study tries every element, each by its best build without a riven,
+      and studies rivens with the winner. The search sticks on poor builds (Chakkhurr's Heat build
+      was 60% off), so each element's search restarts from every other's build (`optimiseEach`).
+- [x] The usual picks beside it: Brozime's Lich Weapons note and the Community sheet of the user's
+      workbook (`tools/build-valence-picks.mjs` → `src/data/valence-picks.js`).
+- Agreement (the model's best, within 0.5%, includes the pick), level 150 Steel Path Heavy Gunner
+  without weaknesses, room clearing: armor stripped, 14/40 Brozime and 15/40 community (before
+  the restarts); full armor, 23/40 and 21/40. Heat's armor strip and Magnetic's work on shields and
+  Overguard (Eximus) are why players pick them; a stripped, unshielded target values neither.
+- [ ] Score per faction (Corpus shields for Magnetic) and with Overguard once it's modelled.
+- [ ] Ties: Impact, Magnetic and Radiation often tie exactly against one unshielded unit (none
+      combines and their procs do little there).
+
 **13e — UI and checks**
 - The model block gets: scenario, faction / level, frame, companion, arcane (or "best"). Results: the
   riven's value per stat and the best sets, now as best-with − best-without, plus both builds.

@@ -125,7 +125,15 @@ export const HEADS = {
  * @property {Target} [target]     the unit fought, at its level (overrides armor)
  * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
  * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)
+ * @property {Valence} [valence]   an adversary weapon's Valence bonus
  */
+
+/**
+ * An adversary weapon's Valence bonus (Kuva, Tenet, Coda): one of Heat, Cold, Electricity, Toxin,
+ * Impact, Magnetic, Radiation, 25%–60% of its listed damage (60% once fused; Valence Fusion).
+ * @typedef {{type: string, value: number}} Valence
+ */
+export const VALENCE_TYPES = ['heat', 'cold', 'electricity', 'toxin', 'impact', 'magnetic', 'radiation'];
 
 /**
  * A target at its level: what it takes to kill, and its weaknesses (damage type → extra share, e.g.
@@ -176,7 +184,7 @@ export function dpsOf(w, t, opts = {}) {
   const raw = (/** @type {string} */ id) => t.stats[id] ?? 0;
   const mode = w.modes[opts.mode ?? w.main] ?? w.modes[0];
   // Each part's hit by type (the per status bonuses don't touch it), worked out once.
-  const parts = mode.parts.map(p => ({ p, typed: hitByType(p, t, raw) }));
+  const parts = mode.parts.map(p => ({ p, typed: hitByType(p, t, raw, opts.valence) }));
   const statusTypes = statusTypesUp(w, mode, t, opts, parts);
   // A "per status type" bonus (stat id + "PerStatus") counts once per type up.
   const stats = statusTypes ? withPerStatus(t.stats, statusTypes) : t.stats;
@@ -286,16 +294,22 @@ export function withPerStatus(stats, n) {
  * A part's hit before Damage mods, by type: physical types scaled by their own stats; the build's
  * elements (shares of the base, in slot order) combined with the weapon's own (combineElements).
  * Null for a part that does no damage.
- * @param {Part} p @param {Totals} t @param {(id: string) => number} m
+ * @param {Part} p @param {Totals} t @param {(id: string) => number} m @param {Valence} [valence]
  */
-export function hitByType(p, t, m) {
-  const base = Object.values(p.dmg).reduce((s, v) => s + v, 0);
-  if (base <= 0) return null;
+export function hitByType(p, t, m, valence) {
+  const listed = Object.values(p.dmg).reduce((s, v) => s + v, 0);
+  if (listed <= 0) return null;
   /** @type {Record<string, number>} */
   const byType = {};
   /** @type {Record<string, number>} */
   const innate = {};
-  for (const [type, v] of Object.entries(p.dmg)) {
+  // The Valence bonus is the weapon's own damage: a share of its listed damage, joining in HCET order
+  // (Impact scales with Impact mods), and part of the base that elemental mods and DoTs scale from.
+  // In game, Coda Bassocyst's 808 with 60% Heat totals 1292.8, and Incendiary Coat's 90% adds 1163.5.
+  const own = { ...p.dmg };
+  if (valence?.value) own[valence.type] = (own[valence.type] ?? 0) + valence.value * listed;
+  const base = listed * (1 + (valence?.value ?? 0));
+  for (const [type, v] of Object.entries(own)) {
     if (PHYSICAL.includes(type)) byType[type] = v * Math.max(0, 1 + m(type));
     else if (ELEMENTS.includes(type)) innate[type] = v;
     else byType[type] = v;                                  // Tau, Void, True: as they are

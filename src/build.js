@@ -275,6 +275,27 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
 }
 
 /**
+ * The best build for each of several settings (a Valence element each, say). The search can stick
+ * on a poor build, so each one restarts from every other setting's build and keeps the best.
+ * @param {WeaponStats} w @param {Piece[]} pool @param {Piece[]} arcanes @param {SimOptions[]} settings
+ * @returns {Build[]}
+ */
+export function optimiseEach(w, pool, arcanes, settings) {
+  const builds = settings.map(opts => optimise(w, pool, arcanes, opts));
+  const key = (/** @type {Build} */ b) => b.slots.map(p => p.name).sort().join('|');
+  const starts = [...new Map(builds.map(b => [key(b), b.slots])).entries()];
+  return settings.map((opts, i) => {
+    let best = builds[i];
+    for (const [k, slots] of starts) {
+      if (k === key(builds[i])) continue;
+      const b = optimise(w, pool, arcanes, opts, { start: slots });
+      if (b.dps > best.dps) best = b;
+    }
+    return best;
+  });
+}
+
+/**
  * A riven's worth on a weapon: the best build with it against the best without it, and each stat's
  * worth in the riven's slot (the best build with that stat alone on the riven, against an empty
  * riven slot: the seven other mods are re-chosen each time).

@@ -81,7 +81,7 @@ export function fight(w, t, opts) {
 
   // What one shot carries, before Galvanized's per-status Direct Damage (which depends on the target).
   const volleys = mode.parts.flatMap(p => {
-    const typed = hitByType(p, t, raw);
+    const typed = hitByType(p, t, raw, opts.valence);
     if (!typed) return [];
     const { base, byType, hit } = typed;
     const cc = p.cc * (1 + raw('critChance'));

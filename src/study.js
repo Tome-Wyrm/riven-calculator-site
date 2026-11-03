@@ -6,7 +6,8 @@
 import { WEAPON_STATS } from './data/weapon-stats.js';
 import { STAT_BY_ID, SHAPES } from './data/stats.js';
 import { rawValue, displayValue, format } from './engine.js';
-import { modPool, arcanePool, optimise, rivenPiece, SCENARIOS } from './build.js';
+import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, SCENARIOS } from './build.js';
+import { VALENCE_TYPES } from './sim.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
 /** @typedef {import('./data/stats.js').Shape} Shape */
@@ -18,7 +19,8 @@ import { modPool, arcanePool, optimise, rivenPiece, SCENARIOS } from './build.js
  * @property {Exclude<WeaponClass, 'melee'>} cls
  * @property {Shape} shape
  * @property {keyof typeof SCENARIOS} scenario
- * @property {import('./sim.js').SimOptions} opts
+ * @property {import('./sim.js').SimOptions} opts  an adversary weapon's Valence type 'best': the
+ *   element whose best build (no riven) does most, each one tried
  * @property {string[]} positives  stats the riven can roll as positives (spliced ones included)
  * @property {string[]} negatives  and as the curse
  */
@@ -39,12 +41,26 @@ export function study(input) {
   const opts = { ...input.opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1 };
   const pool = modPool(cls, w, sc, opts);
   const arcanes = arcanePool(cls, sc, opts);
+  // Each Valence element, by its best build without a riven (the elements it leaves the mods to
+  // make change with it); the study goes on with the best one.
+  /** @type {{type: string, change: number, build: ReturnType<typeof summary>}[] | null} */
+  let valences = null;
+  /** @type {Build | null} the chosen element's build, where the study's own search starts */
+  let found = null;
+  if (w.adversary && opts.valence?.type === 'best') {
+    const value = opts.valence.value;
+    const builds = optimiseEach(w, pool, arcanes, VALENCE_TYPES.map(type => ({ ...opts, valence: { type, value } })));
+    const tried = VALENCE_TYPES.map((type, i) => ({ type, b: builds[i] })).sort((a, b) => b.b.dps - a.b.dps);
+    valences = tried.map(t => ({ type: t.type, change: t.b.dps / tried[0].b.dps - 1, build: summary(t.b) }));
+    opts.valence = { type: tried[0].type, value };
+    found = tried[0].b;
+  }
   const raw = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign) => rawValue(STAT_BY_ID[id], cls, shape, sign, sign === '+' ? medianU(id) : 0.5);
   const shown = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign) => format(STAT_BY_ID[id], displayValue(STAT_BY_ID[id], cls, shape, sign, sign === '+' ? medianU(id) : 0.5));
   /** @param {Record<string, number>} roll @param {Build} from */
   const withRiven = (roll, from) => optimise(w, pool, arcanes, opts, { riven: rivenPiece(roll), start: from.slots });
 
-  const none = optimise(w, pool, arcanes, opts);
+  const none = found ?? optimise(w, pool, arcanes, opts);
   const empty = withRiven({}, none);
 
   // Each positive alone in the riven's slot, against the slot empty.
@@ -84,5 +100,5 @@ export function study(input) {
       return { id, shown: shown(id, '-'), change: b.dps / base.dps - 1 };
     }).sort((a, b) => b.change - a.change);
   }
-  return { none: summary(none), empty: empty.dps, singles, sets, curses };
+  return { none: summary(none), empty: empty.dps, singles, sets, curses, valences, valence: opts.valence ?? null };
 }

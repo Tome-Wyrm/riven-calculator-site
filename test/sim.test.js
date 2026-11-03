@@ -167,3 +167,26 @@ test('a Slash proc per tick: the wiki’s Damage over Time example (faction twic
   // One proc a second, 6 ticks each.
   assert.ok(Math.abs(dpsOf(slashGun, build, { enemy: 'grineer' }) - (344.5 + 6 * 297.8202)) < 1e-3);
 });
+
+test('the Valence bonus: the weapon’s own element, after the mods (HCET), in the base the mods scale from', async () => {
+  const { hitByType } = await import('../src/sim.js');
+  const p = { name: 'x', dmg: { puncture: 100 }, cc: 0, cd: 1, sc: 0, ms: 1 };
+  const m = (/** @type {Record<string, number>} */ st) => (/** @type {string} */ id) => st[id] ?? 0;
+  // A Cold mod (90% of 100 + 60) and a 60% Toxin bonus: Viral, 144 + 60.
+  assert.deepEqual(hitByType(p, { stats: {}, elements: [{ type: 'cold', value: 0.9 }] }, m({}), { type: 'toxin', value: 0.6 })?.byType, { puncture: 100, viral: 204 });
+  // Electricity and Toxin mods take Corrosive; a Heat bonus stays Heat.
+  assert.deepEqual(hitByType(p, { stats: {}, elements: [{ type: 'electricity', value: 0.9 }, { type: 'toxin', value: 0.9 }] }, m({}), { type: 'heat', value: 0.6 })?.byType, { puncture: 100, corrosive: 288, heat: 60 });
+  // Radiation stays Radiation; Impact x (1 + 120% Impact mods).
+  assert.deepEqual(hitByType(p, { stats: {}, elements: [] }, m({}), { type: 'radiation', value: 0.6 })?.byType, { puncture: 100, radiation: 60 });
+  assert.equal(hitByType(p, { stats: {}, elements: [] }, m({ impact: 1.2 }), { type: 'impact', value: 0.6 })?.byType.impact, 60 * 2.2);
+  // In game: Coda Bassocyst (789 Blast, 19 Radiation) with 60% Heat shows 484.8 Heat, 1292.8 in all;
+  // with Incendiary Coat (+90% Heat), 1648.3 Heat and 2456.3 in all. Its alt-fire: 618.1 of 921.1.
+  const { WEAPON_STATS } = await import('../src/data/weapon-stats.js');
+  const [normal, alt] = WEAPON_STATS['Coda Bassocyst'].modes.map(md => md.parts[0]);
+  const heat = { type: 'heat', value: 0.6 };
+  const r1 = (/** @type {number | undefined} */ x) => Math.round((x ?? 0) * 10) / 10;
+  assert.equal(r1(hitByType(normal, { stats: {}, elements: [] }, m({}), heat)?.hit), 1292.8);
+  const coat = { stats: {}, elements: [{ type: 'heat', value: 0.9 }] };
+  assert.deepEqual([r1(hitByType(normal, coat, m({}), heat)?.byType.heat), r1(hitByType(normal, coat, m({}), heat)?.hit)], [1648.3, 2456.3]);
+  assert.deepEqual([r1(hitByType(alt, coat, m({}), heat)?.byType.heat), r1(hitByType(alt, coat, m({}), heat)?.hit)], [618.1, 921.1]);
+});

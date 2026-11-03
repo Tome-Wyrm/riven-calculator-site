@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compatFor, liveFactor, modPool, arcanePool, optimise, rivenPiece, rivenWorth, SCENARIOS } from '../src/build.js';
+import { compatFor, liveFactor, modPool, arcanePool, optimise, optimiseEach, rivenPiece, rivenWorth, SCENARIOS } from '../src/build.js';
 import { combineElements, COMBINED } from '../src/elements.js';
 import { WEAPON_STATS } from '../src/data/weapon-stats.js';
 import { GUN_MODS } from '../src/data/mods.js';
@@ -61,6 +61,24 @@ test('the search pairs elements: without a riven, Laetum still gets a combined e
   const b = optimise(w, modPool('pistol', w, SCENARIOS.room, opts), arcanePool('pistol', SCENARIOS.room, opts), opts);
   const combined = combineElements(b.slots.flatMap(p => p.elements));
   assert.ok(Object.keys(combined).some(t => COMBINED.includes(t)), JSON.stringify(combined));
+});
+
+test('each Valence element’s best build: no worse than its own search, nor than any other element’s build', async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  const w = WEAPON_STATS['Kuva Bramma'];
+  const pool = modPool('rifle', w, SCENARIOS.room, opts), arcanes = arcanePool('rifle', SCENARIOS.room, opts);
+  const settings = ['heat', 'toxin', 'magnetic'].map(type => ({ ...opts, valence: { type, value: 0.6 } }));
+  const each = optimiseEach(w, pool, arcanes, settings);
+  const totals = (/** @type {import('../src/build.js').Build} */ b) => ({
+    stats: Object.fromEntries(Object.entries([...b.slots, ...(b.arcane ? [b.arcane] : [])].flatMap(p => Object.entries(p.stats))
+      .reduce((m, [k, v]) => m.set(k, (m.get(k) ?? 0) + v), new Map()))),
+    elements: b.slots.flatMap(p => p.elements),
+  });
+  settings.forEach((o, i) => {
+    assert.ok(each[i].dps >= optimise(w, pool, arcanes, o).dps - 1e-6);
+    // Within the search's own fine steps: another element's build never beats it by much.
+    for (const b of each) assert.ok(dpsOf(w, totals(b), o) <= each[i].dps * 1.02, `${o.valence.type}`);
+  });
 });
 
 test("a riven's worth: it takes a slot; a good stat beats the empty slot; the riven stays in the build", () => {
