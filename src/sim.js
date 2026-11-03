@@ -177,6 +177,19 @@ export function dps(w, cls, mods, opts = {}) {
 }
 
 /**
+ * An attack's weak point multiplier: the target's (its head, or opts.headMult) plus 1.5 x Weakpoint
+ * Damage, then x (1 + headshot bonuses: Deadhead, Target Acquired, the weapon's own, e.g. Cernos
+ * Prime's +50%). Weapons the wiki marks -2 (Arca Plasmor, Flux Rifle…) get no weak point bonus: 1x,
+ * Weakpoint Damage does nothing, headshot bonuses still apply. Checked in game 2026-11-03: Cernos
+ * Prime 2.25x on a Murmur head (1.5 x 1.5); Tenet Arca Plasmor 1x; Ignis Wraith 3x on a Grineer head.
+ * @param {Part} p @param {string} enemy @param {SimOptions} opts @param {(id: string) => number} m
+ */
+export function weakPointMult(p, enemy, opts, m) {
+  const head = (p.hs ?? 0) <= -1 ? 1 : Math.max(0, (opts.headMult ?? HEADS[enemy].headMult) + 1.5 * m('weakpointDamage'));
+  return head * Math.max(0, 1 + m('headshotMultiplier') + Math.max(0, p.hs ?? 0));
+}
+
+/**
  * Damage per second of a build, from its totals.
  * @param {WeaponStats} w @param {Totals} t @param {SimOptions} [opts]
  */
@@ -194,7 +207,6 @@ export function dpsOf(w, t, opts = {}) {
   const faction = enemy ? Math.max(0, 1 + m(enemy)) : 1;
   const D = Math.max(0, 1 + m('damage'));
   // A weak point: its multiplier plus 1.5 x Weakpoint Damage (heads), then x headshot bonuses.
-  const wpMult = Math.max(0, (opts.headMult ?? HEADS[enemy].headMult) + 1.5 * m('weakpointDamage')) * Math.max(0, 1 + m('headshotMultiplier'));
   const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
   // A fire-rate lock (the Semi- Cannonades) keeps the weapon's own rate.
   const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1)));
@@ -220,7 +232,7 @@ export function dpsOf(w, t, opts = {}) {
     // Body and weak point hits: their scale (weak point × crit) mixed by share; Damage mods apart.
     // Explosions are never weak point hits.
     const onWp = p.aoe ? 0 : wp;
-    const scale = (1 - onWp) * crit(cc, cd) + onWp * wpMult * crit(ccWp, headcrit ? 2 * cd : cd);
+    const scale = (1 - onWp) * crit(cc, cd) + onWp * weakPointMult(p, enemy, opts, m) * crit(ccWp, headcrit ? 2 * cd : cd);
     // Galvanized's Direct Damage: added to Damage, or multiplying it, at this attack's share.
     const [coShare, coMult] = p.co ?? [1, 0];
     const Ddirect = Math.max(0, coMult ? D * (1 + coShare * m('directDamage')) : D + coShare * m('directDamage'));

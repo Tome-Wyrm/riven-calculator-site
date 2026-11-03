@@ -61,6 +61,8 @@ function partOf(a) {
     ms: round(a.Multishot ?? 1),
     ...(a.ForcedProcs?.length ? { forced: a.ForcedProcs.map((/** @type {string} */ p) => p.toLowerCase()) } : {}),
     ...(a.ShotType === 'AoE' ? { aoe: 1 } : {}),
+    // The wiki's ExtraHeadshotDmg: a headshot bonus (Cernos Prime +0.5), or -2 for no weak point bonus.
+    ...(a.ExtraHeadshotDmg ? { hs: a.ExtraHeadshotDmg } : {}),
   });
 }
 
@@ -159,7 +161,7 @@ await writeFile(new URL('../src/data/weapon-stats.js', import.meta.url), `// @ts
 export const WEAPON_STATS_UPDATED = '${date}';
 
 /**
- * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number, co?: number[]}} Part
+ * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number, hs?: number, co?: number[]}} Part
  * @typedef {{name: string, rate: number, cost: number, charge?: number, parts: Part[]}} Mode
  * @typedef {{kind: string, mag: number, reload: number, ammo: number | null, trigger: string, tags: string[], adversary?: boolean, main: number, modes: Mode[]}} WeaponStats
  */

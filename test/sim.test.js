@@ -76,6 +76,24 @@ test('critical headshots double the crit multiplier, where the enemy allows it',
   near(head(true) / head(false), (1 + 2.5 * (11.2 - 1)) / (1 + 2.5 * (5.6 - 1)), 1e-9);
 });
 
+test('a weapon’s own headshot bonus (the wiki’s ExtraHeadshotDmg), checked in game', () => {
+  const head = (part, mods, headMult) => {
+    const w = gun({ cc: 0, ...part }), o = { weakpoint: 1, headMult };
+    return dps(w, 'rifle', mods, o) / dps(w, 'rifle', mods, { weakpoint: 0 });
+  };
+  // Cernos Prime on a Rogue Arcocanid (Murmur, 1.5x): body 236, head 530 = 1.5 x 1.5.
+  near(head({ hs: 0.5 }, {}, 1.5), 2.25);
+  // With Deadhead the bonuses add: 1.5 x (1 + 0.5 + 0.3).
+  near(head({ hs: 0.5 }, { headshotMultiplier: 0.3 }, 1.5), 2.7);
+  // Tenet Arca Plasmor (-2): 1,047 on head and body; Weakpoint Damage does nothing, Deadhead still applies.
+  near(head({ hs: -2 }, {}, 3), 1);
+  near(head({ hs: -2 }, { weakpointDamage: 2 }, 3), 1);
+  near(head({ hs: -2 }, { headshotMultiplier: 0.3 }, 3), 1.3);
+  // The data carries them.
+  assert.equal(WEAPON_STATS['Cernos Prime'].modes[0].parts[0].hs, 0.5);
+  assert.equal(WEAPON_STATS['Tenet Arca Plasmor'].modes[0].parts[0].hs, -2);
+});
+
 test('explosions are never weak point hits', () => {
   const blast = gun({ aoe: 1 });
   near(dps(blast, 'rifle', { weakpointDamage: 2 }, { weakpoint: 1 }) / dps(blast, 'rifle', {}, { weakpoint: 1 }), 1);
