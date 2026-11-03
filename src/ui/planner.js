@@ -29,6 +29,7 @@ const state = {
   spliced: NONE,
   recipe: NONE,                         // "a+b", or '' for the cheapest
   want: [NONE, NONE, NONE],
+  alts: /** @type {string[][]} */ ([[], [], []]), // other stats that would do for each positive ("Cold or Toxin")
   mins: ['', '', ''],                   // value wanted for each positive, '' = any
   ops: /** @type {Op[]} */ (['gte', 'gte', 'gte']),
   negative: NONE,
@@ -59,11 +60,18 @@ let T = /** @type {Shape} */ ('+++-');
 function valueGoals() {
   /** @type {Record<string, import('../planner.js').ValueGoal>} */
   const out = {};
-  state.want.forEach((id, i) => { const m = magnitude(state.mins[i]); if (id && m !== null) out[id] = { op: state.ops[i], value: m }; });
+  // A slot's goal holds for whichever of its stats lands.
+  state.want.forEach((id, i) => {
+    const m = magnitude(state.mins[i]);
+    if (id && m !== null) for (const x of slot(i)) out[x] = { op: state.ops[i], value: m };
+  });
   const sm = magnitude(state.splicedMin);
   if (state.spliced && sm !== null) out[state.spliced] = { op: state.splicedOp, value: sm };
   return out;
 }
+
+/** A positive slot's stats: its pick and the alternatives that would do instead. @param {number} i */
+const slot = i => (state.want[i] ? [...new Set([state.want[i], ...state.alts[i].filter(Boolean)])] : []);
 
 /** The curse's value goal, if any. @returns {import('../planner.js').ValueGoal | undefined} */
 function negGoal() {
@@ -203,6 +211,7 @@ function controls() {
   const splicedOptions = /** @type {[string, string][]} */ ([[NONE, 'None'], ...splicedList.map(s => [s.id, name(s.id)])]);
   // Keep choices valid for the class.
   state.want = state.want.map(id => (positive.includes(id) ? id : NONE));
+  state.alts = state.alts.map((a, i) => (state.want[i] ? a.filter(id => positive.includes(id)) : []));
   if (!negative.includes(state.negative)) state.negative = NONE;
   if (!splicedList.some(s => s.id === state.spliced)) state.spliced = NONE;
   const shapes = validShapes();
@@ -233,6 +242,13 @@ function controls() {
         want[i] = v;
         set({ want });
       }),
+      // Other stats that would do for this slot ("Cold or Toxin"): any one of them counts.
+      ...(id ? state.alts[i].map((alt, j) => select('or', [[NONE, '(none)'], ...posOptions.slice(1)], alt, v => {
+        const alts = state.alts.map(a => [...a]);
+        if (v) alts[i][j] = v; else alts[i].splice(j, 1);
+        set({ alts });
+      })) : []),
+      ...(id && state.alts[i].length < 3 ? [orButton(i, positive, set)] : []),
       ...(id ? [
         opPicker(`Positive ${i + 1} value`, state.ops[i], v => {
           const ops = [...state.ops];
@@ -320,10 +336,33 @@ function actionText(action, parents, have = [], spliced = false) {
   return `Lock ${name(action)}${also} and cycle`;
 }
 
+/**
+ * "+ or": adds another stat that would do for slot i (the first one not already wanted).
+ * @param {number} i @param {string[]} positive @param {(patch: Partial<typeof state>) => void} set
+ */
+function orButton(i, positive, set) {
+  const b = el('button', { type: 'button', class: 'copy-link', title: 'Another stat that would do just as well here: the plan takes whichever comes first' }, ['+ or']);
+  b.addEventListener('click', () => {
+    const taken = new Set(state.want.flatMap((_, k) => slot(k)));
+    const next = positive.find(id => !taken.has(id));
+    if (!next) return;
+    const alts = state.alts.map(a => [...a]);
+    alts[i].push(next);
+    set({ alts });
+  });
+  return b;
+}
+
+/** A slot's stats as text: "Cold or Toxin". @param {number} i */
+const slotText = i => slot(i).map(name).join(' or ');
+
 function results() {
   const want = state.want.filter(Boolean);
+  // One entry per slot: a stat, or the list of stats that would do.
+  const slots = state.want.flatMap((id, i) => (!id ? [] : slot(i).length > 1 ? [slot(i)] : [id]));
   const problems = [];
-  if (new Set(want).size !== want.length) problems.push('The same positive is picked twice.');
+  const single = slots.filter(x => typeof x === 'string');
+  if (new Set(single).size !== single.length) problems.push('The same positive is picked twice.');
   if (!want.length && !state.spliced) problems.push('Pick at least one stat you want.');
   if (!validShapes().length) problems.push('No riven shape can hold all of that.');
   if (state.from === 'mine' && !current().shape) problems.push('Enter your riven: at least 2 different positives.');
@@ -340,7 +379,7 @@ function results() {
     const mineNow = state.from === 'mine' ? current() : null;
     try {
       const plan = planBuild({
-        cls: state.cls, ipsCode: ipsOf(state.weapon), positives: want, spliced: state.spliced || null,
+        cls: state.cls, ipsCode: ipsOf(state.weapon), positives: slots, spliced: state.spliced || null,
         parents: state.recipe ? state.recipe.split('+') : undefined, negative: state.negative || null, shape,
         goals: valueGoals(), negGoal: negGoal(),
       }, mineNow && mineNow.shape
@@ -480,7 +519,7 @@ function results() {
     ];
   };
   const goals = valueGoals();
-  const goalList = [...want.map(id => (goals[id] ? `${name(id)} ${OP_TEXT[goals[id].op]} ${goals[id].value}` : name(id))),
+  const goalList = [...state.want.flatMap((id, i) => (!id ? [] : [goals[id] ? `${slotText(i)} ${OP_TEXT[goals[id].op]} ${goals[id].value}` : slotText(i)])),
     ...(state.negative ? [name(`-${state.negative}`) + (ng ? ` ${OP_TEXT[ng.op]} ${ng.value}` : '')] : [])].join(', ');
   if (state.spliced) {
     const curseOk = SHAPES[T].negatives > 0 && parents.some(id => pools(state.cls, ipsOf(state.weapon)).negative.includes(id));
@@ -521,7 +560,7 @@ function renderResults() {
   resultsBox.replaceChildren(results());
   saveState('p', {
     weapon: state.weapon, cls: state.cls, spliced: state.spliced, recipe: state.recipe,
-    want: state.want.filter(Boolean).join(','), neg: state.negative, shape: state.shape,
+    want: state.want.map((id, i) => slot(i).join('|')).filter(Boolean).join(','), neg: state.negative, shape: state.shape,
     min: state.want.map((id, i) => (id && state.mins[i] ? `${id}:${state.ops[i]}:${state.mins[i]}` : '')).filter(Boolean).join(','),
     smin: state.spliced && state.splicedMin ? `${state.splicedOp}:${state.splicedMin}` : '',
     nmin: state.negative && state.negMin ? `${state.negOp}:${state.negMin}` : '',
@@ -554,7 +593,8 @@ function restore() {
     cls: oneOf(CLASSES),
     spliced: v => (v === '' || STAT_BY_ID[v]?.spliced ? v : undefined),
     recipe: v => v,
-    want: v => v.split(',').filter(id => STAT_BY_ID[id]).slice(0, 3),
+    // "cold|toxin,range": a slot's alternatives after its pick.
+    want: v => v.split(',').map(x => x.split('|').filter(id => STAT_BY_ID[id])).filter(x => x.length).slice(0, 3),
     neg: v => (v === '' || STAT_BY_ID[v] ? v : undefined),
     shape: oneOf(/** @type {(Shape | 'any')[]} */ ([...SHAPE_ORDER, 'any'])),
     from: oneOf(/** @type {const} */ (['fresh', 'mine'])),
@@ -577,7 +617,10 @@ function restore() {
   } else if (saved.cls) { state.weapon = ''; state.cls = saved.cls; }
   if (saved.spliced !== undefined) state.spliced = saved.spliced;
   if (saved.recipe !== undefined) state.recipe = saved.recipe;
-  if (saved.want) state.want = [...saved.want, NONE, NONE, NONE].slice(0, 3);
+  if (saved.want) {
+    state.want = [...saved.want.map(x => x[0]), NONE, NONE, NONE].slice(0, 3);
+    state.alts = [...saved.want.map(x => x.slice(1)), [], [], []].slice(0, 3);
+  }
   if (saved.neg !== undefined) state.negative = saved.neg;
   if (saved.shape) state.shape = saved.shape;
   state.from = saved.from ?? 'fresh';
@@ -619,6 +662,7 @@ export function loadTargetIntoPlanner(target) {
     weapon: target.weapon,
     cls: target.cls,
     want: [...target.positives, NONE, NONE, NONE].slice(0, 3),
+    alts: [[], [], []],
     mins: ['', '', ''],
     ops: ['gte', 'gte', 'gte'],
     spliced: target.spliced ?? NONE,

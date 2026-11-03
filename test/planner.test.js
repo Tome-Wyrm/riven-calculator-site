@@ -121,3 +121,20 @@ test('after a splice, cycling with only the spliced stat locked is the normal pr
   assert.ok(p.expectedKuva < p.expectedCycles * 2 * FLAT_COST - 1);
   assert.equal(p.steps.find(s => s.stage === 'post' && !s.have.length)?.action, 'cycle');
 });
+
+test('a slot can take any one of several stats ("Cold or Toxin")', () => {
+  const base = { cls: 'rifle', spliced: null, negative: null, shape: '+++' };
+  const one = planBuild({ ...base, positives: ['cold', 'zoom'] }).expectedKuva;
+  const either = planBuild({ ...base, positives: [['cold', 'toxin'], 'zoom'] }).expectedKuva;
+  const both = planBuild({ ...base, positives: [['cold', 'toxin'], ['zoom', 'fireRate']] }).expectedKuva;
+  assert.ok(either < one && both < either, `${one} > ${either} > ${both}`);
+  // An alternative that another slot needs can't fill both: the same as wanting Cold and Toxin.
+  near(planBuild({ ...base, positives: [['cold', 'toxin'], 'toxin'] }).expectedKuva,
+    planBuild({ ...base, positives: ['cold', 'toxin'] }).expectedKuva, 1e-3);
+  // A riven with Toxin and Range is done.
+  const p = planBuild({ ...base, positives: [['cold', 'toxin'], 'zoom'] }, { stage: 'post', have: ['toxin', 'zoom'], shape: '+++' });
+  assert.equal(p.expectedKuva, 0);
+  // Alternatives that can't roll are dropped; a slot with none left is refused.
+  assert.throws(() => planBuild({ ...base, positives: [['range', 'comboDuration']] }), /Range or Combo Duration can't roll/);
+  assert.throws(() => planBuild({ ...base, positives: [['cold', 'toxin', 'heat', 'electricity'], ['zoom', 'fireRate', 'multishot']] }), /Too many alternatives/);
+});

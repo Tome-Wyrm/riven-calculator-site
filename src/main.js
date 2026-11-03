@@ -9,6 +9,7 @@ import { mountImporter } from './ui/importer.js';
 import { mountOcr } from './ui/ocr.js';
 import { mountPlanner } from './ui/planner.js';
 import { mountPicks } from './ui/picks.js';
+import { gateSection } from './ui/gate.js';
 
 const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
@@ -26,7 +27,8 @@ byId('weapons-updated').textContent = WEAPONS_UPDATED;
 
 // Collapsible sections: remember which are closed (a per-viewer convenience, so failures are fine).
 // A shared link to one section opens that section and scrolls to it.
-const SECTIONS = { r: 'ranges', g: 'calculator', a: 'advisor', p: 'planner', v: 'grader' };
+// Recommended rolls isn't here: it's gated (src/ui/gate.js) and starts closed on every load.
+const SECTIONS = { r: 'ranges', g: 'calculator', p: 'planner', v: 'grader' };
 const CLOSED_KEY = 'closedSections';
 /** @type {string[]} */
 let closed = [];
@@ -43,3 +45,4 @@ for (const id of Object.values(SECTIONS)) {
   });
 }
 if (target) byId(target).scrollIntoView();
+gateSection(/** @type {HTMLDetailsElement} */ (byId('advisor')));

@@ -321,6 +321,18 @@ it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL 
   a riven is past its 10th cycle). Revisit if real data turns up.
 - [x] Combine with roll quality (Phase 11): "and Cold ≥ 100%"
 - [x] "Plan from this riven" button in the grader / importer (fill the start state automatically)
+- [x] **Either-or slots** (a request from the Discord, 2026-11-03): a positive slot can take several
+      stats ("Cold or Toxin", "Range or Attack Speed"); any one fills it. The engine tracks every
+      alternative and counts the riven done once each slot is filled by a different stat (so
+      overlapping slots can't share one). At most 6 tracked stats, splice parents included. Panel:
+      "+ or" beside a pick; links store a slot as `cold|toxin`. Felarx-style melee example (Status
+      Damage spliced, -Slash): Cold + Range ~1.74M Kuva, Cold/Toxin + Range/Attack Speed ~0.54M.
+
+- [x] **Recommended rolls gated** (2026-11-03, still under construction): 🚧 in its title, closed on
+      every load; opening it asks for a name, and only names whose MD5 is in `src/data/allowlist.js`
+      open it. The names live in the git-ignored `tools/data/allowlist.txt`
+      (`node tools/build-allowlist.mjs` fills in hashes and rebuilds the published list). Not
+      security: it keeps the panel out of casual view.
 
 ### Phase 11 — Multi-stat goals
 - [ ] Several goal rows (stat + op + target) at once, e.g. ≥X Crit Chance **and** ≥Y Crit Damage

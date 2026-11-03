@@ -19,3 +19,5 @@ tools/data/cache/
 tools/data/*.wiki
 # Hand-kept workbooks read by the builders (tools/build-valence-picks.mjs: ValenceElements.xlsx)
 tools/data/*.xlsx
+# Who may open Recommended rolls (names; only their hashes are published: tools/build-allowlist.mjs)
+tools/data/allowlist.txt

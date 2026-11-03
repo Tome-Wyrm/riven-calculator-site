@@ -385,3 +385,17 @@ table.picks { border-collapse: collapse; margin: 6px 0; }
 .set-build summary { cursor: pointer; color: var(--muted); }
 .note.busy { font-style: italic; }
 @media (max-width: 600px) { .build-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* The Recommended rolls gate (src/ui/gate.js). */
+dialog.gate {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: var(--gap);
+  max-width: min(360px, calc(100vw - 32px));
+}
+dialog.gate::backdrop { background: rgb(0 0 0 / 0.4); }
+dialog.gate p { margin: 0 0 8px; }
+dialog.gate input { width: 100%; box-sizing: border-box; }
+.gate-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }

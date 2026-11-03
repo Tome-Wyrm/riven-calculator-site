@@ -35,6 +35,8 @@ import { pools, cycleCost } from './cycle.js';
 
 export const FLAT_COST = cycleCost(99);          // 3,500
 export const OP_TEXT = { gte: '≥', lte: '≤', eq: '=' };
+/** The most wanted stats (alternatives and splice parents included) a plan follows: states double with each. */
+export const MAX_TRACKED = 6;
 const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
   if (k < 0 || k > n) return 0;
   let r = 1;
@@ -46,7 +48,8 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
  * @typedef {object} Target
  * @property {WeaponClass} cls
  * @property {string} [ipsCode]
- * @property {string[]} positives    ordinary stats wanted as positives (not counting the spliced one)
+ * @property {(string | string[])[]} positives  ordinary stats wanted as positives (not counting the
+ *   spliced one), one per slot: a list is "any one of these" (Cold or Toxin)
  * @property {string | null} spliced  spliced stat wanted, if any
  * @property {string[]} [parents]     which recipe to splice it from (default: the cheapest)
  * @property {string | null} negative wanted negative, or null for "don't care"
@@ -73,16 +76,52 @@ function solveFor(t, parents) {
   const { positive: posPool, negative: negPool } = pools(t.cls, t.ipsCode);
   const S = t.spliced;
   const targetNeg = t.negative;
-  // Tracked positives per stage. Before the splice: the parents first, then wanted positives that
-  // survive the splice. After: the wanted positives.
-  const preTracked = parents ? [...parents, ...t.positives.filter(id => !parents.includes(id))] : [];
-  const postTracked = [...t.positives];
-  const parentMask = parents ? 0b11 : 0;
+  /**
+   * The chance a freshly rolled positive meets its value goal on a shape (1 with no goal). The game
+   * rounds what it shows (1 decimal, 2 for multipliers), so "≥ 148.5" includes rolls showing as
+   * 148.5: a perfect roll is a goal like any other.
+   */
+  const meets = (/** @type {string} */ id, /** @type {Shape} */ shape, /** @type {'+' | '-'} */ pm = '+', goal = t.goals?.[id]) => {
+    if (!goal) return 1;
+    const stat = STAT_BY_ID[id];
+    const half = stat.unit === 'mult' ? 0.005 : 0.05;
+    const r = range(stat, t.cls, shape, pm);
+    const sign = r.at1 < 0 ? -1 : 1;           // e.g. recoil shows as negative when it's the positive
+    // (A curse's size grows with its roll too, so the same window works for it.)
+    const u = (/** @type {number} */ mag) => Math.min(1, Math.max(0, solveU(stat, t.cls, shape, pm, sign * mag)));
+    const lo = goal.op === 'lte' ? 0 : u(goal.value - half);
+    const hi = goal.op === 'gte' ? 1 : u(goal.value + half);
+    return Math.max(0, hi - lo);
+  };
   const finalPos = SHAPES[t.shape].positives;
-  if (postTracked.length + (S ? 1 : 0) > finalPos) throw new Error(`A ${t.shape} riven has only ${finalPos} positives.`);
+  if (t.positives.length + (S ? 1 : 0) > finalPos) throw new Error(`A ${t.shape} riven has only ${finalPos} positives.`);
   if (targetNeg && SHAPES[t.shape].negatives === 0) throw new Error(`A ${t.shape} riven has no negative.`);
-  for (const id of [...postTracked, ...(parents ?? [])]) if (!posPool.includes(id)) throw new Error(`${STAT_BY_ID[id].name} can't roll as a positive on this weapon.`);
+  for (const id of parents ?? []) if (!posPool.includes(id)) throw new Error(`${STAT_BY_ID[id].name} can't roll as a positive on this weapon.`);
   if (targetNeg && !negPool.includes(targetNeg)) throw new Error(`${STAT_BY_ID[targetNeg].name} can't roll as a negative on this weapon.`);
+  // Each slot's alternatives, less the ones this weapon can't roll or that can't meet their goal;
+  // a slot needs at least one left.
+  const groups = t.positives.map(p => {
+    const all = Array.isArray(p) ? p : [p];
+    const names = all.map(id => STAT_BY_ID[id].name).join(' or ');
+    const rollable = all.filter(id => posPool.includes(id));
+    if (!rollable.length) throw new Error(`${names} can't roll as a positive on this weapon.`);
+    const fit = rollable.filter(id => meets(id, t.shape) > 0);
+    if (!fit.length) {
+      const id = rollable[0];
+      const r = range(STAT_BY_ID[id], t.cls, t.shape, '+');
+      const [lo, hi] = [Math.abs(r.at0), Math.abs(r.at1)].sort((a, b) => a - b).map(v => Math.round(v * 100) / 100);
+      throw new Error(`${rollable.length > 1 ? `None of ${names} can` : `${STAT_BY_ID[id].name} can't`} be ${OP_TEXT[/** @type {ValueGoal} */ (t.goals?.[id]).op]} ${t.goals?.[id]?.value} on a ${t.shape} riven${rollable.length > 1 ? '' : ` (it rolls ${lo} to ${hi})`}.`);
+    }
+    return fit;
+  });
+  // Tracked positives per stage. After the splice: every wanted alternative. Before: the parents
+  // first, then the wanted ones that survive the splice.
+  const postTracked = [...new Set(groups.flat())];
+  const preTracked = parents ? [...parents, ...postTracked.filter(id => !parents.includes(id))] : [];
+  if (Math.max(preTracked.length, postTracked.length) > MAX_TRACKED) {
+    throw new Error(`Too many alternatives: the planner follows at most ${MAX_TRACKED} stats at once (splice parents included).`);
+  }
+  const parentMask = parents ? 0b11 : 0;
 
   /** @type {Map<string, State>} */
   const states = new Map();
@@ -123,38 +162,21 @@ function solveFor(t, parents) {
   }
 
   const tracked = (/** @type {State} */ s) => (s.stage === 'pre' ? preTracked : postTracked);
+  // Done: each slot filled by a different stat the riven has (an alternative counts for one slot).
+  const fills = (/** @type {number} */ mask) => {
+    const have = postTracked.filter((_, i) => mask & (1 << i));
+    const assign = (/** @type {number} */ g, /** @type {Set<string>} */ used) => g === groups.length
+      || groups[g].some(id => have.includes(id) && !used.has(id) && assign(g + 1, new Set([...used, id])));
+    return assign(0, new Set());
+  };
   const isDone = (/** @type {State} */ s) => s.stage === 'post' && s.shape === t.shape
-    && s.mask === (1 << postTracked.length) - 1 && (!targetNeg || s.neg === 1);
+    && fills(s.mask) && (!targetNeg || s.neg === 1);
   // Both parents as positives, or one as a positive and the other as the curse; with a goal for
   // the spliced stat, neither may be above its window and one must be inside it.
   const canSplice = (/** @type {State} */ s) => s.stage === 'pre' && s.shape === t.shape
     && ((s.mask & parentMask) === parentMask || (s.neg >= 2 && (s.mask & (1 << (3 - s.neg))) !== 0))
     && (!win || (cat(s.pg, 0) !== 2 && cat(s.pg, 1) !== 2 && (cat(s.pg, 0) === 1 || cat(s.pg, 1) === 1)));
 
-  /**
-   * The chance a freshly rolled positive meets its value goal on a shape (1 with no goal). The game
-   * rounds what it shows (1 decimal, 2 for multipliers), so "≥ 148.5" includes rolls showing as
-   * 148.5: a perfect roll is a goal like any other.
-   */
-  const meets = (/** @type {string} */ id, /** @type {Shape} */ shape, /** @type {'+' | '-'} */ pm = '+', goal = t.goals?.[id]) => {
-    if (!goal) return 1;
-    const stat = STAT_BY_ID[id];
-    const half = stat.unit === 'mult' ? 0.005 : 0.05;
-    const r = range(stat, t.cls, shape, pm);
-    const sign = r.at1 < 0 ? -1 : 1;           // e.g. recoil shows as negative when it's the positive
-    // (A curse's size grows with its roll too, so the same window works for it.)
-    const u = (/** @type {number} */ mag) => Math.min(1, Math.max(0, solveU(stat, t.cls, shape, pm, sign * mag)));
-    const lo = goal.op === 'lte' ? 0 : u(goal.value - half);
-    const hi = goal.op === 'gte' ? 1 : u(goal.value + half);
-    return Math.max(0, hi - lo);
-  };
-  for (const id of postTracked) {
-    if (meets(id, t.shape) === 0) {
-      const r = range(STAT_BY_ID[id], t.cls, t.shape, '+');
-      const [lo, hi] = [Math.abs(r.at0), Math.abs(r.at1)].sort((a, b) => a - b).map(v => Math.round(v * 100) / 100);
-      throw new Error(`${STAT_BY_ID[id].name} can't be ${OP_TEXT[/** @type {ValueGoal} */ (t.goals?.[id]).op]} ${t.goals?.[id]?.value} on a ${t.shape} riven (it rolls ${lo} to ${hi}).`);
-    }
-  }
   /** The chance a fresh curse of the wanted stat meets its goal. @param {Shape} shape */
   const meetsNeg = shape => (targetNeg && t.negGoal && SHAPES[shape].negatives ? meets(targetNeg, shape, '-', t.negGoal) : 1);
   if (targetNeg && t.negGoal && meetsNeg(t.shape) === 0) {
