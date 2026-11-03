@@ -23,9 +23,21 @@
 // multiplies on the attacks Underframe marks so (Coda Bassocyst), at the share it lists.
 // Sustained DPS adds the reload: a magazine of shots (Ammo Efficiency stretches it) then the reload time.
 //
-// Armor is optional (stripped by default): Corrosive and Heat procs take it down, Slash bleeds ignore it.
-// Not modelled: shields, health types,
-// falloff, and the build changing around the riven (a riven element that saves a mod slot).
+// A target (src/enemies.js: a unit at its level) has health, shields and armor, and its faction's
+// weaknesses (Update 36: +50% or -50% by damage type). Shields go first: armor doesn't cover them,
+// Heat does half to them, Toxin skips them (Slash bleeds don't, since Update 27.2), and Magnetic procs
+// multiply the damage they take like Viral does health's (x2 for one, +25% each more, x4.25 at 10).
+// When they break, each Magnetic stack deals 3% of the max shields as Electricity to health. Armor
+// covers health: Corrosive and Heat procs take it down, Slash bleeds ignore it. The result is an
+// effective DPS: the target's health and shields over the time to take both. Without a target:
+// health only, no weaknesses, and the armor given (stripped by default).
+// "Per status type" bonuses (Galvanized) count the status types the weapon keeps on the target: each
+// type's chance of being up, from its procs per second over the 6 s a proc lasts. A primed target
+// (a primer companion's work, or a squad's) has every type up, Viral and Corrosive at 10 stacks and
+// Heat burning.
+// Not modelled: Overguard, Eximus units, falloff, and the build changing around the riven (a riven
+// element that saves a mod slot). Shield regeneration is left out on purpose: Magnetic stops it, and
+// a target whose shields come back is one the build isn't keeping up with.
 
 import { STAT_BY_ID, SHAPES } from './data/stats.js';
 import { rawValue, displayValue, format } from './engine.js';
@@ -61,6 +73,8 @@ const TICKS = 7;
 /** The build's two elementals combine into this. */
 const BUILD_ELEMENT = 'viral';
 const STATUS_SECONDS = 6;
+/** Status types a target can carry (each counted once by "per status type" bonuses). */
+const STATUS_TYPES = [...PHYSICAL, ...ELEMENTS];
 export const FACTIONS = ['grineer', 'corpus', 'infested', 'orokin', 'scaldra', 'techrot', 'murmur'];
 
 /** @typedef {'' | 'grineer' | 'corpus' | 'infested' | 'orokin' | 'scaldra' | 'techrot' | 'murmur'} Enemy */
@@ -91,7 +105,15 @@ export const HEADS = {
  * @property {boolean} [headcrit]  whether the target takes the critical headshot bonus (default: its faction's)
  * @property {boolean} [burst]     ignore reloads (default: sustained)
  * @property {boolean} [bow]       a bow: Fire Rate rolls count double
- * @property {number} [armor]      the enemy's armor (default 0: stripped); Steel Path enemies reach 2700
+ * @property {number} [armor]      the enemy's armor without a target (default 0: stripped)
+ * @property {Target} [target]     the unit fought, at its level (overrides armor)
+ * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
+ */
+
+/**
+ * A target at its level: what it takes to kill, and its weaknesses (damage type → extra share, e.g.
+ * 0.5 or -0.5) on health and on shields.
+ * @typedef {{health: number, shields: number, armor: number, weak: Record<string, number>, shieldWeak: Record<string, number>}} Target
  */
 
 /** Stats with no effect on damage in this model (they're quality of life). */
@@ -134,8 +156,14 @@ export function dps(w, cls, mods, opts = {}) {
  * @param {WeaponStats} w @param {Totals} t @param {SimOptions} [opts]
  */
 export function dpsOf(w, t, opts = {}) {
-  const m = (/** @type {string} */ id) => t.stats[id] ?? 0;
+  const raw = (/** @type {string} */ id) => t.stats[id] ?? 0;
   const mode = w.modes[opts.mode ?? w.main] ?? w.modes[0];
+  // Each part's hit by type (the per status bonuses don't touch it), worked out once.
+  const parts = mode.parts.map(p => ({ p, typed: hitByType(p, t, raw) }));
+  const statusTypes = statusTypesUp(w, mode, t, opts, parts);
+  // A "per status type" bonus (stat id + "PerStatus") counts once per type up.
+  const stats = statusTypes ? withPerStatus(t.stats, statusTypes) : t.stats;
+  const m = (/** @type {string} */ id) => stats[id] ?? 0;
   const wp = opts.weakpoint ?? 0;
   const enemy = opts.enemy ?? '';
   const faction = enemy ? Math.max(0, 1 + m(enemy)) : 1;
@@ -148,28 +176,14 @@ export function dpsOf(w, t, opts = {}) {
   const crit = (/** @type {number} */ cc, /** @type {number} */ cd) => 1 + Math.max(0, cc) * (Math.max(1, cd) - 1);
   const statusMult = TICKS * Math.max(0, 1 + m('statusDuration')) * Math.max(0, 1 + m('statusDamage'));
 
-  let armored = 0;                                          // damage armor reduces
-  let bleed = 0;                                            // Slash DoT: true damage, armor or not
+  /** @type {Record<string, number>} damage per second by type (direct hits and DoT), before the target */
+  const dealt = {};
+  let bleed = 0;                                            // Slash DoT: True damage, past armor and shields
   /** @type {Record<string, number>} procs per second of the types whose stacks matter */
-  const procs = { viral: 0, corrosive: 0, heat: 0 };
-  for (const p of mode.parts) {
-    const base = Object.values(p.dmg).reduce((s, v) => s + v, 0);
-    if (base <= 0) continue;
-    // The hit before Damage mods, by type: physical types scaled by their own stats; the build's
-    // elements (shares of the base, in slot order) combined with the weapon's own (combineElements).
-    /** @type {Record<string, number>} */
-    const byType = {};
-    /** @type {Record<string, number>} */
-    const innate = {};
-    for (const [type, v] of Object.entries(p.dmg)) {
-      if (PHYSICAL.includes(type)) byType[type] = v * Math.max(0, 1 + m(type));
-      else if (ELEMENTS.includes(type)) innate[type] = v;
-      else byType[type] = v;                                // Tau, Void, True: as they are
-    }
-    const combined = combineElements(t.elements.map(e => ({ type: e.type, value: e.value * base })), innate);
-    for (const [type, v] of Object.entries(combined)) byType[type] = (byType[type] ?? 0) + v;
-    const hit = Object.values(byType).reduce((s, v) => s + v, 0);
-    if (hit <= 0) continue;
+  const procs = { viral: 0, corrosive: 0, heat: 0, magnetic: 0 };
+  for (const { p, typed } of parts) {
+    if (!typed) continue;
+    const { base, byType, hit } = typed;
 
     const cc = p.cc * (1 + m('critChance'));
     const ccWp = p.cc * (1 + m('critChance') + m('weakpointCrit'));
@@ -182,35 +196,132 @@ export function dpsOf(w, t, opts = {}) {
     const [coShare, coMult] = p.co ?? [1, 0];
     const Ddirect = Math.max(0, coMult ? D * (1 + coShare * m('directDamage')) : D + coShare * m('directDamage'));
     const pellets = p.ms * (m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot')));
-    const direct = hit * faction * Ddirect * scale * pellets * rate;
+    const direct = faction * Ddirect * scale * pellets * rate;
 
     // Status: chance per pellet (plus forced procs), type weighted by share of the hit; Hunter
     // Munitions adds a Slash proc chance on each critical hit.
-    const chance = Math.max(0, p.sc * (1 + m('statusChance')));
-    const onCrit = (/** @type {string} */ type) => Math.min(1, Math.max(0, cc)) * m(`${type}OnCrit`);
-    const procsPerPellet = (/** @type {string} */ type) => chance * (byType[type] ?? 0) / hit + (p.forced?.includes(type) ? 1 : 0) + onCrit(type);
+    const procsPerPellet = procsOf(p, byType, hit, cc, m);
     // DoT ticks are a share of the base damage (not the elements or IPS mods), faction twice.
     const dotScale = statusMult * base * faction * faction * D * scale * pellets * rate;
-    armored += direct;
+    for (const [type, v] of Object.entries(byType)) dealt[type] = (dealt[type] ?? 0) + v * direct;
     for (const [type, tick] of Object.entries(DOT)) {
       const dot = procsPerPellet(type) * tick * dotScale;
-      if (type === 'slash') bleed += dot; else armored += dot;
+      if (type === 'slash') bleed += dot; else dealt[type] = (dealt[type] ?? 0) + dot;
     }
     for (const type of Object.keys(procs)) procs[type] += procsPerPellet(type) * pellets * rate;
   }
   const uptime = opts.burst ? 1 : sustained(w, mode, rate, m);
-  // Average stacks up: procs per second over the time each lasts, capped.
-  const stacks = (/** @type {string} */ type, cap = 10) => Math.min(cap, procs[type] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration')));
+  // Average stacks up: procs per second over the time each lasts, capped (all of them on a primed target).
+  const stacks = (/** @type {string} */ type, cap = 10) => (opts.primed ? cap
+    : Math.min(cap, procs[type] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'))));
   // Below one stack on average, an effect ramps up with the share of time it's there.
-  const v = stacks('viral');
-  const viral = v < 1 ? 1 + v : 1.75 + 0.25 * v;
+  // Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more.
+  const amplify = (/** @type {number} */ n) => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
+  const viral = amplify(stacks('viral'));
   // Armor: Corrosive takes 26% for the first stack, 6% for each more (80% at 10); a Heat proc
   // halves what's left while it burns. Damage reduction 0.9 × √(armor / 2700).
   const c = stacks('corrosive');
   const stripped = c < 1 ? 0.26 * c : 0.2 + 0.06 * c;
-  const armor = (opts.armor ?? 0) * (1 - stripped) * (1 - 0.5 * stacks('heat', 1));
+  const target = opts.target ?? { health: 1, shields: 0, armor: opts.armor ?? 0, weak: {}, shieldWeak: {} };
+  const armor = target.armor * (1 - stripped) * (1 - 0.5 * stacks('heat', 1));
   const kept = 1 - 0.9 * Math.sqrt(Math.min(armor, 2700) / 2700);
-  return (armored * kept + bleed) * uptime * viral;
+
+  // Per second, while firing: to health (all of it), and to shields (all but Toxin, which takes
+  // health even while shields are up). Bleeds are True damage: no armor, no weaknesses.
+  const toHealthOf = (/** @type {string} */ type, /** @type {number} */ v) => v * Math.max(0, 1 + (target.weak[type] ?? 0)) * kept * viral;
+  const magnetic = target.shields > 0 ? stacks('magnetic') : 0;
+  let toHealth = bleed * viral;
+  let toxin = 0;
+  let toShields = bleed * amplify(magnetic);
+  for (const [type, v] of Object.entries(dealt)) {
+    const h = toHealthOf(type, v);
+    toHealth += h;
+    if (type === 'toxin') toxin += h;
+    else toShields += v * Math.max(0, 1 + (target.shieldWeak[type] ?? 0)) * amplify(magnetic);
+  }
+  if (target.shields <= 0) return toHealth * uptime;
+  // Shields first; Toxin takes health meanwhile, and finishes it alone if it's faster. The break
+  // costs health 3% of the max shields per Magnetic stack, as Electricity.
+  const shieldTime = toShields > 0 ? target.shields / toShields : Infinity;
+  const left = target.health - toxin * shieldTime - toHealthOf('electricity', 0.03 * magnetic * target.shields);
+  const toxinAlone = target.health / Math.max(1e-9, toxin);
+  const time = !Number.isFinite(shieldTime) ? toxinAlone : left <= 0 ? Math.min(shieldTime, toxinAlone) : shieldTime + left / toHealth;
+  return (target.health + target.shields) / time * uptime;
+}
+
+/**
+ * Stats with each per status type bonus counted `n` times into its own stat.
+ * @param {Record<string, number>} stats @param {number} n
+ */
+function withPerStatus(stats, n) {
+  const out = { ...stats };
+  for (const [k, v] of Object.entries(stats)) {
+    if (k.endsWith('PerStatus')) { const id = k.slice(0, -'PerStatus'.length); out[id] = (out[id] ?? 0) + n * v; }
+  }
+  return out;
+}
+
+/**
+ * A part's hit before Damage mods, by type: physical types scaled by their own stats; the build's
+ * elements (shares of the base, in slot order) combined with the weapon's own (combineElements).
+ * Null for a part that does no damage.
+ * @param {Part} p @param {Totals} t @param {(id: string) => number} m
+ */
+function hitByType(p, t, m) {
+  const base = Object.values(p.dmg).reduce((s, v) => s + v, 0);
+  if (base <= 0) return null;
+  /** @type {Record<string, number>} */
+  const byType = {};
+  /** @type {Record<string, number>} */
+  const innate = {};
+  for (const [type, v] of Object.entries(p.dmg)) {
+    if (PHYSICAL.includes(type)) byType[type] = v * Math.max(0, 1 + m(type));
+    else if (ELEMENTS.includes(type)) innate[type] = v;
+    else byType[type] = v;                                  // Tau, Void, True: as they are
+  }
+  const combined = combineElements(t.elements.map(e => ({ type: e.type, value: e.value * base })), innate);
+  for (const [type, v] of Object.entries(combined)) byType[type] = (byType[type] ?? 0) + v;
+  const hit = Object.values(byType).reduce((s, v) => s + v, 0);
+  return hit > 0 ? { base, byType, hit } : null;
+}
+
+/**
+ * Procs per pellet of a type: the status chance, the type weighted by its share of the hit, plus
+ * forced procs and Hunter Munitions' Slash proc chance on each critical hit.
+ * @param {Part} p @param {Record<string, number>} byType @param {number} hit @param {number} cc @param {(id: string) => number} m
+ */
+function procsOf(p, byType, hit, cc, m) {
+  const chance = Math.max(0, p.sc * (1 + m('statusChance')));
+  const slashOnCrit = Math.min(1, Math.max(0, cc)) * m('slashOnCrit');   // the only "on crit" proc stat
+  return (/** @type {string} */ type) => chance * (byType[type] ?? 0) / hit + (p.forced?.includes(type) ? 1 : 0)
+    + (type === 'slash' ? slashOnCrit : 0);
+}
+
+/**
+ * How many status types the weapon keeps on the target, on average: each type's chance of being up,
+ * 1 - e^(-procs/s x seconds a proc lasts). Every type on a primed target. Per status type bonuses
+ * don't change it (no status stat counts per status type).
+ * @param {WeaponStats} w @param {WeaponStats['modes'][number]} mode @param {Totals} t @param {SimOptions} opts
+ * @param {{p: Part, typed: ReturnType<typeof hitByType>}[]} parts
+ */
+function statusTypesUp(w, mode, t, opts, parts) {
+  if (opts.primed) return STATUS_TYPES.length;
+  const m = (/** @type {string} */ id) => t.stats[id] ?? 0;
+  if (!Object.keys(t.stats).some(k => k.endsWith('PerStatus'))) return 0;
+  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1)));
+  const pellets = m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot'));
+  const uptime = opts.burst ? 1 : sustained(w, mode, rate, m);
+  const seconds = STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
+  /** @type {Record<string, number>} procs per second by type (only the types the hit has, forced ones and Slash) */
+  const perSecond = {};
+  for (const { p, typed } of parts) {
+    if (!typed) continue;
+    const procs = procsOf(p, typed.byType, typed.hit, p.cc * (1 + m('critChance')), m);
+    for (const type of new Set([...Object.keys(typed.byType), ...(p.forced ?? []), 'slash'])) {
+      if (STATUS_TYPES.includes(type)) perSecond[type] = (perSecond[type] ?? 0) + procs(type) * p.ms * pellets * rate * uptime;
+    }
+  }
+  return Object.values(perSecond).reduce((n, r) => n + 1 - Math.exp(-r * seconds), 0);
 }
 
 /**

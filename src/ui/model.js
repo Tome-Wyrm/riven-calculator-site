@@ -1,14 +1,15 @@
 // @ts-check
 // The damage model's view of a gun's riven, under its community picks: the best build without a
 // riven, the best rivens (each with the build re-chosen around it), what each stat is worth in the
-// riven's slot, and what each curse costs on the best riven. The work (src/study.js) runs in a
-// worker, about a second per setting.
+// riven's slot, and what each curse costs on the best riven, against a chosen target (a unit at a
+// level, src/enemies.js). The work (src/study.js) runs in a worker, about a second per setting.
 
 import { STAT_BY_ID, SPLICED, SHAPES } from '../data/stats.js';
 import { WEAPONS } from '../data/weapons.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { pools } from '../cycle.js';
 import { FACTIONS } from '../sim.js';
+import { targetOf } from '../enemies.js';
 import { picksFor, communityFit } from '../picks.js';
 import { el, statName, segmented, select, ipsOf } from './dom.js';
 import { oneOf } from './state.js';
@@ -31,7 +32,11 @@ export const modelState = {
   mode: -1,                                   // fire mode index, -1 = the weapon's main one
   scenario: /** @type {'room' | 'single' | 'weak'} */ ('room'),
   enemy: /** @type {Enemy} */ (''),
-  armor: 0,
+  unit: '',                                   // the faction's unit ('' = its default)
+  level: 150,
+  steelPath: false,
+  armor: 0,                                   // 0 = stripped; else full (2700 without a faction)
+  primed: false,                              // every status type on the target
   burst: false,
 };
 
@@ -40,7 +45,8 @@ export function modelFields() {
   const s = modelState;
   return {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
-    enemy: s.enemy, armor: s.armor || '', burst: s.burst ? 1 : '',
+    enemy: s.enemy, unit: s.enemy ? s.unit : '', lvl: s.enemy && s.level !== 150 ? s.level : '', sp: s.enemy && s.steelPath ? 1 : '',
+    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '',
   };
 }
 
@@ -52,11 +58,18 @@ export function restoreModel(raw) {
   if (raw.sc === 'single' || raw.sc === 'weak') modelState.scenario = raw.sc;
   if (FACTIONS.includes(raw.enemy ?? '')) modelState.enemy = /** @type {Enemy} */ (raw.enemy);
   if (raw.armor) modelState.armor = Number(raw.armor) > 0 ? 2700 : 0;
+  modelState.unit = raw.unit ?? '';                        // checked against the faction's units when they're in
+  const level = Number(raw.lvl);
+  if (Number.isInteger(level) && level >= 1 && level <= 9999) modelState.level = level;
+  modelState.steelPath = raw.sp === '1';
+  modelState.primed = raw.primed === '1';
   modelState.burst = raw.burst === '1';
 }
 
 /** @type {Record<string, import('../data/weapon-stats.js').WeaponStats> | null} */
 let stats = null;
+/** @type {typeof import('../data/enemies.js') | null} */
+let enemies = null;
 /** @type {Promise<void> | null} */
 let loading = null;
 
@@ -95,6 +108,17 @@ const pct = x => {
   return r === 0 ? '±0%' : `${r > 0 ? '+' : '−'}${Math.abs(r)}%`;
 };
 
+/** A big number, shortened: "1.2M", "34k". @param {number} x */
+const big = x => (x >= 1e6 ? `${(x / 1e6).toFixed(1)}M` : x >= 1e4 ? `${Math.round(x / 1e3)}k` : String(Math.round(x)));
+
+/** A target's weaknesses as text: "; weak to Impact and Corrosive, resists Heat". @param {Record<string, number>} weak */
+const weakText = weak => {
+  const named = (/** @type {number} */ sign) => Object.entries(weak).filter(([, v]) => Math.sign(v) === sign)
+    .map(([k]) => k[0].toUpperCase() + k.slice(1)).join(' and ');
+  const parts = [named(1) && `weak to ${named(1)}`, named(-1) && `resists ${named(-1)}`].filter(Boolean);
+  return parts.length ? `; ${parts.join(', ')}` : '';
+};
+
 /** A bar for a DPS change, scaled to the largest. @param {number} x @param {number} max */
 const bar = (x, max) => el('span', { class: `dps-bar${x < 0 ? ' neg' : ''}`, style: `width: ${(Math.min(1, Math.abs(x) / max) * 100).toFixed(1)}%` });
 
@@ -113,8 +137,9 @@ const buildGrid = b => el('div', { class: 'build' }, [
 export function modelBlock(weapon, cls, rerender) {
   const head = el('h3', { class: 'model-title' }, ['Damage model']);
   if (cls === 'melee') return [head, el('p', { class: 'note' }, ['The damage model covers guns only: melee damage depends on combo, stance and heavy attacks more than on a riven’s numbers.'])];
-  if (!stats) {
-    loading ??= import('../data/weapon-stats.js').then(m => { stats = m.WEAPON_STATS; rerender(); });
+  if (!stats || !enemies) {
+    loading ??= Promise.all([import('../data/weapon-stats.js'), import('../data/enemies.js')])
+      .then(([m, e]) => { stats = m.WEAPON_STATS; enemies = e; rerender(); });
     return [head, el('p', { class: 'note' }, ['Loading weapon stats…'])];
   }
   const w = stats[weapon];
@@ -124,10 +149,19 @@ export function modelBlock(weapon, cls, rerender) {
   const gun = /** @type {Exclude<WeaponClass, 'melee'>} */ (cls);
   const set = (/** @type {Partial<typeof modelState>} */ patch) => { Object.assign(s, patch); rerender(); };
   if (s.mode >= w.modes.length) s.mode = -1;
+  const units = s.enemy ? enemies.UNITS[s.enemy] ?? [] : [];
+  const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies?.DEFAULT_UNIT[s.enemy]) ?? null;
+  const target = unit ? targetOf(unit, s.level, s.steelPath, !s.armor, enemies) : null;
   const opts = {
-    mode: s.mode < 0 ? w.main : s.mode, enemy: s.enemy, armor: s.armor, burst: s.burst,
+    mode: s.mode < 0 ? w.main : s.mode, enemy: s.enemy, burst: s.burst, primed: s.primed,
+    ...(target ? { target } : { armor: s.armor }),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
   };
+  const level = /** @type {HTMLInputElement} */ (el('input', { type: 'number', min: '1', max: '9999', step: '1', value: String(s.level), inputmode: 'numeric' }));
+  level.addEventListener('change', () => {
+    const v = Math.round(Number(level.value));
+    if (v >= 1 && v <= 9999) set({ level: v }); else level.value = String(s.level);
+  });
   const pool = pools(cls, ipsOf(weapon));
   const positives = [...pool.positive, ...SPLICED.filter(x => x.b[cls] !== undefined).map(x => x.id)];
   const rows = picksFor(weapon, cls);
@@ -138,8 +172,16 @@ export function modelBlock(weapon, cls, rerender) {
     ...(w.modes.length > 1 ? [select('Fire mode', w.modes.map((m, i) => /** @type {[string, string]} */ ([String(i), m.name])), String(opts.mode), v => set({ mode: Number(v) }))] : []),
     select('Build', SCENARIO, s.scenario, v => set({ scenario: /** @type {'room' | 'single' | 'weak'} */ (v) })),
     select('Enemy', [['', 'Any (no faction bonus)'], ...FACTIONS.map(id => /** @type {[string, string]} */ ([id, ENEMY_NAME[id] ?? id]))], s.enemy,
-      v => set({ enemy: /** @type {Enemy} */ (v) })),
-    select('Armor', [['0', 'Stripped'], ['2700', 'Steel Path (2700)']], String(s.armor), v => set({ armor: Number(v) })),
+      v => set({ enemy: /** @type {Enemy} */ (v), unit: '' })),
+    ...(unit ? [
+      select('Target', units.map(u => /** @type {[string, string]} */ ([u.name, u.name])), unit.name, v => set({ unit: v })),
+      el('label', { class: 'field' }, [el('span', {}, ['Level']), level]),
+      el('div', { class: 'field' }, [el('span', {}, ['Mode']), segmented('Mode', ['normal', 'sp'], s.steelPath ? 'sp' : 'normal',
+        v => set({ steelPath: v === 'sp' }), v => (v === 'sp' ? 'Steel Path' : 'Normal'))]),
+    ] : []),
+    select('Armor', [['0', 'Stripped'], ['2700', unit ? 'Full' : 'Steel Path (2700)']], s.armor ? '2700' : '0', v => set({ armor: Number(v) })),
+    el('div', { class: 'field' }, [el('span', {}, ['Statuses']), segmented('Statuses', ['own', 'primed'], s.primed ? 'primed' : 'own',
+      v => set({ primed: v === 'primed' }), v => (v === 'primed' ? 'Primed (all)' : 'The weapon’s own'))]),
     el('div', { class: 'field' }, [el('span', {}, ['DPS']), segmented('DPS', ['sustained', 'burst'], s.burst ? 'burst' : 'sustained',
       v => set({ burst: v === 'burst' }), v => (v === 'burst' ? 'Burst' : 'With reloads'))]),
   ]);
@@ -152,9 +194,14 @@ export function modelBlock(weapon, cls, rerender) {
       weak: 'Weak points: every direct hit lands on one (explosions never do), and weak point kills keep stacks up. '
         + 'The weak point multiplier is the target\u2019s own (3x for most heads, 1.5x for the Murmur and Techrot) plus 1.5x Weakpoint Damage, '
         + 'times headshot bonuses; critical headshots double the crit multiplier where the enemy allows it (not Corpus humanoids)',
-    }[s.scenario]}; aiming bonuses count; 4 status types on the target. `
+    }[s.scenario]}; aiming bonuses count. ${s.primed
+      ? 'Primed target: every status type on it (a primer companion’s or the squad’s work), Viral and Corrosive at 10 stacks, Heat burning. '
+      : 'Per status type bonuses (Galvanized) count the status types the weapon keeps up by itself. '}`
+    + (unit && target ? `Target: ${unit.name}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
+      + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
+      + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
-    + (s.armor ? ' Against full Steel Path armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
+    + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
 
   const result = studyOf({ weapon, cls: gun, shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative }, rerender);
   if (result === 'pending') return [head, controls, about, el('p', { class: 'note busy' }, ['Working out the builds…'])];

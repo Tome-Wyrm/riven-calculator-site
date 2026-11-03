@@ -26,15 +26,14 @@ import { dpsOf } from './sim.js';
  * @typedef {object} Scenario
  * @property {boolean} kills       kills keep on-kill stacks up; false: a single target, no stacks
  * @property {boolean} aiming      aiming-only bonuses count
- * @property {number} statusTypes  status types on the target, for "per status type" bonuses
  * @property {number} weakpoint    share of direct hits on weak points
  */
 
 /** @type {Record<'room' | 'single' | 'weak', Scenario>} */
 export const SCENARIOS = {
-  room: { kills: true, aiming: true, statusTypes: 4, weakpoint: 0 },     // room clearing: kills, body shots
-  single: { kills: false, aiming: true, statusTypes: 4, weakpoint: 0 },  // one target, no kill stacks
-  weak: { kills: true, aiming: true, statusTypes: 4, weakpoint: 1 },     // every direct hit on a weak point
+  room: { kills: true, aiming: true, weakpoint: 0 },    // room clearing: kills, body shots
+  single: { kills: false, aiming: true, weakpoint: 0 },  // one target, no kill stacks
+  weak: { kills: true, aiming: true, weakpoint: 1 },    // every direct hit on a weak point
 };
 
 const ELEMENTS = [...BASE, ...COMBINED];
@@ -46,8 +45,8 @@ const DPS_STATS = new Set(['damage', 'multishot', 'critChance', 'critDamage', 's
   ...ELEMENTS]);
 
 /**
- * How much of an effect is live in a scenario: 0 (off), 1, or its stack count (× status types when
- * it counts per status type). Triggers the model doesn't follow (reload from empty, first shot,
+ * How much of an effect is live in a scenario: 0 (off), 1, or its stack count (a per status type
+ * bonus counts per type on the target in dpsOf). Triggers the model doesn't follow (reload from empty, first shot,
  * invisibility, ability casts, movement, a chance proc) count as off.
  * @param {Effect} e @param {Scenario} sc
  */
@@ -62,7 +61,7 @@ export function liveFactor(e, sc) {
   else if (/(weak point|headshot) kill/.test(on)) f = sc.kills && wp ? (e.stacks ?? 1) : 0;
   else if (/(weak point|headshot)( hit)?$/.test(on)) f = wp ? (e.stacks ?? 1) : 0;
   else if (on === 'hit') f = e.stacks ?? 1;                 // sustained fire keeps on-hit stacks up
-  return e.per === 'status type' ? f * sc.statusTypes : f;
+  return f;
 }
 
 /**
@@ -96,8 +95,9 @@ function piece(name, effects, sc, opts, excl = []) {
   for (const e of effects) {
     const f = liveFactor(e, sc);
     if (!f) continue;
+    const stat = e.per === 'status type' ? `${e.stat}PerStatus` : e.stat;
     if (ELEMENTS.includes(e.stat)) elements.push({ type: e.stat, value: e.value * f });
-    else stats[e.stat] = (stats[e.stat] ?? 0) + e.value * f;
+    else stats[stat] = (stats[stat] ?? 0) + e.value * f;
   }
   return { name, stats, elements, excl };
 }

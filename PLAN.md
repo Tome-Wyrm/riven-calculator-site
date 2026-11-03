@@ -616,6 +616,29 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
 - **Factions**: Grineer, Corpus, Infested, Corrupted, Murmur, Scaldra, Techrot… each with its health,
   armor and shield profile and damage-type weaknesses (post-rework values, from the wiki), at a chosen
   level / Steel Path. Faction damage on the riven then counts against its own faction only.
+- [x] **Done (first pass, 2026-11-03).** Scenarios are the three build types (13b) plus a **primed
+      target** toggle (status capped: every status type up, Viral and Corrosive at 10 stacks, Heat
+      burning). **Targets**: `tools/build-enemies.mjs` → `src/data/enemies.js` (648 units from
+      Underframe's codex-based presets, base level / health / shields / armor; each faction's
+      Update 36 weaknesses from the wiki's `Module:DamageTypes/data`, ±50%, Heat −50% on shields).
+      `src/enemies.js` scales them (the wiki's Enemy Level Scaling: per-faction health and shield
+      curves, smoothstep 70–80 levels up, armor 200 floor / 2700 cap, Steel Path x2.5 health and
+      shields; the builder checks every coefficient against the page). The model kills the target:
+      shields first (no armor; Toxin skips them, Slash bleeds don't since Update 27.2: the user caught
+      it, 2026-11-03), then health; the result is health +
+      shields over the time taken. **Per status type** bonuses (Galvanized) now count the status types
+      the weapon keeps up itself (each type 1 − e^(−procs/s × 6 s)), not a fixed 4. UI: target unit
+      (each faction's default: Heavy Gunner, Elite Crewman, Ancient Healer, Corrupted Heavy Gunner,
+      Scaldra Screamer, Techrot Scaart, Lumbering Fragment), level (default 150), Normal / Steel Path,
+      armor stripped / full, statuses own / primed; URL `unit`, `lvl`, `sp`, `armor`, `primed`.
+      A study takes 0.9–1.9 s (was 0.6–1.4 s).
+- [x] **Magnetic** (the wiki's Damage/Magnetic page and the in-game tooltip): shields take x2 at one
+      stack, +25% each more, x4.25 at 10; when they break, 3% of the max shields per stack as
+      Electricity to health.
+- Shield regeneration is left out on purpose (the user: if the enemy regenerates shields, the build
+  is doing it wrong).
+- [ ] **Not modelled yet**: Overguard and Eximus units; Narmer and Sentient units (no Bane faction
+      to file them under); per-unit weak points.
 
 **13d — Frames, subsumes and companions (curated buffs)**
 - Frames and subsumes that warp a build, as buffs in the same effect format: Narin (weak points, for

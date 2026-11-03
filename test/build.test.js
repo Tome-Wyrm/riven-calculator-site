@@ -25,8 +25,8 @@ test('build types: kill stacks in room clearing and weak point builds, weak poin
   assert.equal(liveFactor(scope, SCENARIOS.single), 0);
   assert.equal(liveFactor(scope, SCENARIOS.weak), 1);
   assert.equal(liveFactor(scope, { ...SCENARIOS.weak, aiming: false }), 0);
-  // Per status type: Galvanized Aptitude's +40% x 2 stacks x 4 status types.
-  assert.equal(liveFactor({ stat: 'directDamage', value: 0.4, on: 'kill', stacks: 2, per: 'status type' }, SCENARIOS.room), 8);
+  // Per status type: Galvanized Aptitude's 2 stacks (dpsOf counts the status types on the target).
+  assert.equal(liveFactor({ stat: 'directDamage', value: 0.4, on: 'kill', stacks: 2, per: 'status type' }, SCENARIOS.room), 2);
   // Triggers the model doesn't follow are off; so are chance procs.
   assert.equal(liveFactor({ stat: 'damage', value: 2.2, on: 'reload from empty', seconds: 17 }, SCENARIOS.room), 0);
   assert.equal(liveFactor({ stat: 'critChance', value: 0.45, on: 'damaged', chance: 0.21 }, SCENARIOS.room), 0);

@@ -7,77 +7,11 @@
 import { writeFile } from 'node:fs/promises';
 import { cachedText, cachedJson } from './lib/cache.mjs';
 import { readWikiCo, crossCheckCo } from './lib/co-wiki.mjs';
+import { parseLua } from './lib/lua.mjs';
 import { WEAPONS } from '../src/data/weapons.js';
 
 const WIKI = 'https://wiki.warframe.com/w/Module:Weapons/data/';
 const MODULES = ['primary', 'secondary', 'archwing', 'companion'];
-
-/**
- * Reads a Lua data module (`return { ... }`: tables, strings, numbers, booleans, comments) into
- * plain values. A table with only positional entries becomes an array.
- * @param {string} src
- */
-function parseLua(src) {
-  let i = 0;
-  const fail = (/** @type {string} */ msg) => { throw new Error(`${msg} at ${src.slice(i, i + 40)}`); };
-  const skip = () => {
-    for (;;) {
-      while (/\s/.test(src[i] ?? '')) i++;
-      if (src.startsWith('--[[', i)) { i = src.indexOf(']]', i) + 2; continue; }
-      if (src.startsWith('--', i)) { while (i < src.length && src[i] !== '\n') i++; continue; }
-      return;
-    }
-  };
-  const string = () => {
-    const q = src[i++];
-    let s = '';
-    while (src[i] !== q) {
-      if (src[i] === '\\') { i++; s += { n: '\n', t: '\t' }[src[i]] ?? src[i]; } else s += src[i];
-      i++;
-    }
-    i++;
-    return s;
-  };
-  /** @returns {any} */
-  const value = () => {
-    skip();
-    const c = src[i];
-    if (c === '{') return table();
-    if (c === '"' || c === "'") return string();
-    const m = src.slice(i, i + 40).match(/^(-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|true|false|nil|math\.huge)/);
-    if (!m) fail('Unexpected value');
-    i += m[0].length;
-    return { true: true, false: false, nil: null, 'math.huge': Infinity }[m[0]] ?? Number(m[0]);
-  };
-  const table = () => {
-    i++;                                                    // {
-    /** @type {Record<string, any>} */
-    const named = {};
-    const list = [];
-    for (;;) {
-      skip();
-      if (src[i] === '}') { i++; break; }
-      let key = null;
-      if (src[i] === '[') {
-        i++; skip(); key = String(value()); skip();
-        if (src[i] !== ']') fail('Expected ]');
-        i++; skip(); i++;                                   // ] =
-      } else {
-        const m = src.slice(i).match(/^([A-Za-z_]\w*)\s*=(?!=)/);
-        if (m) { key = m[1]; i += m[0].length; }
-      }
-      const v = value();
-      if (key === null) list.push(v); else named[key] = v;
-      skip();
-      if (src[i] === ',' || src[i] === ';') i++;
-    }
-    return Object.keys(named).length ? named : list;
-  };
-  skip();
-  if (!src.startsWith('return', i)) fail('Expected return');
-  i += 6;
-  return value();
-}
 
 const lower = (/** @type {Record<string, number>} */ d) => Object.fromEntries(Object.entries(d ?? {}).filter(([, v]) => v).map(([k, v]) => [k[0].toLowerCase() + k.slice(1), v]));
 const round = (/** @type {number} */ x) => Math.round(x * 1e4) / 1e4;
