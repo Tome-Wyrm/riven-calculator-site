@@ -10,6 +10,8 @@ import { SHAPE_ORDER } from '../engine.js';
 import { pools } from '../cycle.js';
 import { VALENCE_TYPES } from '../sim.js';
 import { evolutionsOf } from '../incarnon.js';
+import { combosFor, PLAIN } from '../melee.js';
+import { arcaneNames } from '../build.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
 import { targetOf } from '../enemies.js';
 import { picksFor, communityFit } from '../picks.js';
@@ -45,6 +47,13 @@ export const modelState = {
   valencePct: 60,                             // and its size, 25–60%
   perks: /** @type {number[] | null} */ (null), // an incarnon's perk per evolution; null = the best combination
   perksOf: '',                                // the weapon those perks are for
+  arcane: /** @type {string | null} */ (null), // the arcane builds carry: null = the best found, '' = none
+  // Melee:
+  combo: /** @type {'initial' | 'max' | 'build'} */ ('build'), // the combo counter
+  stanceCombo: '',                            // "Stance|Combo" ('' = the best per swing)
+  nearby: 3,                                  // enemies inside a swing (room clearing)
+  close: 6,                                   // enemies within 20 m of the target (Melee Influence)
+  clump: 50,                                  // clumping, %: how many of those stand within 20 m of each other
 };
 
 /** The URL fields for the model's settings (defaults left out). */
@@ -56,6 +65,8 @@ export function modelFields() {
     armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '',
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     perks: s.perks ? s.perks.join('.') : '',
+    arc: s.arcane === null ? '' : s.arcane || '-', combo: s.combo === 'build' ? '' : s.combo, sc2: s.stanceCombo,
+    near: s.nearby === 3 ? '' : s.nearby, close: s.close === 6 ? '' : s.close, clump: s.clump === 50 ? '' : s.clump,
   };
 }
 
@@ -78,6 +89,14 @@ export function restoreModel(raw) {
   if (raw.valp && pct >= 25 && pct <= 60) modelState.valencePct = pct;
   // "0.2.2.0": checked against the weapon's evolutions when it's shown.
   if (/^-?\d(\.-?\d){0,3}$/.test(raw.perks ?? '')) { modelState.perks = raw.perks.split('.').map(Number); modelState.perksOf = '?'; }
+  // The arcane is checked against the weapon's slot when it's shown ('-': none).
+  if (raw.arc) modelState.arcane = raw.arc === '-' ? '' : raw.arc;
+  if (raw.combo === 'initial' || raw.combo === 'max') modelState.combo = raw.combo;
+  if (raw.sc2) modelState.stanceCombo = raw.sc2;
+  const count = (/** @type {string | undefined} */ v, /** @type {number} */ max) => (v && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= max ? Number(v) : null);
+  modelState.nearby = count(raw.near, 20) || modelState.nearby;
+  modelState.close = count(raw.close, 40) ?? modelState.close;
+  modelState.clump = count(raw.clump, 100) ?? modelState.clump;
 }
 
 /** @type {Record<string, import('../data/weapon-stats.js').WeaponStats> | null} */
@@ -137,17 +156,26 @@ const weakText = weak => {
 const bar = (x, max) => el('span', { class: `dps-bar${x < 0 ? ' neg' : ''}`, style: `width: ${(Math.min(1, Math.abs(x) / max) * 100).toFixed(1)}%` });
 
 /**
- * A build's shots to kill, with its DPS, kill time and per-shot damage on hover; nothing without a fight.
- * @param {{dps: number, fight: {shots: number, seconds: number, perShot: number} | null}} b
+ * A build's shots (melee: swings) to kill: a button that shows its DPS, kill time and per-shot damage
+ * on a line below (a tap on a phone, where there's no hover), and hides them again. Nothing without a fight.
+ * @param {{dps: number, fight: {shots: number, seconds: number, perShot: number, tier?: number} | null}} b
+ * @param {boolean} [melee]
  */
-const killText = b => {
+const killText = (b, melee = false) => {
   const f = b.fight;
   if (!f) return [];
   const shots = f.shots < 10 ? f.shots.toFixed(1).replace(/\.0$/, '') : String(Math.round(f.shots));
-  return [el('span', {
-    class: 'kill-shots',
-    title: `DPS: ${big(b.dps)}\nDamage per shot: ${big(f.perShot)} (the first, on a fresh target)\nTime per kill: ${f.seconds.toFixed(2)} s (reloads included)`,
-  }, [`${shots} shot${shots === '1' ? '' : 's'} to kill`])];
+  const word = melee ? 'swing' : 'shot';
+  const detail = el('span', { class: 'kill-detail', hidden: '' }, [melee
+    ? `${big(b.dps)} DPS · first swing ${big(f.perShot)} · ${f.seconds.toFixed(2)} s a kill · ${f.tier ?? 1}x combo at the kill`
+    : `${big(b.dps)} DPS · ${big(f.perShot)} a shot (the first, on a fresh target) · ${f.seconds.toFixed(2)} s a kill, reloads included`]);
+  const button = el('button', { type: 'button', class: 'kill-shots', 'aria-expanded': 'false' }, [`${shots} ${word}${shots === '1' ? '' : 's'} to kill`]);
+  button.addEventListener('click', () => {
+    const open = detail.hidden;
+    detail.hidden = !open;
+    button.setAttribute('aria-expanded', String(open));
+  });
+  return [button, detail];
 };
 
 /** A build as a grid of its eight slots (in order: top row, then bottom) and its arcane. @param {{mods: string[], arcane: string | null}} b */
@@ -164,17 +192,16 @@ const buildGrid = b => el('div', { class: 'build' }, [
  */
 export function modelBlock(weapon, cls, rerender) {
   const head = el('h3', { class: 'model-title' }, ['Damage model']);
-  if (cls === 'melee') return [head, el('p', { class: 'note' }, ['The damage model covers guns only: melee damage depends on combo, stance and heavy attacks more than on a riven’s numbers.'])];
   if (!stats || !enemies) {
     loading ??= Promise.all([import('../data/weapon-stats.js'), import('../data/enemies.js')])
       .then(([m, e]) => { stats = m.WEAPON_STATS; enemies = e; rerender(); });
     return [head, el('p', { class: 'note' }, ['Loading weapon stats…'])];
   }
   const w = stats[weapon];
-  if (!w) return [head, el('p', { class: 'note' }, [`No stats for ${weapon} in the wiki data (kitgun chambers depend on their grip and loader).`])];
+  if (!w) return [head, el('p', { class: 'note' }, [`No stats for ${weapon} in the wiki data (kitgun chambers and zaw strikes depend on their other parts).`])];
 
   const s = modelState;
-  const gun = /** @type {Exclude<WeaponClass, 'melee'>} */ (cls);
+  const isMelee = cls === 'melee' && !!w.melee;
   const set = (/** @type {Partial<typeof modelState>} */ patch) => { Object.assign(s, patch); rerender(); };
   if (s.mode >= w.modes.length) s.mode = -1;
   // Chosen perks belong to one weapon (a link's to the weapon it opens with); another starts at the best.
@@ -188,8 +215,17 @@ export function modelBlock(weapon, cls, rerender) {
   const units = enemies.UNITS[pick] ?? [];
   const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies.DEFAULT_UNIT[pick]) ?? null;
   const target = unit ? targetOf(group ? unit : { ...unit, types: '' }, s.level, s.steelPath, !s.armor, enemies) : null;
+  // The arcane: one of this weapon's slot, or the best found.
+  const arcanes = arcaneNames(cls);
+  if (s.arcane && !arcanes.includes(s.arcane)) s.arcane = null;
+  // Melee: the stance combo (the best per swing unless chosen), the combo counter and the crowd.
+  const combos = isMelee ? combosFor(w.kind) : [];
+  const chosen = combos.find(c => `${c.stance}|${c.combo.name}` === s.stanceCombo) ?? combos[0] ?? null;
+  const comboName = chosen ? `${chosen.stance}, ${chosen.combo.name}` : 'none in the wiki’s data: plain hits';
   const opts = {
     mode: s.mode < 0 ? w.main : s.mode, enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
+    ...(s.arcane !== null ? { arcane: s.arcane } : {}),
+    ...(isMelee ? { melee: { attacks: chosen?.combo.attacks ?? PLAIN, combo: s.combo, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
     ...(target ? { target } : { armor: s.armor }),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
     ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
@@ -209,6 +245,24 @@ export function modelBlock(weapon, cls, rerender) {
   const rows = picksFor(weapon, cls);
   const name = (/** @type {string} */ id) => statName(STAT_BY_ID[id], cls);
 
+  const num = (/** @type {string} */ label, /** @type {number} */ value, /** @type {number} */ max, /** @type {(v: number) => void} */ apply) => {
+    const input = /** @type {HTMLInputElement} */ (el('input', { type: 'number', min: '0', max: String(max), step: '1', value: String(value), inputmode: 'numeric' }));
+    input.addEventListener('change', () => {
+      const v = Math.round(Number(input.value));
+      if (v >= 0 && v <= max) apply(v); else input.value = String(value);
+    });
+    return el('label', { class: 'field' }, [el('span', {}, [label]), input]);
+  };
+  const meleeControls = isMelee ? [
+    ...(combos.length ? [select('Stance combo', combos.map(c => /** @type {[string, string]} */ ([`${c.stance}|${c.combo.name}`, `${c.stance}: ${c.combo.name} (${c.perSwing.toFixed(1)}x a swing)`])),
+      chosen ? `${chosen.stance}|${chosen.combo.name}` : '', v => set({ stanceCombo: v === `${combos[0].stance}|${combos[0].combo.name}` ? '' : v }))] : []),
+    el('div', { class: 'field' }, [el('span', {}, ['Combo counter']), segmented('Combo counter', ['initial', 'max', 'build'], s.combo,
+      v => set({ combo: /** @type {'initial' | 'max' | 'build'} */ (v) }), v => ({ initial: 'Initial', max: 'Max (12x)', build: 'Built up' })[v] ?? v,
+      () => 'Held at the initial combo, held at the max, or built up by the hits (room clearing carries it from kill to kill)')]),
+    num('In the swing', s.nearby, 20, v => set({ nearby: Math.max(1, v) })),
+    num('Within 20 m', s.close, 40, v => set({ close: v })),
+    num('Clumping %', s.clump, 100, v => set({ clump: v })),
+  ] : [];
   const controls = el('div', { class: 'controls model-controls' }, [
     el('div', { class: 'field' }, [el('span', {}, ['Shape']), segmented('Shape', SHAPE_ORDER, s.shape, v => set({ shape: /** @type {Shape} */ (v) }))]),
     ...(w.modes.length > 1 ? [select('Fire mode', w.modes.map((m, i) => /** @type {[string, string]} */ ([String(i), m.name])), String(opts.mode), v => set({ mode: Number(v) }))] : []),
@@ -217,6 +271,9 @@ export function modelBlock(weapon, cls, rerender) {
       el('label', { class: 'field' }, [el('span', {}, ['Bonus %']), valencePct]),
     ] : []),
     select('Build', SCENARIO, s.scenario, v => set({ scenario: /** @type {'room' | 'single' | 'weak'} */ (v) })),
+    ...(arcanes.length ? [select('Arcane', [['*', 'Best (searched)'], ['-', 'None'], ...arcanes.map(a => /** @type {[string, string]} */ ([a, a]))],
+      s.arcane === null ? '*' : s.arcane || '-', v => set({ arcane: v === '*' ? null : v === '-' ? '' : v }))] : []),
+    ...meleeControls,
     select('Enemy', [['', 'Any (no faction bonus)'], ...enemies.GROUPS.map(g => /** @type {[string, string]} */ ([g.id, g.name]))], group?.id ?? '',
       v => set({ enemy: v, unit: '' })),
     ...(unit ? [
@@ -228,8 +285,8 @@ export function modelBlock(weapon, cls, rerender) {
     select('Armor', [['0', 'Stripped'], ['2700', 'Full']], s.armor ? '2700' : '0', v => set({ armor: Number(v) })),
     el('div', { class: 'field' }, [el('span', {}, ['Statuses']), segmented('Statuses', ['own', 'primed'], s.primed ? 'primed' : 'own',
       v => set({ primed: v === 'primed' }), v => (v === 'primed' ? 'Primed (all)' : 'The weapon’s own'))]),
-    el('div', { class: 'field' }, [el('span', {}, ['DPS']), segmented('DPS', ['sustained', 'burst'], s.burst ? 'burst' : 'sustained',
-      v => set({ burst: v === 'burst' }), v => (v === 'burst' ? 'Burst' : 'With reloads'))]),
+    ...(isMelee ? [] : [el('div', { class: 'field' }, [el('span', {}, ['DPS']), segmented('DPS', ['sustained', 'burst'], s.burst ? 'burst' : 'sustained',
+      v => set({ burst: v === 'burst' }), v => (v === 'burst' ? 'Burst' : 'With reloads'))])]),
   ]);
   const about = el('p', { class: 'note' }, [
     `For each riven, the best build the search finds around it (eight slots, the riven taking one, and an arcane), `
@@ -249,10 +306,14 @@ export function modelBlock(weapon, cls, rerender) {
     + (unit && target ? `Target: ${unit.name}${group ? (group.bane ? '' : ` (${group.name}: no riven faction stat applies)`) : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
       + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
+    + (isMelee ? `Melee: normal attacks only (no heavy attacks, slams or finishers yet), a swing being the next attack of the stance combo (${comboName}): its hits’ multipliers and counts, not its timing. `
+      + `The combo counter is ${{ initial: 'held at the initial combo', max: 'held at 12x', build: 'built up by the hits (each hit adds its multiplier in points; room clearing carries it from kill to kill)' }[s.combo]}; Blood Rush and Weeping Wounds add theirs per tier past 1x. `
+      + `Room clearing: ${s.nearby} enem${s.nearby === 1 ? 'y' : 'ies'} in each swing, each further one at ${Math.round((w.melee?.ft ?? 1) * 100)}% follow through of the one before; `
+      + `Melee Influence spreads elemental procs to ${s.close} enem${s.close === 1 ? 'y' : 'ies'} within 20 m, each taking 1 + ${s.clump}% x the others as copies (clumped enemies pass it on to each other). ` : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
 
-  const result = studyOf({ weapon, cls: gun, shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative, perks: s.perks ?? 'best' }, rerender);
+  const result = studyOf({ weapon, cls: /** @type {import('../study.js').StudyInput['cls']} */ (cls), shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative, perks: s.perks ?? 'best' }, rerender);
   if (result === 'pending') return [head, controls, about, el('p', { class: 'note busy' }, ['Working out the builds…'])];
   if ('error' in result) return [head, controls, el('p', { class: 'note warn' }, [`The model failed: ${result.error}`])];
 
@@ -311,8 +372,9 @@ export function modelBlock(weapon, cls, rerender) {
     plan.addEventListener('click', () => loadTargetIntoPlanner({
       weapon, cls, positives: x.ids.filter(id => !STAT_BY_ID[id].spliced), spliced: x.ids.find(id => STAT_BY_ID[id].spliced) ?? null, negative: x.curse?.id ?? null,
     }));
-    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')}${x.curse ? `, −${name(x.curse.id)}` : ''} `, ...killText(x.build), ' ', plan,
-      el('details', { class: 'set-build' }, [el('summary', {}, ['Its build']), buildGrid(x.build)])]);
+    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')}${x.curse ? `, −${name(x.curse.id)}` : ''} `, ...killText(x.build, isMelee), ' ', plan,
+      el('details', { class: 'set-build' }, [el('summary', {}, ['Its build']), buildGrid(x.build),
+        ...(isMelee ? [el('p', { class: 'note' }, [`Stance: ${comboName}. Its hits’ damage multipliers and counts count; its timing doesn’t (each attack is one swing at the weapon’s attack speed).`])] : [])])]);
   }));
   const moving = result.singles.filter(e => Math.abs(e.change) >= 0.005);
   const still = result.singles.filter(e => Math.abs(e.change) < 0.005).map(e => name(e.id));
@@ -340,7 +402,7 @@ export function modelBlock(weapon, cls, rerender) {
       })));
   }
   const out = [head, controls, about, ...perkBlock, ...valenceBlock,
-    el('h4', {}, ['Best build without a riven']), ...(result.none.fight ? [el('p', {}, killText(result.none))] : []), buildGrid(result.none),
+    el('h4', {}, ['Best build without a riven']), ...(result.none.fight ? [el('p', {}, killText(result.none, isMelee))] : []), buildGrid(result.none),
     el('h4', {}, [`Best rivens (${k} positives${SHAPES[s.shape].negatives ? ' and a curse' : ''}) over no riven`]), setList,
     el('h4', {}, ['Each positive in the riven slot']),
     el('p', { class: 'note' }, ['Against the riven slot left empty, with the other seven mods re-chosen each time.']),

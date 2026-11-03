@@ -28,10 +28,20 @@
 // of what crit rolls spread), never less than one shot; a DoT that kills between shots, when it
 // does. The result is an effective DPS, the targets' health and shields over the time taken, so it
 // reads like the closed form (src/sim.js dpsOf) and the optimiser can use either.
+// Melee (src/melee.js): a shot is a swing, the next attack of the stance combo (its hits' multipliers
+// summed for damage, each hit rolling crit and status), at the attack speed. The combo counter is
+// held at the initial combo or the max, or built up by the hits (room clearing carries it from target
+// to target); Blood Rush and Weeping Wounds add their bonus per tier past 1x. In room clearing, the
+// enemies inside a swing (opts.melee.nearby) each take the follow through's share of the one before
+// and add combo points: the room falls that much faster.
 // Not modelled yet: Blast stacks, extra hits, abilities (Phase 14), random rolls (a Monte Carlo run
 // could check the averages).
 
 import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
+import { comboTier, swingOf, MAX_COMBO } from './melee.js';
+
+/** The elemental statuses Melee Influence spreads (not physical, Void or Tau). */
+const ELEMENTAL = new Set(['cold', 'electricity', 'heat', 'toxin', 'blast', 'corrosive', 'gas', 'magnetic', 'radiation', 'viral']);
 
 /** @typedef {import('./sim.js').SimOptions} SimOptions */
 /** @typedef {import('./sim.js').Totals} Totals */
@@ -49,6 +59,7 @@ const TARGET_SECONDS = 20;
  * @property {number} timePerKill  seconds, from the first shot until the gun is ready for the next target
  * @property {number} shotsPerKill
  * @property {number} perShot      the first shot's damage to a fresh target (health and shields; overkill counts)
+ * @property {number} [tier]       melee: the combo multiplier at the last kill
  */
 
 /** Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more. @param {number} n */
@@ -80,15 +91,21 @@ export function fight(w, t, opts) {
   const directPer = raw('directDamagePerStatus');
 
   // What one shot carries, before Galvanized's per-status Direct Damage (which depends on the target).
-  const volleys = mode.parts.flatMap(p => {
+  // Melee: at each combo tier (Blood Rush's crit chance, Weeping Wounds' status chance per tier).
+  const volleysAt = (/** @type {(id: string) => number} */ raw) => mode.parts.flatMap(p => {
     const typed = hitByType(p, t, raw, opts.valence);
     if (!typed) return [];
     const { base, byType, hit } = typed;
     const cc = critChanceOf(p, raw('critChance'));
-    const cd = p.cd * (1 + raw('critDamage'));
+    // Melee Doughty: +1x Critical Damage per whole 10% of Puncture status chance.
+    const punctureChance = Math.max(0, p.sc * (1 + raw('statusChance'))) * (byType.puncture ?? 0) / hit;
+    const cd = p.cd * (1 + raw('critDamage')) + (raw('doughty') ? Math.floor(punctureChance * 10 + 1e-9) * raw('doughty') : 0);
     const onWp = p.aoe ? 0 : wp;
     const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) * crit(critChanceOf(p, raw('critChance') + raw('weakpointCrit')), headcrit ? 2 * cd : cd, p);
-    const pellets = p.ms * (raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot')));
+    // Melee Duplicate: a base (yellow) critical hit strikes again, crit and status rolled anew. A hit
+    // is yellow with the chance it crits below 100%, and with 2 - CC between 100% and 200%.
+    const yellow = cc < 1 ? Math.max(0, cc) : cc < 2 ? 2 - cc : 0;
+    const pellets = p.ms * (raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot'))) * (1 + Math.min(1, raw('duplicate')) * yellow);
     const procsPerPellet = procsOf(p, byType, hit, cc, raw);
     /** @type {[string, number, number][]} per type: expected procs a shot, and a tick of its DoT per proc */
     const procs = [];
@@ -102,6 +119,38 @@ export function fight(w, t, opts) {
     const [coShare, coMult] = p.co ?? [1, 0];
     return [{ hits: Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets])), coShare, coMult, procs }];
   });
+  const melee = w.melee && opts.melee ? opts.melee : null;
+  /** @type {Map<number, ReturnType<typeof volleysAt>>} */
+  const byTier = new Map();
+  const volleysOf = (/** @type {number} */ tier) => {
+    let v = byTier.get(tier);
+    if (!v) byTier.set(tier, v = volleysAt(tier <= 1 ? raw : id => raw(id) + raw(`${id}PerTier`) * (tier - 1)));
+    return v;
+  };
+  const swings = melee ? melee.attacks.map(swingOf) : [];
+  // The enemies inside a swing (room clearing): the target, then each further one at the follow
+  // through's share of the one before. They fall together: the room goes that much faster.
+  const nearby = melee && targets > 1 ? Math.max(1, Math.round(melee.nearby ?? 1)) : 1;
+  const ft = w.melee?.ft ?? 1;
+  let together = 0;
+  for (let k = 0; k < nearby; k++) together += ft ** k;
+  // Combo points: each hit its multiplier, plus Additional Combo Count Chance's point, per enemy hit.
+  const comboChance = Math.max(0, raw('comboChance'));
+  const initial = Math.max(0, raw('initialCombo'));
+  // Melee Afflictions: a knockdown or launching hit adds stacks to every status on the target.
+  const afflictions = melee ? raw('afflictions') : 0;
+  // Melee Influence (room clearing): while its buff is up, every elemental proc on the target spreads
+  // to the enemies within 20 m (close), with that element's damage from the hit and the status (its
+  // ticks too). With clumping k, each reached enemy is also within 20 m of k of the others and passes
+  // the proc on to them: each of the close enemies takes 1 + k x (close - 1) copies. The buff: an
+  // Electricity proc's 20% chance of 18 s, not refreshed while up; its uptime is the steady share
+  // 18 l / (1 + 18 l) for triggers at l per second. What spreads counts as damage to the room.
+  const influence = melee && targets > 1 ? raw('influence') : 0;
+  const close = Math.max(0, Math.round(melee?.close ?? 0));
+  const copies = close * (1 + Math.min(1, Math.max(0, melee?.clump ?? 0)) * Math.max(0, close - 1));
+  let spread = 0;                                          // damage spread to the room (this target)
+  // The others' armor: as the target's before any strip (their own statuses aren't followed).
+  const fullArmor = 1 - 0.9 * Math.sqrt(Math.min(target.armor, 2700) / 2700);
 
   // The magazine: shots before a reload (none for Incarnon modes, weapons without one, or bursts).
   const reloads = !opts.burst && w.mag > 0 && w.reload > 0 && mode.cost > 0 && !/incarnon/i.test(mode.name);
@@ -110,9 +159,11 @@ export function fight(w, t, opts) {
   const reload = w.reload / Math.max(0.05, 1 + raw('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
   const ehp = target.health + target.shields;
   let perShot = 0;
+  let lastTier = 1;
 
-  // One target, from its first shot until the gun is ready for the next, reloading or not.
-  const one = (/** @type {boolean} */ reloading) => {
+  // One target, from its first shot until the gun is ready for the next, reloading or not; melee
+  // starts at a combo count (carried from the last target when it builds up).
+  const one = (/** @type {boolean} */ reloading, combo = initial) => {
     let now = 0;                                // when the next shot is due
     let inMag = reloading ? shotsPerMag : Infinity;
     let shots = 0;
@@ -134,6 +185,7 @@ export function fight(w, t, opts) {
     /** @type {Record<string, number>} the DoTs' running damage per second by type */
     const dotRate = {};
     let heat = { rate: 0, until: -1, start: -1, owed: 0 };
+    let elecSeen = 0, buffUp = 0;
     let dead = -1;
 
     // Stacks still up at `at` (expired ones leave their queue for good: time only moves forward).
@@ -213,7 +265,7 @@ export function fight(w, t, opts) {
         // Still alive: finish it at the rate it has been losing health and shields.
         const lost = ehp - Math.max(0, health) - shields;
         const more = (Math.max(0, health) + shields) * now / Math.max(1e-9, lost);
-        return { time: now + more, shots: shots + more * rate };
+        return { time: now + more, shots: shots + more * rate, combo };
       }
       // The shot: Galvanized counts the status types on the target now.
       const s = snap(now);
@@ -222,10 +274,18 @@ export function fight(w, t, opts) {
       if (opts.primed) types = STATUS_TYPES.length;
       else if (directPer) for (const type of stacks.keys()) types += 1 - Math.exp(-count(type, now));
       const direct = raw('directDamage') + types * directPer;
-      for (const v of volleys) {
+      // Melee: this swing's attack (its multiplier and hit count) at the combo's tier now.
+      const sw = melee ? swings[shots % swings.length] : null;
+      const tier = !melee ? 1 : comboTier(melee.combo === 'max' ? MAX_COMBO : combo);
+      const mult = sw ? sw.mult : 1;
+      const hitsPer = sw ? sw.hits : 1;
+      for (const v of volleysOf(tier)) {
         const Dshot = Math.max(0, v.coMult ? D * (1 + v.coShare * direct) : D + v.coShare * direct);
-        for (const [type, amount] of v.hits) land(type, amount * Dshot, s, now);
-        for (const [type, n, perProc] of v.procs) {
+        for (const [type, amount] of v.hits) land(type, amount * Dshot * mult, s, now);
+        for (const [type, n0, perProc0] of v.procs) {
+          // Each hit of a swing rolls status; a proc's ticks follow its hit's multiplier (on average).
+          const n = n0 * hitsPer;
+          const perProc = perProc0 * mult / hitsPer;
           let q = stacks.get(type);
           if (!q) stacks.set(type, q = { list: [], head: 0, sum: 0 });
           q.list.push({ until: now + duration, n });
@@ -245,27 +305,83 @@ export function fight(w, t, opts) {
           if (ticks > 0) pending.push({ at: now + 0.5, rate: perTick, type: dotType, ticks });
         }
       }
+      if (sw && afflictions && sw.knocks > 0) {
+        // The knockdown adds stacks to each status already up (Melee Afflictions), each new stack's
+        // ticks the average of that type's running ones.
+        for (const [type, q] of stacks) {
+          const have = count(type, now);
+          if (!(have > 0)) continue;
+          q.list.push({ until: now + duration, n: afflictions });
+          q.sum += afflictions;
+          const dotType = type === 'slash' ? 'slash-dot' : type;
+          const per = (type === 'heat' ? heat.rate : dotRate[dotType] ?? 0) / have;
+          if (per > 0) pending.push({ at: now + 0.5, rate: per * afflictions, type: dotType, ticks: ticksOf(type, duration) });
+        }
+      }
+      if (influence && copies > 0) {
+        let electric = 0;
+        const s2 = snap(now);
+        for (const v of volleysOf(tier)) {
+          const Dshot = Math.max(0, v.coMult ? D * (1 + v.coShare * direct) : D + v.coShare * direct);
+          for (const [type, n0, perProc0] of v.procs) {
+            if (type === 'electricity') electric += n0 * hitsPer;
+            if (!ELEMENTAL.has(type)) continue;
+            // Each proc spreads its hit's share of this element, and the status (with its ticks).
+            const amount = (v.hits.find(([t]) => t === type)?.[1] ?? 0) * Dshot * mult / hitsPer;
+            const ticks = DOT[/** @type {keyof typeof DOT} */ (type)] ? ticksOf(type, duration) * perProc0 * mult / hitsPer : 0;
+            spread += n0 * hitsPer * buffUp * copies * (amount + ticks) * Math.max(0, 1 + (target.weak[type] ?? 0)) * fullArmor;
+          }
+        }
+        // The buff's uptime from the Electricity procs so far (each a 20% chance of 18 s).
+        elecSeen += electric;
+        const lambda = 0.2 * elecSeen / Math.max(1 / rate, now + 1 / rate);
+        buffUp = influence * lambda / (1 + influence * lambda);
+      }
       shots++;
+      if (sw && melee?.combo === 'build') combo += (sw.mult + sw.hits * comboChance) * nearby;
+      lastTier = tier;
       if (shots === 1) perShot = ehp - health - shields;
       if (dead >= 0) {
         // Killed by this shot: it counts for the share of it that was needed (crits make the real
         // count a spread; this is its smooth average), but a kill always takes at least one shot.
         const f = Math.min(1, before / Math.max(1e-9, before - health - shields));
-        return { time: Math.max(1 / rate, now + f / rate), shots: Math.max(1, shots - 1 + f) };
+        return { time: Math.max(1 / rate, now + f / rate), shots: Math.max(1, shots - 1 + f), combo };
       }
       // The next shot (after a reload when the magazine is empty).
       inMag -= 1;
       let next = now + 1 / rate;
       if (inMag <= 0) { next = now + reload; inMag = shotsPerMag; }
       runDots(now, next);
-      if (dead >= 0) return { time: Math.max(1 / rate, dead), shots: Math.max(1, shots) };
+      if (dead >= 0) return { time: Math.max(1 / rate, dead), shots: Math.max(1, shots), combo };
       now = next;
     }
   };
 
   if (targets <= 1) {
     const r = one(true);
-    return { dps: ehp / Math.max(1e-9, r.time), timePerKill: r.time, shotsPerKill: r.shots, perShot };
+    return { dps: ehp / Math.max(1e-9, r.time), timePerKill: r.time, shotsPerKill: r.shots, perShot, ...(melee ? { tier: lastTier } : {}) };
+  }
+  if (melee) {
+    // A room of melee kills: the combo carries from target to target when it builds up (once it's at
+    // the max, every target is alike); the enemies inside each swing fall together.
+    let time = 0, shots = 0, combo = initial, first = 0, spreadAll = 0;
+    for (let k = 0; k < targets; k++) {
+      spread = 0;
+      const r = one(false, combo);
+      if (k === 0) first = perShot;
+      if (melee.combo !== 'build' || combo >= MAX_COMBO) {
+        const left = targets - k;
+        time += r.time * left; shots += r.shots * left; spreadAll += spread * left;
+        break;
+      }
+      time += r.time; shots += r.shots; spreadAll += spread; combo = r.combo;
+    }
+    // Each kill also brings down the others in the swing, and the spread damage counts as more kills
+    // (at most the close enemies' share of the room).
+    const others = Math.min(close, spreadAll / targets / Math.max(1, ehp));
+    const kills = Math.min(targets, together + others);
+    time /= targets * kills;
+    return { dps: ehp / Math.max(1e-9, time), timePerKill: time, shotsPerKill: shots / targets / kills, perShot: first, tier: lastTier };
   }
   // A room: every target is the same, so one fight without reloads gives the shots a kill takes;
   // the reloads come every magazine, each in place of a shot's interval.

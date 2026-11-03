@@ -17,7 +17,7 @@ import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
 /**
  * @typedef {object} StudyInput
  * @property {string} weapon
- * @property {Exclude<WeaponClass, 'melee'>} cls
+ * @property {WeaponClass} cls
  * @property {Shape} shape
  * @property {keyof typeof SCENARIOS} scenario
  * @property {import('./sim.js').SimOptions} opts  an adversary weapon's Valence type 'best': the
@@ -50,7 +50,7 @@ export function study(input) {
   const opts = { ...input.opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1 };
   // An incarnon: the gun as evolved (Felarx's Devastating Attrition turns crit chance into a cost).
   const plain = WEAPON_STATS[input.weapon];
-  const perks = !evolutionsOf(input.weapon).length ? []
+  const perks = !evolutionsOf(input.weapon).length || cls === 'melee' ? []
     : Array.isArray(input.perks) ? input.perks : bestPerks(plain, input.weapon, cls, { ...opts, valence: undefined });
   const w = withPerks(plain, input.weapon, perks);
   const pool = modPool(cls, w, sc, opts);

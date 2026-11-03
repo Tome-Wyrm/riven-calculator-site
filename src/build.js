@@ -38,12 +38,15 @@ export const SCENARIOS = {
 };
 
 const ELEMENTS = [...BASE, ...COMBINED];
+/** Arcane effects that change how a melee weapon works, rather than adding to a stat. */
+const MECHANIC = new Set(['influence', 'afflictions', 'duplicate', 'doughty']);
 
 /** Stats the damage model uses (others, such as zoom or ammo, change nothing in it). */
 const DPS_STATS = new Set(['damage', 'multishot', 'critChance', 'critDamage', 'statusChance', 'statusDuration',
   'statusDamage', 'fireRate', 'magazine', 'reloadSpeed', 'ammoEfficiency', 'impact', 'puncture', 'slash',
   'weakpointDamage', 'weakpointCrit', 'headshotMultiplier', 'directDamage', 'slashOnCrit', 'multishotLocked', 'fireRateLocked',
-  ...ELEMENTS]);
+  'directDamagePerStatus', 'critChancePerTier', 'statusChancePerTier', 'initialCombo', 'comboChance',
+  'duplicate', 'doughty', 'influence', 'afflictions', ...ELEMENTS]);
 
 /**
  * How much of an effect is live in a scenario: 0 (off), 1, or its stack count (a per status type
@@ -76,12 +79,13 @@ export function compatFor(cls, kind) {
   if (cls === 'shotgun') return ['Shotgun', 'PRIMARY'];
   if (cls === 'pistol') return ['Pistol'];
   if (cls === 'archgun') return ['Archgun'];
+  if (cls === 'melee') return ['Melee'];
   return [];
 }
 
 /**
  * One thing in a build (a mod, the riven, the arcane) reduced to what it adds in a scenario.
- * @typedef {{name: string, stats: Record<string, number>, elements: {type: string, value: number}[], excl: string[], riven?: true}} Piece
+ * @typedef {{name: string, stats: Record<string, number>, elements: {type: string, value: number}[], excl: string[], riven?: true, chosen?: true}} Piece
  */
 
 /**
@@ -96,7 +100,8 @@ function piece(name, effects, sc, opts, excl = []) {
   for (const e of effects) {
     const f = liveFactor(e, sc);
     if (!f) continue;
-    const stat = e.per === 'status type' ? `${e.stat}PerStatus` : e.stat;
+    // Per status type on the target, or per melee combo tier past 1x (Blood Rush): counted in the fight.
+    const stat = e.per === 'status type' ? `${e.stat}PerStatus` : e.per === 'combo tier' ? `${e.stat}PerTier` : e.stat;
     if (ELEMENTS.includes(e.stat)) elements.push({ type: e.stat, value: e.value * f });
     else stats[stat] = (stats[stat] ?? 0) + e.value * f;
   }
@@ -156,10 +161,27 @@ export function modPool(cls, w, sc, opts) {
     .map(({ p }) => p);
 }
 
-/** The arcanes (as pieces) a weapon's arcane slot takes. @param {WeaponClass} cls @param {Scenario} sc @param {SimOptions} opts */
+/**
+ * The arcanes a weapon's arcane slot takes, by name (each one, whether the model sees it do anything).
+ * @param {WeaponClass} cls
+ */
+export function arcaneNames(cls) {
+  const slot = cls === 'pistol' ? 'secondary' : cls === 'rifle' || cls === 'shotgun' ? 'primary' : cls === 'melee' ? 'melee' : null;
+  return GUN_ARCANES.filter(a => a.slot === slot && !(cls === 'rifle' && /^Shotgun /.test(a.name))).map(a => a.name);
+}
+
+/**
+ * The arcanes (as pieces) a weapon's arcane slot takes: those that do something here, or only the
+ * one chosen (opts.arcane: '' for none), which the build then always carries.
+ * @param {WeaponClass} cls @param {Scenario} sc @param {SimOptions} opts
+ */
 export function arcanePool(cls, sc, opts) {
-  const slot = cls === 'pistol' ? 'secondary' : cls === 'rifle' || cls === 'shotgun' ? 'primary' : null;
-  return GUN_ARCANES.filter(a => a.slot === slot && !(cls === 'rifle' && /^Shotgun /.test(a.name)))
+  const names = arcaneNames(cls);
+  if (opts.arcane !== undefined) {
+    const a = GUN_ARCANES.find(x => x.name === opts.arcane && names.includes(x.name));
+    return a ? [{ ...piece(a.name, a.effects, sc, opts), chosen: /** @type {const} */ (true) }] : [];
+  }
+  return GUN_ARCANES.filter(a => names.includes(a.name))
     .map(a => piece(a.name, a.effects, sc, opts)).filter(p => Object.keys(p.stats).length || p.elements.length);
 }
 
@@ -276,9 +298,18 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
   let arc = null;
   for (const a of arcanes) {
     const v = value(slots, a);
-    if (v > dps * (1 + 1e-9)) { arc = a; dps = v; }
+    // A chosen arcane goes in whatever it does.
+    if (a.chosen || v > dps * (1 + 1e-9)) { arc = a; dps = v; }
   }
   if (arc) ({ slots, dps } = search(slots, arc));
+  // Arcanes that change how the weapon works (Melee Influence needs Electricity procs; Afflictions
+  // knockdowns with statuses up) can be worth nothing to the mods found without them: each gets a
+  // search of its own around it.
+  for (const a of arcanes) {
+    if (a === arc || !Object.keys(a.stats).some(k => MECHANIC.has(k))) continue;
+    const b = search(slots, a);
+    if (b.dps > dps * (1 + 1e-9)) ({ slots, dps } = b), arc = a;
+  }
   return { slots, arcane: arc, dps };
 }
 

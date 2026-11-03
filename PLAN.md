@@ -963,12 +963,39 @@ Decisions (the user's, 2026-11-03):
   and wind up; attacks' falloff). Zaws, like kitguns, have no stats of their own (their parts decide);
   Dark Split-Sword is missing from the wiki module.
 - [x] Melee weapon stats and stances
-- [ ] Melee mods (Melee Damage → damage, Attack Speed → fireRate; Blood Rush, Weeping Wounds and
-      Gladiator's per-combo-multiplier stats; the "(x2 for Heavy Attacks)" crit mods; initial combo)
-- [ ] Melee arcanes and the arcane selector (guns too)
-- [ ] Melee in sim and fight: attack speed, stance multipliers, combo counter, follow through
-- [ ] Melee Influence (crowd: nearby, close, clumping) and Melee Afflictions
-- [ ] The page: melee in the model, the combo toggle, crowd settings, "swings to kill"
+- [x] Melee mods: tools/build-mods.mjs takes the Melee compat; Melee Damage reads as damage, Attack
+      Speed as fireRate; melee Condition Overload (+80% Melee Damage per status type) as Direct Damage
+      per status type, like the guns' Galvanized; Blood Rush / Weeping Wounds per combo tier past 1x
+      (the wiki's worked examples: additive, 0.4 x (tier - 1)); "(x2 for Heavy Attacks)" crit mods at
+      their normal value; Initial Combo, Combo Count Chance. Underframe's melee upgrade types mapped
+      for the cross-check (its True / Sacrificial Steel values are the heavy-attack doubles).
+- [x] Melee arcanes (slot "melee") and the arcane selector on every weapon ("Best (searched)", "None",
+      or one by name: the build always carries a chosen one). Melee arcanes' text isn't plain stats,
+      so tools/build-arcanes.mjs gives them by hand, each with its assumption: Exposure at its 240%
+      Corrosive cap (abilities keep it up), Retaliation at its 420% cap (2,800+ shields), Duplicate (a
+      base crit strikes again: chance 1 - (CC - 1) between 100% and 200%), Doughty (+1x Critical Damage
+      per whole 10% Puncture status chance), Influence, Afflictions. Heavy / finisher / roll / kill
+      arcanes (Animosity, Assimilation, Crescendo, Careen, Vortex) stay out. The search also builds
+      around each arcane that changes how the weapon works (Influence needs an Electricity mod first).
+- [x] Melee in the fight (src/fight.js, src/melee.js): a swing is the next attack of the stance combo
+      (best damage per swing unless chosen), at the attack speed; the combo counter held at the
+      initial combo, at 12x, or built up (each hit adds its multiplier; room clearing carries it);
+      room clearing's enemies in the swing fall together at the follow through.
+- [x] Melee Influence: buff uptime from the Electricity procs (20% chance of 18 s, steady share
+      18l / (1 + 18l)); each elemental proc spreads its element's damage and status ticks to the close
+      enemies, each taking 1 + clumping x (close - 1) copies; the damage spread to the room counts as
+      more kills (at most the close enemies). The others' armor is the target's before any strip.
+      Melee Afflictions: a swing with knockdown / launching hits adds 6 stacks to each status up, their
+      ticks the average of that type's running ones.
+- [x] The page: melee in the model; Stance combo, Combo counter (Initial / Max / Built up), In the
+      swing, Within 20 m, Clumping %; "swings to kill" with the stance's timing disclosed on hover.
+- [ ] In game: Melee Duplicate's yellow-crit chance, Doughty's steps, Influence's spread (does a spread
+      proc spread again?), Afflictions' added ticks; Blood Rush additive vs multiplicative (the wiki's
+      formula line and its example disagree; the example is used).
+- [ ] Speed: a melee study takes about a minute (built-up combos fight the room's targets one by one,
+      and each mechanic arcane gets its own search).
+- [ ] Heavy attacks, slams, glaive throws, gunblade shots; Gladiator set bonus; melee incarnons;
+      zaws (parts) and Dark Split-Sword.
 
 ## Verified in game (2026-10-23)
 

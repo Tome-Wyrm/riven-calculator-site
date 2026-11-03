@@ -1,7 +1,7 @@
 // @ts-check
 // Damage model for guns: what each riven stat adds to a weapon's damage per second over a simple
-// reference build. Pure functions, no DOM. Melee isn't modelled (combo, heavy attacks and stance
-// builds don't fit a DPS number).
+// reference build. Pure functions, no DOM. Melee fights through src/fight.js (src/melee.js: stance
+// swings, the combo counter); this closed form is for guns.
 //
 // Per part of a fire mode (an attack and what hangs off it, e.g. a projectile and its explosion):
 //
@@ -126,6 +126,15 @@ export const HEADS = {
  * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
  * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)
  * @property {Valence} [valence]   an adversary weapon's Valence bonus
+ * @property {MeleeOptions} [melee] a melee weapon’s swings (src/fight.js; src/melee.js)
+ * @property {string} [arcane]     the arcane the build carries (src/build.js arcanePool: '' for none; unset: the best found)
+ */
+
+/**
+ * How a melee weapon fights: its stance combo's attacks (each a swing), the combo counter (held at
+ * the initial combo, held at the max, or built up by the hits), and the enemies inside each swing
+ * (room clearing: each further one takes the follow through's share and adds combo points).
+ * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', nearby?: number, close?: number, clump?: number}} MeleeOptions
  */
 
 /**

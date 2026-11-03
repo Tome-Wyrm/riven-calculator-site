@@ -19,7 +19,10 @@ const STATS = {
   'Beam Range': 'beamRange', 'Range': 'range', 'Fire/Charge Rate': 'fireRate',
   'Combo Duration': 'comboDuration', 'Chance to Explode (Use with Caution)': 'explodeChance',
   'Ammo Efficiency': 'ammoEfficiency', 'Melee Damage': 'meleeDamage', 'Attack Speed': 'attackSpeed',
-  'Energy Regen/s': 'energyRegen', 'Armor': 'armor',
+  'Energy Regen/s': 'energyRegen', 'Armor': 'armor', 'Initial Combo': 'initialCombo',
+  'Combo Count Chance': 'comboChance', 'Additional Combo Count Chance': 'comboChance',
+  'Heavy Attack Efficiency': 'heavyEfficiency', 'Heavy Attack Wind Up Speed': 'heavyWindup',
+  'Slam Attack Damage': 'slamDamage', 'Finisher Damage': 'finisherDamage', 'Slide Attack Damage': 'slideDamage',
 };
 
 /**
@@ -30,7 +33,8 @@ const STATS = {
  * @property {1} [aim]        only while aiming
  * @property {number} [seconds]
  * @property {number} [stacks]
- * @property {string} [per]   "status type": the value counts once per status type on the target
+ * @property {string} [per]   "status type": the value counts once per status type on the target;
+ *                            "combo tier": once per melee combo multiplier past 1x (Blood Rush at 4x: 3 x 40%)
  * @property {number} [chance]  arcanes: the chance the trigger gives it ("21% chance for …")
  * @property {string} [to]    arcanes: the weapons it applies to ("pistols", "primary", "primary no shotguns",
  *                            "shotguns", "snipers", "secondary", "melee")
@@ -109,6 +113,12 @@ export function readLine(line) {
     if (stacks) { extra.stacks = Number(stacks[1]); t = t.replace(stacks[0], ''); }
     if (/ when Aiming/.test(t)) { extra.aim = 1; t = t.replace(/ when Aiming/, ''); }
     if (/ per Status Type affecting the target/.test(t)) { extra.per = 'status type'; t = t.replace(/ per Status Type affecting the target/, ''); }
+    // Melee combo: "+40% Critical Chance stacks with Combo Multiplier" (Blood Rush), "+40% Status
+    // Chance per Combo Multiplier" (Weeping Wounds): the wiki's worked examples add it per tier past 1x.
+    if (/ (?:stacks with|per) Combo Multiplier$/i.test(t)) { extra.per = 'combo tier'; t = t.replace(/ (?:stacks with|per) Combo Multiplier$/i, ''); }
+    // True Steel's "+120% Critical Chance (x2 for Heavy Attacks)": normal attacks get the value as written.
+    t = t.replace(/\s*\(x2 for Heavy Attacks\)$/, '');
+    if (/^\+\d+(?:\.\d+)?% COMBO COUNT CHANCE$/.test(t)) t = t.replace('COMBO COUNT CHANCE', 'Combo Count Chance');
     const first = t.match(/^(.*) on first shot in Magazine$/);
     if (first) { extra.on = 'first shot'; t = first[1]; }
     if (/ while Invisible$/.test(t)) { extra.on = 'invisible'; t = t.replace(/ while Invisible$/, ''); }
