@@ -112,7 +112,8 @@
   },
   "Felarx": {
    "checked": "2026-11-02",
-   "note": "'Auto / Semi' trigger: can't take the Semi- Cannonades (no SEMI_AUTO tag)"
+   "note": "'Auto / Semi' trigger: can't take the Semi- Cannonades (no SEMI_AUTO tag)",
+   "incarnon": "2026-11-03: Devastating Attrition is x21 (+2000%), rolled per pellet: unmodded pellets 27, a boosted one 561 = 26.7 x 21"
   },
   "Laetum": {
    "checked": "2026-11-02",

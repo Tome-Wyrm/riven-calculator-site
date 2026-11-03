@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { withPerks, bestPerks, evolutionsOf } from '../src/incarnon.js';
-import { dps, critScale } from '../src/sim.js';
+import { dps, critScale, BUILDS } from '../src/sim.js';
 import { WEAPON_STATS } from '../src/data/weapon-stats.js';
 
 const near = (a, b, tol = 1e-9) => assert.ok(Math.abs(a - b) < tol, `${a} vs ${b}`);
@@ -26,11 +26,12 @@ test('perks change the base numbers: crit and status per form, base damage to no
   near(normal.sc, w.modes[0].parts[0].sc + 0.025);        // +2.5% per projectile
   near(form.sc, w.modes[1].parts[0].sc + 0.1);            // +10% for Incarnon Form
   assert.equal(w.modes[0].parts[0].cc, 0.2);              // the original is untouched
-  // Boar's Fortress Salvo: +16 damage, each type in proportion, normal attacks only.
+  // Boar's Fortress Salvo: +16 damage a shot, shared by its 8 pellets, each type in proportion,
+  // normal attacks only.
   const b = WEAPON_STATS.Boar;
   const salvo = withPerks(b, 'Boar', perk('Boar', 'Fortress Salvo'));
   const sum = d => Object.values(d).reduce((x, y) => x + y, 0);
-  near(sum(salvo.modes[0].parts[0].dmg), sum(b.modes[0].parts[0].dmg) + 16, 1e-6);
+  near(sum(salvo.modes[0].parts[0].dmg), sum(b.modes[0].parts[0].dmg) + 16 / 8, 1e-6);
 });
 
 test('the non-crit bonus: 50% chance of +2000% on hits that don’t crit, gone at 100% crit', () => {
@@ -52,4 +53,18 @@ test('Felarx: the best perks avoid crit, and a crit chance curse helps', () => {
   const curse = x => dps(x, 'shotgun', { critChance: -0.5 }, o) / dps(x, 'shotgun', {}, o) - 1;
   assert.ok(curse(w) < 0, 'unevolved: crit chance helps');
   assert.ok(curse(ev) > 0, 'evolved: losing crit chance helps');
+});
+
+test('perk fire rate adds to the mods (in game: Laetum, +100% mods and Rapid Wrath: 2.5 x 2.2 = 5.5)', () => {
+  const w = WEAPON_STATS.Laetum;
+  const fast = withPerks(w, 'Laetum', perk('Laetum', 'Rapid Wrath'));
+  assert.deepEqual(fast.bonus, { fireRate: 0.2 });
+  assert.equal(fast.modes[0].rate, w.modes[0].rate);
+  // Burst DPS against the same build: (1 + mods + 0.2) / (1 + mods). (Without status, so that faster
+  // stacking doesn't add to it.)
+  const o = { weakpoint: 0, burst: true };
+  const calm = x => ({ ...x, modes: x.modes.map(m => ({ ...m, parts: m.parts.map(p => ({ ...p, sc: 0 })) })) });
+  const at = (x, mods) => dps(calm(x), 'pistol', mods, o);
+  const B = BUILDS.pistol.fireRate ?? 0;                     // the reference build's own fire rate mods
+  near(at(fast, { fireRate: 1 }) / at(w, { fireRate: 1 }), (1 + B + 1 + 0.2) / (1 + B + 1), 1e-9);
 });

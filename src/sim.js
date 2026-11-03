@@ -226,7 +226,7 @@ export function dpsOf(w, t, opts = {}) {
   // A weak point: its multiplier plus 1.5 x Weakpoint Damage (heads), then x headshot bonuses.
   const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
   // A fire-rate lock (the Semi- Cannonades) keeps the weapon's own rate.
-  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1)));
+  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1) + (w.bonus?.fireRate ?? 0)));
   const crit = critScale;
   const statusSeconds = STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
   const statusMult = Math.max(0, 1 + m('statusDamage'));
@@ -372,7 +372,7 @@ function statusTypesUp(w, mode, t, opts, parts) {
   if (opts.primed) return STATUS_TYPES.length;
   const m = (/** @type {string} */ id) => t.stats[id] ?? 0;
   if (!Object.keys(t.stats).some(k => k.endsWith('PerStatus'))) return 0;
-  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1)));
+  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1) + (w.bonus?.fireRate ?? 0)));
   const pellets = m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot'));
   const uptime = opts.burst ? 1 : sustained(w, mode, rate, m);
   const seconds = STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
@@ -400,7 +400,7 @@ function sustained(w, mode, rate, m) {
   const mag = w.mag <= 1 ? w.mag : Math.max(1, Math.round(w.mag * Math.max(0, 1 + m('magazine'))));
   const shots = mag / (mode.cost * Math.max(0.01, 1 + m('ammoEfficiency')));
   const firing = shots / rate;
-  const reload = w.reload / Math.max(0.05, 1 + m('reloadSpeed'));
+  const reload = w.reload / Math.max(0.05, 1 + m('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
   return firing / (firing + reload);
 }
 

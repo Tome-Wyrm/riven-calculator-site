@@ -67,7 +67,7 @@ export function fight(w, t, opts) {
   const faction = enemy ? Math.max(0, 1 + raw(enemy)) : 1;
   const D = Math.max(0, 1 + raw('damage'));
   const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
-  const rate = mode.rate * (raw('fireRateLocked') ? 1 : Math.max(0.05, 1 + raw('fireRate') * (opts.bow ? 2 : 1)));
+  const rate = mode.rate * (raw('fireRateLocked') ? 1 : Math.max(0.05, 1 + raw('fireRate') * (opts.bow ? 2 : 1) + (w.bonus?.fireRate ?? 0)));
   const crit = critScale;
   const duration = STATUS_SECONDS * Math.max(0, 1 + raw('statusDuration'));
   const stripStep = 0.5 * duration / STATUS_SECONDS;
@@ -106,7 +106,7 @@ export function fight(w, t, opts) {
   const reloads = !opts.burst && w.mag > 0 && w.reload > 0 && mode.cost > 0 && !/incarnon/i.test(mode.name);
   const mag = w.mag <= 1 ? w.mag : Math.max(1, Math.round(w.mag * Math.max(0, 1 + raw('magazine'))));
   const shotsPerMag = reloads ? mag / (mode.cost * Math.max(0.01, 1 + raw('ammoEfficiency'))) : Infinity;
-  const reload = w.reload / Math.max(0.05, 1 + raw('reloadSpeed'));
+  const reload = w.reload / Math.max(0.05, 1 + raw('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
   const ehp = target.health + target.shields;
 
   // One target, from its first shot until the gun is ready for the next, reloading or not.

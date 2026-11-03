@@ -804,9 +804,15 @@ chance curse good, and the model had it as a cost)
       lists each evolution's perk and lets you change any ("Back to the best").
 - Felarx, level 200 Steel Path Heavy Gunner, room clearing: a Critical Chance curse went from -30%
   (unevolved) to +2.9%. At level 150 the evolved Felarx one-shots, so crit stops mattering at all.
-- [ ] To check in game: Devastating Attrition's size (+2000%, x21 on the hit, as Felarx's text says,
-      or x20 as Laetum's "2000% damage" reads); whether "Increase Damage by +X" is per pellet on
-      shotguns (applied per pellet here); whether perk fire rate adds to mods (applied on its own).
+- [x] Devastating Attrition is x21 (+2000%), rolled per pellet (in game 2026-11-03, unmodded Felarx:
+      pellets 27, a boosted one 561 = 26.7 x 21; x20 would show 561 next to 28s).
+- [x] "Increase Damage by +X" is per shot: a shotgun's pellets share it (in game 2026-11-03, Boar at
+      level 235: Fortress Salvo +16 and Reified Bane +10 both show pellets of 10 and crits of 24; per
+      pellet, +16 would be 19% more).
+- [x] Perk fire rate adds to the mods (in game 2026-11-03: Laetum with +100% from mods shows 5 without
+      Rapid Wrath, 5.5 with it = 2.5 x (1 + 1 + 0.2); a separate x1.2 would be 6). Reload speed is
+      taken the same way (`WeaponStats.bonus`). Shotgun splits go by base pellets (the user: Multishot
+      only adds pellets; each keeps the same chances).
 - [x] Best rivens on a shape with a curse carry one (the user, 2026-11-03: no curse is never better,
       since a curse raises the positives and some curse is always harmless): each takes the kindest
       curse measured on the top riven (the next one where it rolls that stat), re-scored with it;
