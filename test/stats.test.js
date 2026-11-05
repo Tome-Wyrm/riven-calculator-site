@@ -65,7 +65,7 @@ function sheetMin(stat, cls) {
 }
 
 // Positive minimums from the ++- spreadsheet, columns [rifle, shotgun, pistol, archgun, melee].
-// null = blank cell. Merged sheet rows are checked against the stat they match (see PLAN.md).
+// null = blank cell. Merged sheet rows are checked against the stat they match (see docs/history.md).
 const SHEET_PP_MINUS_MIN = {
   ammoMax:              [66.76, 120.29, 120.29, 133.52, null],
   heat:                 [120.29, 120.29, 120.29, 159.98, 120.29],

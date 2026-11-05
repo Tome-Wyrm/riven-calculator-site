@@ -3,7 +3,7 @@
 //
 // Source: Warframe wiki "Riven Mods" base-coefficient tables (post Hotfix 44.1.3, dispositions
 // removed). Sign rules cross-checked against warframe.market's riven attribute list; see the
-// "Data decisions" section of PLAN.md for the discrepancies and how they were resolved.
+// "Data decisions" section of docs/history.md for the discrepancies and how they were resolved.
 
 /** @typedef {'rifle' | 'shotgun' | 'pistol' | 'archgun' | 'melee'} WeaponClass */
 /** @typedef {'++' | '++-' | '+++' | '+++-'} Shape */
