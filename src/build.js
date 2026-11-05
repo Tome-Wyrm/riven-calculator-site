@@ -28,13 +28,16 @@ import { fight } from './fight.js';
  * @property {boolean} kills       kills keep on-kill stacks up; false: a single target, no stacks
  * @property {boolean} aiming      aiming-only bonuses count
  * @property {number} weakpoint    share of direct hits on weak points
+ * @property {number} charging     that share while charging an Incarnon gauge (you aim for them then): the gauge's speed, not its damage
  */
 
 /** @type {Record<'room' | 'single' | 'weak', Scenario>} */
 export const SCENARIOS = {
-  room: { kills: true, aiming: true, weakpoint: 0 },    // room clearing: kills, body shots
-  single: { kills: false, aiming: true, weakpoint: 0 },  // one target, no kill stacks
-  weak: { kills: true, aiming: true, weakpoint: 1 },    // every direct hit on a weak point
+  // Aiming at bodies, a few hits land on weak points by accident: one in fifty. They're worth so much
+  // (the head's multiplier, crits doubled) that 10% or even 5% made Weakpoint Damage a top stat.
+  room: { kills: true, aiming: true, weakpoint: 0.02, charging: 0.75 },    // room clearing: kills
+  single: { kills: false, aiming: true, weakpoint: 0.02, charging: 0.75 }, // one target, no kill stacks
+  weak: { kills: true, aiming: true, weakpoint: 1, charging: 1 },         // every direct hit on a weak point
 };
 
 const ELEMENTS = [...BASE, ...COMBINED];
@@ -59,7 +62,8 @@ const HEAVY_STATS = new Set(['animosity', 'meleeDamageOnHeavy', 'heavyEfficiency
 export function liveFactor(e, sc) {
   if (e.aim && !sc.aiming) return 0;
   if (e.chance !== undefined && e.chance < 1) return 0;
-  const wp = sc.weakpoint > 0;
+  // (Stacks from weak point hits need aiming for them: accidents don't keep them up.)
+  const wp = sc.weakpoint >= 0.5;
   let f = 0;
   const on = e.on;
   if (!on) f = 1;

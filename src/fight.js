@@ -36,6 +36,16 @@
 // health and shields over the time taken (without that floor: past a one-shot kill, the share of
 // the shot it needed), so it reads like the closed form (src/sim.js dpsOf) and the optimiser can use
 // either.
+// Incarnon (opts.incarnon): a cycle, not the form alone. Normal fire until the gauge is full, the swap
+// in (a reload's time: Reload Speed shortens it), the form until its ammo is gone (fire rate spends it
+// sooner; nothing stretches it), the swap back (under a second: in game, Boar). The DPS is the two
+// fights weighted by their time, averaged like reloads. Each pellet on a weak point charges (in game,
+// Boar: 8 pellets, 50 hits, full in 7 shots; Multishot's pellets too), at a share of hits you aim for
+// (for the gauge's speed only: the damage while charging stays the build's own share, or Incarnon
+// would score for the aiming, not the form), up to the pellet that kills: the rest of the shot charges nothing, though it lands on the same
+// frame (the user). What a shot charges with is an average of what whole pellets do (`chargedPellets`,
+// checked against a pellet by pellet simulation). One target: the gauge starts full, the form first,
+// then the cycle for what's left. A burst stays in the form.
 // Melee (src/melee.js): a shot is a swing, the next attack of the stance combo (its hits' multipliers
 // summed for damage, each hit rolling crit and status), at the attack speed. The combo counter is
 // held at the initial combo or the max, or built up by the hits (room clearing carries it from target
@@ -83,16 +93,69 @@ const TARGET_SECONDS = 20;
  * @property {number} shotsPerKill
  * @property {number} perShot      the first shot's damage to a fresh target (health and shields; overkill counts)
  * @property {number} [tier]       melee: the combo multiplier at the last kill
+ * @property {number} [inForm]      Incarnon: the share of the time in the form
  */
+
+/** Seconds from the form back to normal fire (in game on Boar: firing again in under a second). */
+const SWAP_OUT = 0.75;
+
+/**
+ * The pellets a shot charges with, on average, while killing a stream of targets. Pellets land one by
+ * one until one kills. How many a kill takes: its health over a pellet's average damage, plus the
+ * overshoot, as a kill runs past its last point by more when some pellets hit far harder than others
+ * (renewal theory: `spread` is a pellet's mean square over its mean squared; a head hit against a
+ * body hit makes it large), and at least one. A kill that spills into another shot wastes the rest
+ * of that one: on average half a shot's worth, once the kill takes about a shot.
+ * @param {number} pellets a shot's pellets @param {number} perShot its damage @param {number} ehp the target's health and shields @param {number} spread
+ */
+export function chargedPellets(pellets, perShot, ehp, spread) {
+  const x = ehp / Math.max(1e-9, perShot / pellets);
+  const taken = Math.max(1, x + spread / 2 * (1 - Math.exp(-x)));
+  const spilled = 0.5 * (1 - 1 / Math.max(1, pellets)) * Math.min(1, Math.max(0, taken / pellets - 0.5) * 2);
+  return taken / Math.max(1, taken / pellets + spilled);
+}
+
+/**
+ * A build against its target: one fight, or the Incarnon cycle of two.
+ * @param {WeaponStats} w @param {Totals} t @param {SimOptions & {target: Target, targets?: number}} opts
+ * @returns {FightResult}
+ */
+export function fight(w, t, opts) {
+  const c = opts.incarnon;
+  const { interval: _i, reload: _r, hits: _h, spread: _s, aimed: _a, ...once } = engage(w, t, opts);
+  if (!c || opts.burst) return once;
+  const form = engage(w, t, opts);
+  const plain = engage(w, t, { ...opts, mode: c.normal });
+  const ehp = opts.target.health + opts.target.shields;
+  const landed = chargedPellets(plain.hits, plain.aimed, ehp, plain.spread);
+  const charging = c.hits * plain.interval / Math.max(1e-9, landed * (c.any ? 1 : c.share ?? 0.75));
+  const shotsInForm = c.ammo / Math.max(1e-9, (w.modes[opts.mode ?? w.main] ?? w.modes[0]).cost);
+  const firing = shotsInForm * form.interval;
+  const cycle = charging + plain.reload + firing + SWAP_OUT;
+  const dps = (plain.dps * charging + form.dps * firing) / cycle;
+  const shots = charging / plain.interval + shotsInForm;
+  if ((opts.targets ?? 1) <= 1) {
+    // One target: the gauge starts full. The form may finish it; what's left goes at the cycle's rate.
+    if (form.dps * firing >= ehp) return { ...once, inForm: 1 };
+    const rest = (ehp - form.dps * firing) / Math.max(1e-9, dps);
+    const time = firing + rest;
+    return { dps: ehp / time, timePerKill: time, shotsPerKill: shotsInForm + rest * shots / cycle, perShot: form.perShot, inForm: (firing + rest * firing / cycle) / time };
+  }
+  const kills = charging / plain.timePerKill + firing / form.timePerKill;
+  return { dps, timePerKill: cycle / kills, shotsPerKill: shots / kills, perShot: form.perShot, inForm: firing / cycle };
+}
 
 /** Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more. @param {number} n */
 const amplify = n => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
 
 /**
+ * One fight in one fire mode, with what the Incarnon cycle needs: a shot's interval, the reload, the
+ * pellets a shot lands (each may charge the gauge), and, aiming for weak points as you do to charge,
+ * how unevenly they hit and a shot's damage (`chargedPellets`).
  * @param {WeaponStats} w @param {Totals} t @param {SimOptions & {target: Target, targets?: number}} opts
- * @returns {FightResult}
+ * @returns {FightResult & {interval: number, reload: number, hits: number, spread: number, aimed: number}}
  */
-export function fight(w, t, opts) {
+function engage(w, t, opts) {
   const target = opts.target;
   const targets = opts.targets ?? 1;
   const raw = (/** @type {string} */ id) => t.stats[id] ?? 0;
@@ -190,7 +253,7 @@ export function fight(w, t, opts) {
   const influence = melee && targets > 1 ? raw('influence') : 0;
   const close = Math.max(0, Math.round(melee?.close ?? 0));
   const copies = close * (1 + Math.min(1, Math.max(0, melee?.clump ?? 0)) * Math.max(0, close - 1));
-  let spread = 0;                                          // damage spread to the room (this target)
+  let spreadDamage = 0;                                    // damage spread to the room (this target)
   // The others' armor: as the target's before any strip (their own statuses aren't followed).
   const fullArmor = 1 - 0.9 * Math.sqrt(Math.min(target.armor, 2700) / 2700);
 
@@ -201,6 +264,27 @@ export function fight(w, t, opts) {
   const reload = w.reload / Math.max(0.05, 1 + raw('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
   // A shot's interval at the sustained rate: its own, and its share of the reload.
   const interval = 1 / rate + (Number.isFinite(shotsPerMag) ? Math.max(0, reload - 1 / rate) / shotsPerMag : 0);
+  const hits = Math.max(1, ...mode.parts.filter(p => !p.aoe).map(p => p.ms)) * (raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot')));
+  // A pellet's rolls, by chance and multiplier: its crit tiers, the non-crit bonus, on a body or a head.
+  const rolls = (/** @type {import('./sim.js').Part} */ p, /** @type {number} */ cc, /** @type {number} */ cd) => {
+    const tier = Math.floor(Math.max(0, cc)), over = Math.max(0, cc) - tier;
+    const low = 1 + tier * (Math.max(1, cd) - 1), high = low + Math.max(1, cd) - 1;
+    const bonus = tier === 0 && p.nonCrit ? p.nonCrit.chance : 0;
+    return [[(1 - over) * (1 - bonus), low], [(1 - over) * bonus, low + (p.nonCrit?.mult ?? 0)], [over, high]];
+  };
+  let spread = 1, aiming = 1;                               // and a shot's damage aimed, over as fought
+  const first = opts.incarnon ? mode.parts.find(p => !p.aoe) : null;
+  if (first) {
+    const cd = first.cd * (1 + raw('critDamage'));
+    const head = weakPointMult(first, enemy, opts, raw);
+    const body = rolls(first, critChanceOf(first, raw('critChance')), cd);
+    const onHead = rolls(first, critChanceOf(first, raw('critChance') + raw('weakpointCrit')), headcrit ? 2 * cd : cd);
+    const moment = (/** @type {number} */ share, /** @type {number} */ power) => body.reduce((s, [c, v]) => s + (1 - share) * c * v ** power, 0)
+      + onHead.reduce((s, [c, v]) => s + share * c * (v * head) ** power, 0);
+    const aim = opts.incarnon?.share ?? 0.75;
+    spread = moment(aim, 2) / Math.max(1e-9, moment(aim, 1) ** 2);
+    aiming = moment(aim, 1) / Math.max(1e-9, moment(wp, 1));
+  }
   const ehp = target.health + target.shields;
   let perShot = 0;
   let lastTier = 1;
@@ -373,7 +457,7 @@ export function fight(w, t, opts) {
             // Each proc spreads its hit's share of this element, and the status (with its ticks).
             const amount = (v.hits.find(([t]) => t === type)?.[1] ?? 0) * Dshot * mult / hitsPer;
             const ticks = DOT[/** @type {keyof typeof DOT} */ (type)] ? ticksOf(type, duration) * perProc0 * mult / hitsPer : 0;
-            spread += n0 * hitsPer * buffUp * copies * (amount + ticks) * Math.max(0, 1 + (target.weak[type] ?? 0)) * fullArmor;
+            spreadDamage += n0 * hitsPer * buffUp * copies * (amount + ticks) * Math.max(0, 1 + (target.weak[type] ?? 0)) * fullArmor;
           }
         }
         // The buff's uptime from the Electricity procs so far (each a 20% chance of 18 s).
@@ -409,7 +493,7 @@ export function fight(w, t, opts) {
 
   if (targets <= 1 || !melee) {
     const r = one();
-    return { dps: ehp / Math.max(1e-9, r.pace), timePerKill: r.time, shotsPerKill: r.shots, perShot, ...(melee ? { tier: lastTier } : {}) };
+    return { dps: ehp / Math.max(1e-9, r.pace), timePerKill: r.time, shotsPerKill: r.shots, perShot, interval, reload, hits, spread, aimed: perShot * aiming, ...(melee ? { tier: lastTier } : {}) };
   }
   {
     // A room of melee kills: the combo carries from target to target when it builds up; the enemies
@@ -417,7 +501,7 @@ export function fight(w, t, opts) {
     // changes a fight), each adding the same combo: the next ones up to the tier's end aren't re-fought.
     let time = 0, pace = 0, shots = 0, combo = initial, first = 0, spreadAll = 0;
     for (let k = 0; k < targets; k++) {
-      spread = 0;
+      spreadDamage = 0;
       const r = one(combo);
       if (k === 0) first = perShot;
       const gain = r.combo - combo;
@@ -430,7 +514,7 @@ export function fight(w, t, opts) {
         : steady ? left
         : comboTier(lastCombo) !== tier ? 1
         : Math.min(left, Math.ceil((tier * TIER_POINTS - lastCombo) / gain));
-      time += r.time * alike; pace += r.pace * alike; shots += r.shots * alike; spreadAll += spread * alike;
+      time += r.time * alike; pace += r.pace * alike; shots += r.shots * alike; spreadAll += spreadDamage * alike;
       if (melee.combo === 'build') lastTier = comboTier(lastCombo + (alike - 1) * gain);
       combo += gain * alike;
       k += alike - 1;
@@ -441,6 +525,6 @@ export function fight(w, t, opts) {
     const kills = Math.min(targets, together + others);
     time /= targets * kills;
     pace /= targets * kills;
-    return { dps: ehp / Math.max(1e-9, pace), timePerKill: time, shotsPerKill: shots / targets / kills, perShot: first, tier: lastTier };
+    return { dps: ehp / Math.max(1e-9, pace), timePerKill: time, shotsPerKill: shots / targets / kills, perShot: first, tier: lastTier, interval, reload, hits, spread, aimed: first * aiming };
   }
 }

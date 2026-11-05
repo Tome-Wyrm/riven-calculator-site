@@ -14,14 +14,26 @@
 //   Laetum's Rapid Wrath).
 // Conditional effects (on headshot, while sliding…) aren't applied.
 
-import { INCARNONS } from './data/incarnons.js';
-import { dps } from './sim.js';
+import { INCARNONS, INCARNON_CHARGE } from './data/incarnons.js';
+import { dps, referenceTotals } from './sim.js';
+import { fight } from './fight.js';
 
 /** @typedef {import('./data/weapon-stats.js').WeaponStats} WeaponStats */
 /** @typedef {import('./data/incarnons.js').Perk} Perk */
 
 /** A gun's evolutions, or [] for a gun without an incarnon. @param {string} weapon */
 export const evolutionsOf = weapon => INCARNONS[weapon] ?? [];
+
+/**
+ * A gun's Incarnon cycle (src/fight.js): what fills its gauge, what the form holds, and the fire mode
+ * it charges in. Null for a gun without one.
+ * @param {string} weapon @param {WeaponStats} w
+ */
+export function cycleOf(weapon, w) {
+  const charge = INCARNON_CHARGE[weapon];
+  if (!charge) return null;
+  return { ...charge, normal: isForm(w.modes[w.main]) ? w.modes.findIndex(m => !isForm(m)) : w.main };
+}
 
 /** Guns that are Incarnon by birth (the wiki's "natural" Incarnons): there's no adapter to leave out. */
 const NATURAL = new Set(['Felarx', 'Laetum', 'Phenmor', 'Onos']);
@@ -69,7 +81,8 @@ export function withPerks(w, weapon, picks) {
  * The perks that together do most for the gun with the reference build: every combination tried
  * (at most 3^4), since one perk can turn another around (Devastating Attrition makes crit chance a
  * cost, so Wracking Wrath's -10% beats Brutal Edge's +10%). Perks the model can't use count as one
- * choice; ties keep the earlier perks.
+ * choice; ties keep the earlier perks. They're for the fire mode in opts: normal fire gets what helps
+ * normal fire, and the Incarnon cycle what helps the cycle, charging and form together.
  * @param {WeaponStats} w @param {string} weapon @param {Exclude<import('./data/stats.js').WeaponClass, 'melee'>} cls
  * @param {import('./sim.js').SimOptions} opts
  */
@@ -82,7 +95,8 @@ export function bestPerks(w, weapon, cls, opts) {
   let best = choices.map(c => c[0]), bestDps = -Infinity;
   const walk = (/** @type {number} */ i, /** @type {number[]} */ picks) => {
     if (i === choices.length) {
-      const d = dps(withPerks(w, weapon, picks), cls, {}, opts);
+      const evolved = withPerks(w, weapon, picks);
+      const d = opts.incarnon && opts.target ? fight(evolved, referenceTotals(cls, {}), { ...opts, target: opts.target }).dps : dps(evolved, cls, {}, opts);
       if (d > bestDps * (1 + 1e-9)) { best = picks; bestDps = d; }
       return;
     }

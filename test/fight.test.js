@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fight } from '../src/fight.js';
+import { chargedPellets, fight } from '../src/fight.js';
 
 const near = (/** @type {number} */ a, /** @type {number} */ b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps * Math.max(1, Math.abs(b)), `${a} vs ${b}`);
 // One part, one shot a second, no crits or status unless asked: easy numbers.
@@ -89,4 +89,63 @@ test('Ammo Efficiency stops at 75%: a magazine lasts four times as long at most'
   near(time(-0.75), 1 + 2 / 8);
   near(time(-0.9), time(-0.75));
   assert.ok(time(-0.5) > time(-0.75));
+});
+
+// A gun with a form: 1 shot a second normally (2 pellets), 2 a second in the form (10x the damage).
+const incarnon = (/** @type {object} */ weapon = {}) => ({ kind: 'Rifle', mag: 0, reload: 3, ammo: null, trigger: 'Auto', tags: [], main: 0, ...weapon, modes: [
+  { name: 'Normal Attack', rate: 1, cost: 1, parts: [{ name: 'Normal Attack', dmg: { impact: 100 }, cc: 0, cd: 1, sc: 0, ms: 2 }] },
+  { name: 'Incarnon Form', rate: 2, cost: 1, parts: [{ name: 'Incarnon Form', dmg: { impact: 1000 }, cc: 0, cd: 1, sc: 0, ms: 1 }] }] });
+const charged = { hits: 6, any: false, ammo: 20, normal: 0, share: 0.5 };
+
+test('Incarnon: a room is the cycle, charging at the pellets on weak points, then a reload to swap, the form, and back', () => {
+  const big = target(1e7);
+  const room = { target: big, targets: 20, mode: 1 };
+  const form = fight(incarnon(), none, room).dps;
+  const r = fight(incarnon(), none, { ...room, incarnon: charged });
+  // 6 hits at 2 pellets a shot, half on weak points: 6 s. Swap in 3 s, 20 shots in 10 s, swap back 0.75 s.
+  // The aiming speeds the gauge, but its damage stays the build's own (no weak points here).
+  const plain = fight(incarnon(), none, { target: big, targets: 20, mode: 0 }).dps;
+  near(r.dps, (plain * 6 + form * 10) / 19.75, 1e-3);
+  near(r.inForm, 10 / 19.75, 1e-3);
+  // Reload Speed shortens the swap; a burst stays in the form.
+  const quick = fight(incarnon(), { stats: { reloadSpeed: 1 }, elements: [] }, { ...room, incarnon: charged });
+  near(quick.inForm, 10 / 18.25, 1e-3);
+  near(fight(incarnon(), none, { ...room, incarnon: charged, burst: true }).dps, form);
+  // Any hit charges at every pellet, whatever the share.
+  near(fight(incarnon(), none, { ...room, incarnon: { ...charged, any: true } }).inForm, 10 / 16.75, 1e-3);
+});
+
+test('Incarnon: one target starts with a full gauge, the form first and the cycle for what\'s left', () => {
+  const one = (/** @type {number} */ health) => fight(incarnon(), none, { target: target(health), mode: 1, incarnon: charged });
+  // 20 shots in the form hold 20,000: inside that it's the form alone.
+  near(one(10000).dps, fight(incarnon(), none, { target: target(10000), mode: 1 }).dps);
+  assert.equal(one(10000).inForm, 1);
+  // Just past it the kill slows without a jump, and well past it the form is only part of the time.
+  assert.ok(one(20500).timePerKill / one(19500).timePerKill < 1.15);
+  assert.ok(one(1e6).inForm < 0.6);
+});
+
+test('Incarnon: the pellet that kills ends the shot\'s charge, so overkill charges slowly', () => {
+  // 2 pellets, a third of a shot's damage kills: one pellet charges. 6 hits at half on weak points: 12 s.
+  const room = (/** @type {number} */ health) => fight(incarnon(), none, { target: target(health), targets: 20, mode: 1, incarnon: charged });
+  near(room(100).inForm, 10 / 25.75);
+  near(room(1e7).inForm, 10 / 19.75, 1e-3);
+});
+
+test('whole pellets, on average: one pellet at least, more on fodder when some hit far harder, the spill wasted', () => {
+  // 8 pellets of 10 damage, even: one kills a 5-health target, all 8 charge on a tough one.
+  near(chargedPellets(8, 80, 5, 1), 1);
+  near(chargedPellets(8, 80, 1e7, 1), 8, 1e-3);
+  // A weak target with uneven pellets takes more of them than the average says.
+  assert.ok(chargedPellets(8, 80, 30, 2.5) > chargedPellets(8, 80, 30, 1));
+  // A kill that spills just past a shot wastes much of the next one (the simulation: about 70% of 8).
+  assert.ok(chargedPellets(8, 80, 88, 1) < 6.5, String(chargedPellets(8, 80, 88, 1)));
+  // One pellet a shot wastes nothing, and it's smooth over health.
+  near(chargedPellets(1, 10, 1000, 2), 1);
+  let last = chargedPellets(8, 80, 1, 2);
+  for (let ehp = 1; ehp < 2000; ehp += 1) {
+    const now = chargedPellets(8, 80, ehp, 2);
+    assert.ok(Math.abs(now - last) < 0.25, `${now} after ${last} at ${ehp}`);
+    last = now;
+  }
 });

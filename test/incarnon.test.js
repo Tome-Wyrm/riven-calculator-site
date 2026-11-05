@@ -69,7 +69,7 @@ test('perk fire rate adds to the mods (in game: Laetum, +100% mods and Rapid Wra
   near(at(fast, { fireRate: 1 }) / at(w, { fireRate: 1 }), (1 + B + 1 + 0.2) / (1 + B + 1), 1e-9);
 });
 
-test('Normal, Incarnoff, Incarnon: a gun without its adapter has no perks; a natural Incarnon always evolves', async () => {
+test('No adapter, normal fire, Incarnon: a gun without its adapter has no perks; a natural Incarnon always evolves', async () => {
   const { study } = await import('../src/study.js');
   const { pools } = await import('../src/cycle.js');
   const { takesAdapter, isForm } = await import('../src/incarnon.js');
@@ -83,4 +83,31 @@ test('Normal, Incarnoff, Incarnon: a gun without its adapter has no perks; a nat
   assert.ok(off.perks.length > 0 && on.perks.length > 0);
   assert.ok(off.none.dps > normal.none.dps, `${off.none.dps} vs ${normal.none.dps}`);
   assert.notEqual(on.none.dps, off.none.dps);
+});
+
+test('Incarnon charge: every gun has its gauge; Boar takes 50 weak point hits, Laetum\'s form holds 216 (both in game)', async () => {
+  const { cycleOf } = await import('../src/incarnon.js');
+  for (const name of Object.keys((await import('../src/data/incarnons.js')).INCARNONS)) {
+    const c = cycleOf(name, WEAPON_STATS[name]);
+    assert.ok(c && c.hits > 0 && c.ammo > 0, name);
+    assert.ok(!/incarnon/i.test(WEAPON_STATS[name].modes[c.normal].name), name);
+  }
+  assert.deepEqual(cycleOf('Boar', WEAPON_STATS.Boar), { hits: 50, any: false, ammo: 150, normal: 0 });
+  assert.equal(cycleOf('Laetum', WEAPON_STATS.Laetum)?.ammo, 216);
+  assert.equal(cycleOf('Stug', WEAPON_STATS.Stug)?.any, true);
+});
+
+test('perks follow the mode: normal fire, the form and the cycle can each want different ones', async () => {
+  const { cycleOf, isForm } = await import('../src/incarnon.js');
+  const w = WEAPON_STATS.Boltor;
+  const target = { health: 300000, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const base = { target, targets: 20, enemy: 'grineer', weakpoint: 0.02 };
+  const form = w.modes.findIndex(isForm);
+  const names = (/** @type {number[]} */ p) => p.map((k, i) => evolutionsOf('Boltor')[i].perks[k]?.name);
+  const normal = names(bestPerks(w, 'Boltor', 'rifle', { ...base, mode: w.main }));
+  const inForm = names(bestPerks(w, 'Boltor', 'rifle', { ...base, mode: form }));
+  const cycle = names(bestPerks(w, 'Boltor', 'rifle', { ...base, mode: form, incarnon: { ...cycleOf('Boltor', w), share: 0.75 } }));
+  // The cycle reloads and swaps, so it takes the reload perk the form alone has no use for.
+  assert.ok(cycle.includes('Rapid Reinforcement') && !inForm.includes('Rapid Reinforcement'), String(cycle));
+  assert.notDeepEqual(cycle, normal);
 });

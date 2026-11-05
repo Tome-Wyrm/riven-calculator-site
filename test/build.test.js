@@ -32,13 +32,16 @@ test('build types: kill stacks in room clearing and weak point builds, weak poin
   assert.equal(liveFactor({ stat: 'critChance', value: 0.45, on: 'damaged', chance: 0.21 }, SCENARIOS.room), 0);
 });
 
-test('a weak point build values Weakpoint Damage; a room clearing build gives it nothing', async () => {
+test('a weak point build values Weakpoint Damage; a room clearing build, one hit in fifty, far less', async () => {
   const { study } = await import('../src/study.js');
   const input = scenario => ({ weapon: 'Rubico Prime', cls: 'rifle', shape: '+++-', scenario, opts: {},
     positives: ['multishot', 'critDamage', 'weakpointDamage'], negatives: [] });
   const wpd = r => r.singles.find(x => x.id === 'weakpointDamage')?.change ?? NaN;
-  assert.ok(Math.abs(wpd(study(input('room')))) < 1e-9);
   assert.ok(wpd(study(input('weak'))) > 0.2, String(wpd(study(input('weak')))));
+  assert.ok(wpd(study(input('room'))) < wpd(study(input('weak'))) / 3, String(wpd(study(input('room')))));
+  // Accidents don't keep stacks from weak point hits up: those need aiming for them.
+  assert.equal(liveFactor({ stat: 'statusChance', value: 0.3, on: 'weak point hit', stacks: 10 }, SCENARIOS.room), 0);
+  assert.equal(liveFactor({ stat: 'statusChance', value: 0.3, on: 'weak point hit', stacks: 10 }, SCENARIOS.weak), 10);
 });
 
 test('a build: 8 slots, no mod twice, no two mods that exclude each other, an arcane', () => {

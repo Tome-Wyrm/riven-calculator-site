@@ -36,7 +36,7 @@ import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
  */
 const summary = (b, f = null) => ({
   mods: b.slots.map(p => (p.riven ? 'Riven' : p.name)), arcane: b.arcane?.name ?? null, dps: b.dps,
-  fight: f && { shots: f.shotsPerKill, seconds: f.timePerKill, perShot: f.perShot },
+  fight: f && { shots: f.shotsPerKill, seconds: f.timePerKill, perShot: f.perShot, inForm: f.inForm },
 });
 
 /** A spliced stat keeps the better of two parents' rolls: its median roll is √½. @param {string} id */
@@ -48,7 +48,8 @@ export function study(input) {
   const { cls, shape } = input;
   // The kind of build decides the weak point share.
   // Room clearing and weak point builds fight 20 targets in a row (src/fight.js), single target one.
-  const opts = { ...input.opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1 };
+  const opts = { ...input.opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1,
+    ...(input.opts.incarnon ? { incarnon: { ...input.opts.incarnon, share: sc.charging } } : {}) };
   // An incarnon: the gun as evolved (Felarx's Devastating Attrition turns crit chance into a cost).
   const plain = WEAPON_STATS[input.weapon];
   const perks = !evolutionsOf(input.weapon).length || cls === 'melee' || input.adapter === false ? []

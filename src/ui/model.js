@@ -9,7 +9,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { pools } from '../cycle.js';
 import { VALENCE_TYPES } from '../sim.js';
-import { evolutionsOf, isForm, takesAdapter } from '../incarnon.js';
+import { cycleOf, evolutionsOf, isForm, takesAdapter } from '../incarnon.js';
 import { combosFor, PLAIN } from '../melee.js';
 import { arcaneNames } from '../build.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
@@ -45,7 +45,7 @@ export const modelState = {
   burst: false,
   valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
   valencePct: 60,                             // and its size, 25–60%
-  // An Incarnon gun: no adapter, adapter installed and firing normally, or in its Incarnon Form.
+  // An Incarnon gun: no adapter, evolved but never transforming, or the charge and form cycle.
   incarnon: /** @type {'normal' | 'off' | 'on'} */ ('off'),
   perks: /** @type {number[] | null} */ (null), // an incarnon's perk per evolution; null = the best combination
   perksOf: '',                                // the weapon those perks are for
@@ -166,7 +166,7 @@ const bar = (x, max) => el('span', { class: `dps-bar${x < 0 ? ' neg' : ''}`, sty
 /**
  * A build's shots (melee: swings) to kill: a button that shows its DPS, kill time and per-shot damage
  * on a line below (a tap on a phone, where there's no hover), and hides them again. Nothing without a fight.
- * @param {{dps: number, fight: {shots: number, seconds: number, perShot: number, tier?: number} | null}} b
+ * @param {{dps: number, fight: {shots: number, seconds: number, perShot: number, tier?: number, inForm?: number} | null}} b
  * @param {boolean} [melee]
  */
 const killText = (b, melee = false) => {
@@ -176,7 +176,7 @@ const killText = (b, melee = false) => {
   const word = melee ? 'swing' : 'shot';
   const detail = el('span', { class: 'kill-detail', hidden: '' }, [melee
     ? `${big(b.dps)} DPS · first swing ${big(f.perShot)} · ${f.seconds.toFixed(2)} s a kill · ${f.tier ?? 1}x combo at the kill`
-    : `${big(b.dps)} DPS · ${big(f.perShot)} a shot (the first, on a fresh target) · ${f.seconds.toFixed(2)} s a kill at the sustained rate`]);
+    : `${big(b.dps)} DPS · ${big(f.perShot)} a shot (the first, on a fresh target) · ${f.seconds.toFixed(2)} s a kill at the sustained rate${f.inForm === undefined ? '' : ` · ${Math.round(f.inForm * 100)}% of the time in the form`}`]);
   const button = el('button', { type: 'button', class: 'kill-shots', 'aria-expanded': 'false' }, [`${shots} ${word}${shots === '1' ? '' : 's'} to kill`]);
   button.addEventListener('click', () => {
     const open = detail.hidden;
@@ -216,12 +216,13 @@ export function modelBlock(weapon, cls, rerender) {
   const evolutions = evolutionsOf(weapon);
   if (s.perksOf === '?') s.perksOf = weapon;
   if (s.perksOf !== weapon || s.perks?.length !== evolutions.length) { s.perks = null; s.perksOf = weapon; }
-  // Normal, Incarnoff or Incarnon: the choice decides the perks and which fire modes there are. (A
-  // link from before the choice names the Incarnon Form as its fire mode.)
+  // No adapter, normal fire or Incarnon: the choice decides the perks and which fire modes there are.
+  // (A link from before the choice names the Incarnon Form as its fire mode.)
   if (w.modes[s.mode] && isForm(w.modes[s.mode])) s.incarnon = 'on';
   const incarnon = !evolutions.length ? 'normal' : s.incarnon === 'normal' && !takesAdapter(weapon) ? 'off' : s.incarnon;
   const modes = w.modes.flatMap((m, i) => (isForm(m) === (incarnon === 'on') ? [i] : []));
   const mode = modes.includes(s.mode) ? s.mode : modes.includes(w.main) ? w.main : modes[0];
+  const cycle = incarnon === 'on' ? cycleOf(weapon, w) : null;
   // The target: one of the faction's units at its level. Any faction: a Grineer unit's health and
   // armor without faction weaknesses (builds are judged by fights, src/fight.js, so there's always one).
   const group = enemies.GROUPS.find(g => g.id === s.enemy) ?? null;
@@ -237,7 +238,7 @@ export function modelBlock(weapon, cls, rerender) {
   const chosen = combos.find(c => `${c.stance}|${c.combo.name}` === s.stanceCombo) ?? combos[0] ?? null;
   const comboName = chosen ? `${chosen.stance}, ${chosen.combo.name}` : 'none in the wiki’s data: plain hits';
   const opts = {
-    mode, enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
+    mode, ...(cycle ? { incarnon: cycle } : {}), enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
     ...(s.arcane !== null ? { arcane: s.arcane } : {}),
     ...(isMelee ? { melee: { attacks: chosen?.combo.attacks ?? PLAIN, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
     ...(target ? { target } : { armor: s.armor }),
@@ -284,8 +285,8 @@ export function modelBlock(weapon, cls, rerender) {
   const controls = el('div', { class: 'controls model-controls' }, [
     el('div', { class: 'field' }, [el('span', {}, ['Shape']), segmented('Shape', SHAPE_ORDER, s.shape, v => set({ shape: /** @type {Shape} */ (v) }))]),
     ...(evolutions.length ? [el('div', { class: 'field' }, [el('span', {}, ['Incarnon']), segmented('Incarnon', takesAdapter(weapon) ? ['normal', 'off', 'on'] : ['off', 'on'], incarnon,
-      v => set({ incarnon: /** @type {'normal' | 'off' | 'on'} */ (v), mode: -1 }), v => ({ normal: 'Normal', off: 'Incarnoff', on: 'Incarnon' })[v] ?? v,
-      v => ({ normal: 'No adapter: the plain gun', off: 'Evolved, firing normally', on: 'Evolved, in its Incarnon Form' })[v] ?? v)])] : []),
+      v => set({ incarnon: /** @type {'normal' | 'off' | 'on'} */ (v), mode: -1 }), v => ({ normal: 'No adapter', off: takesAdapter(weapon) ? 'Adapter, normal fire' : 'Normal fire', on: 'Incarnon' })[v] ?? v,
+      v => ({ normal: 'The plain gun, no Incarnon Genesis adapter: no perks', off: 'The evolutions’ perks, never transforming', on: 'The evolutions’ perks: charge the gauge, transform, fire the form dry, again' })[v] ?? v)])] : []),
     ...(modes.length > 1 ? [select('Fire mode', modes.map(i => /** @type {[string, string]} */ ([String(i), w.modes[i].name])), String(mode), v => set({ mode: Number(v) }))] : []),
     ...(w.adversary ? [
       select('Valence bonus', [['best', 'Best (each tried)'], ...VALENCE_TYPES.map(v => /** @type {[string, string]} */ ([v, typeName(v)]))], s.valence, v => set({ valence: v })),
@@ -314,8 +315,8 @@ export function modelBlock(weapon, cls, rerender) {
     + `judged by fights against the target at the gun’s sustained rate: each shot carries its share of the reload, so a kill that only just fits a magazine counts for no more than one that doesn’t (twenty targets in a row for room clearing and weak points, one for single target). Damage past a one-shot kill still counts: a riven serves on tougher targets than this one too. The percentages are DPS, `
     + `against the best build without a riven, at median rolls on a ${s.shape} riven (spliced stats keep the better `
     + `of two rolls, so theirs is higher). ${{
-      room: 'Room clearing: kills keep on-kill stacks (Galvanized mods, Merciless) at their maximum; body shots',
-      single: 'Single target: no kills, so no on-kill stacks; body shots',
+      room: 'Room clearing: kills keep on-kill stacks (Galvanized mods, Merciless) at their maximum; aimed at bodies, one hit in fifty on a weak point by accident',
+      single: 'Single target: no kills, so no on-kill stacks; aimed at bodies, one hit in fifty on a weak point by accident',
       weak: 'Weak points: every direct hit lands on one (explosions never do), and weak point kills keep stacks up. '
         + 'The weak point multiplier is the target\u2019s own (3x for most heads, 1.5x for the Murmur and Techrot) plus 1.5x Weakpoint Damage, '
         + 'times headshot bonuses; critical headshots double the crit multiplier where the enemy allows it (not Corpus humanoids)',
@@ -331,7 +332,8 @@ export function modelBlock(weapon, cls, rerender) {
       + `The combo counter is ${{ initial: 'held at the initial combo', max: 'held at 12x', build: 'built up by the hits (each hit adds its multiplier in points; room clearing carries it from kill to kill)' }[s.combo]}; Blood Rush and Weeping Wounds add theirs per tier past 1x. `
       + `Room clearing: ${s.nearby} enem${s.nearby === 1 ? 'y' : 'ies'} in each swing, each further one at ${Math.round((w.melee?.ft ?? 1) * 100)}% follow through of the one before; `
       + `Melee Influence spreads elemental procs to ${s.close} enem${s.close === 1 ? 'y' : 'ies'} within 20 m, each taking 1 + ${s.clump}% x the others as copies (clumped enemies pass it on to each other). ` : '')
-    + (incarnon === 'on' ? 'Incarnon Form: the whole fight in the form, its charge and ammo not counted. ' : '')
+    + (cycle && !s.burst ? `Incarnon: normal fire until the gauge fills (${cycle.hits} ${cycle.any ? 'hits' : `weak point hits, each pellet counting, ${s.scenario === 'weak' ? 'every hit' : '75% of hits'} on them while charging, which speeds the gauge but isn’t counted as damage`}), a reload’s time to transform, then the form’s ${cycle.ammo} ammo, and under a second back. ${s.scenario === 'single' ? 'The gauge starts full. ' : ''}` : '')
+    + (incarnon === 'on' && s.burst ? 'Incarnon, burst: the whole fight in the form. ' : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
 

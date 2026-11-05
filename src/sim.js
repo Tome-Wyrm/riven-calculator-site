@@ -127,6 +127,7 @@ export const HEADS = {
  * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)
  * @property {Valence} [valence]   an adversary weapon's Valence bonus
  * @property {MeleeOptions} [melee] a melee weapon’s swings (src/fight.js; src/melee.js)
+ * @property {IncarnonCycle} [incarnon] fight in the charge and form cycle (src/fight.js)
  * @property {string} [arcane]     the arcane the build carries (src/build.js arcanePool: '' for none; unset: the best found)
  */
 
@@ -135,6 +136,12 @@ export const HEADS = {
  * the initial combo, held at the max, or built up by the hits), and the enemies inside each swing
  * (room clearing: each further one takes the follow through's share and adds combo points).
  * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', heavy?: boolean, heavyAt?: number, nearby?: number, close?: number, clump?: number}} MeleeOptions
+ */
+
+/**
+ * A gun's Incarnon cycle: `hits` to fill the gauge (weak point hits, or `any` hit), `ammo` in the form,
+ * the fire mode it charges in, and the `share` of hits on weak points while charging.
+ * @typedef {{hits: number, any: boolean, ammo: number, normal: number, share?: number}} IncarnonCycle
  */
 
 /**

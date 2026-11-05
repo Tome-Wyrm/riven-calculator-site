@@ -825,11 +825,49 @@ chance curse good, and the model had it as a cost)
       form), crit multiplier, multishot, magazine, flat crit after mods (Elemental Excess), headshot
       bonuses, fire rate and reload; and the non-crit bonus (`critScale` in `src/sim.js`: a 50% chance
       of +2000% on each hit that doesn't crit, so it fades as crit chance rises).
-- [x] **Normal, Incarnoff, Incarnon** (the user, 2026-11-04): a gun that takes a Genesis adapter can go
-      without one (Normal: no perks), have it and fire normally (Incarnoff), or be in its form
-      (Incarnon). Natural Incarnons (the wiki: Felarx, Laetum, Phenmor, Onos) have no Normal. Akimbo
-      and Dual weapons can't take an adapter (the wiki), so Dual Cestra has none. The form counts the
-      whole fight in the form: its charge and ammo aren't modelled.
+- [x] **No adapter, normal fire, Incarnon** (the user, 2026-11-04): a gun that takes a Genesis adapter
+      can go without one (no perks), have it and never transform ("Incarnoff" to some players, but
+      not a universal word, so the page doesn't use it), or run the Incarnon cycle (below). Natural
+      Incarnons (the wiki: Felarx, Laetum, Phenmor, Onos) have no "no adapter".
+- **A different riven means a different weapon** (the user, 2026-11-04), for Genesis adapters, Duviri
+  and Archimedea alike: Dex Furis (family Afuris) can't take the Furis adapter, nor Dual Cestra the
+  Cestra one. Checked: all 69 Incarnon guns fall in 35 families of `tools/data/internal_names.csv`,
+  and no gun in those families lacks the data.
+- [x] **The Incarnon cycle** (`fight` in `src/fight.js`; the user, 2026-11-04: the form lowers kill rate
+      while it recharges, and some forms hold very little). Incarnon mode only. Normal fire until the
+      gauge fills, the swap in, the form until its ammo is gone, the swap back; the DPS is both fights
+      weighted by their time, like reloads. Data from Underframe: `INCARNON_CHARGE` (65 guns charge on
+      weak point hits, 4 on any hit; the form lasts from 5.4 s on Ballistica to 175 s on Onos).
+      - **Each pellet on a weak point charges** (in game, unmodded Boar: 8 pellets, 50 hits; the gauge
+        read 15, 31, 47.5, 64, 80, 97.5, 100% over 7 shots, measured off the screenshots). Multishot's
+        pellets count too (in game on Boar Prime: +180% from mods and Primary Overcharge's +350%
+        filled the 50-hit gauge in one shot; the Arsenal shows 22.4 pellets without the arcane).
+      - **An arcane's Multishot adds to the mods'** (in game 2026-11-05, Boar Prime with Hell's Chamber
+        and Primary Overcharge at +350%, one shot on a level 235 head from empty: the gauge read 92%,
+        measured off the screenshot. 8 x (1 + 1.2 + 3.5) = 45.6 pellets, 46 of 50; multiplying would
+        be 79.2 and fill it).
+      - **The killing pellet ends a shot's charge** (the user, 2026-11-05: all the pellets land on one
+        frame, and those after the kill count for nothing, though they hit a live target). So on a
+        target a shot overkills, it charges with only the pellets the kill took (at least one). A
+        pellet by pellet simulation over target health (2026-11-05) put the first, fractional formula
+        between half and double the real charge time: pellets differ (a head hit against a body hit,
+        so kills take more of them), and a kill spilling into another shot wastes the rest of it.
+        `chargedPellets` averages both. Ignores spread and Punch Through into a second enemy.
+        Confirmed in game (level 1 enemies, raised damage): about 60 pellets to fill Boar's 50-hit gauge
+      - **The swap in takes a reload** and Reload Speed shortens it; **the swap out is under a second**
+        (in game, Boar; 0.75 s here). Nothing stretches the form's ammo but the perks that say so:
+        Ammo Efficiency doesn't (the user). Laetum holds 216.
+      - **One target starts with a full gauge**: the form first, the cycle for what's left. A burst
+        stays in the form.
+      - **Weak points** (the user): a few hits by accident in room clearing and single target, 75%
+        while charging (you aim for heads to get the form back), for the gauge's speed only: counted
+        as damage, it scored Incarnon for the aiming, not the form (Bronco 4.25M against 0.88M with 26%
+        of its time in the form; Boar Prime's top riven +392%, on Weakpoint Damage). The accidents are 2%: at 10%, and
+        even 5%, Weakpoint Damage led rivens, since a head hit multiplies with crit. Stacks from weak
+        point hits still need a weak point build.
+      - **Perks follow the mode** (the user, 2026-11-05): normal fire picks what helps normal fire, the
+        Incarnon cycle what helps the cycle (a fight per combination, at most 81). Cheap enough not to
+        need precomputing yet; it could join the precomputed results below.
 - [x] "Best" (the default): every combination of perks tried with the reference build (at most 81);
       one at a time picked Brutal Edge (+10% crit) before seeing Devastating Attrition. The page
       lists each evolution's perk and lets you change any ("Back to the best").
@@ -1060,6 +1098,10 @@ shots a fight, thousands of fights). In order:
   of the kills, health and armor. It also matters for weapons that hit several targets at once: they
   build kill stacks faster, and not every part of a hit gets every bonus (explosions don't count gun
   Condition Overload), so what a kill-stacking buff is worth depends on the room.
+
+Primary Overcharge (+35% Multishot per 100 Max Energy at or above 90% Energy, up to +350%) isn't
+modelled: it needs the frame's Max Energy, and the arcane search can't see it until then. At the cap
+it would beat most arcanes on multishot guns (the user had it at +350% on Garuda Prime).
 
 External buffs and companions are Phase 14. The first step there is buffs as pieces added to a
 build's totals (Nourish's Viral makes a riven's Viral worth less without any change to the fight).
