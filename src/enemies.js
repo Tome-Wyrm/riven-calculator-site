@@ -75,6 +75,23 @@ export function scaled(unit, level, steelPath = false) {
 }
 
 /**
+ * A battlegroup at a level, as targets: `types` puts them all in one faction ('' for no weaknesses:
+ * "any faction" fights the Grineer's); unset, each its own, and a unit borrowed from another group
+ * takes the group's.
+ * @param {string} id  the group (src/data/battlegroups.js) @param {import('./data/battlegroups.js').Member[]} members
+ * @param {number} level @param {boolean} steelPath @param {boolean} stripped
+ * @param {Parameters<typeof targetOf>[4] & {UNITS: Record<string, Unit[]>}} data @param {string} [types]
+ * @returns {import('./sim.js').RoomUnit[]}
+ */
+export function roomOf(id, members, level, steelPath, stripped, data, types) {
+  const faction = data.UNITS[id][0].types;
+  return members.map(([name, n, from]) => {
+    const unit = /** @type {Unit} */ (data.UNITS[from ?? id].find(u => u.name === name));
+    return { n, target: targetOf({ ...unit, types: types ?? faction }, level, steelPath, stripped, data) };
+  });
+}
+
+/**
  * The damage model's target: a unit at a level, with its faction's weaknesses (`data`: the
  * generated src/data/enemies.js, passed in so the page can load it when needed).
  * @param {Unit} unit @param {number} level @param {boolean} steelPath @param {boolean} stripped  armor fully stripped

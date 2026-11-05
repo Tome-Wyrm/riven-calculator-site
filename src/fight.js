@@ -36,6 +36,10 @@
 // health and shields over the time taken (without that floor: past a one-shot kill, the share of
 // the shot it needed), so it reads like the closed form (src/sim.js dpsOf) and the optimiser can use
 // either.
+// A mixed room (opts.room: the Simulacrum's battlegroups): each unit fought as above, the room's DPS
+// its health and shields over the time all of it takes, so its toughest units count for what they
+// cost. Shots and seconds are per kill, averaged over the units. Enemies aren't hit together: beam
+// chains, Punch Through and explosions reaching a second enemy aren't followed.
 // Incarnon (opts.incarnon): a cycle, not the form alone. Normal fire until the gauge is full, the swap
 // in (a reload's time: Reload Speed shortens it), the form until its ammo is gone (fire rate spends it
 // sooner; nothing stretches it), the swap back (under a second: in game, Boar). The DPS is the two
@@ -129,6 +133,7 @@ export function chargedPellets(pellets, perShot, ehp, spread) {
  * @returns {FightResult}
  */
 export function fight(w, t, opts) {
+  if (opts.room) return clear(w, t, opts.room, opts);
   const c = opts.incarnon;
   const { interval: _i, reload: _r, hits: _h, spread: _s, aimed: _a, ...once } = engage(w, t, opts);
   if (!c || opts.burst) return once;
@@ -151,6 +156,26 @@ export function fight(w, t, opts) {
   }
   const kills = charging / plain.timePerKill + firing / form.timePerKill;
   return { dps, timePerKill: cycle / kills, shotsPerKill: shots / kills, perShot: form.perShot, inForm: firing / cycle };
+}
+
+/**
+ * A mix of units, killed one after another. What a shot does is reported on the toughest.
+ * @param {WeaponStats} w @param {Totals} t @param {import('./sim.js').RoomUnit[]} room @param {SimOptions} opts
+ * @returns {FightResult}
+ */
+function clear(w, t, room, opts) {
+  const { room: _, ...rest } = opts;
+  const each = room.map(({ n, target }) => {
+    const ehp = target.health + target.shields;
+    const r = fight(w, t, { ...rest, target });
+    return { n, ehp, r, time: ehp / Math.max(1e-9, r.dps) };
+  });
+  const sum = (/** @type {(u: typeof each[number]) => number} */ f) => each.reduce((s, u) => s + u.n * f(u), 0);
+  const kills = sum(() => 1), time = sum(u => u.time);
+  const toughest = each.reduce((a, b) => (b.ehp > a.ehp ? b : a));
+  return { dps: sum(u => u.ehp) / Math.max(1e-9, time), timePerKill: sum(u => u.r.timePerKill) / kills, shotsPerKill: sum(u => u.r.shotsPerKill) / kills,
+    perShot: toughest.r.perShot, ...(toughest.r.tier !== undefined ? { tier: toughest.r.tier } : {}),
+    ...(toughest.r.inForm !== undefined ? { inForm: sum(u => u.time * (u.r.inForm ?? 0)) / Math.max(1e-9, time) } : {}) };
 }
 
 /** Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more. @param {number} n */

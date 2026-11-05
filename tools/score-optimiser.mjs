@@ -4,7 +4,7 @@
 // much of the community's first choices the best riven holds, and the curses. A check, not a
 // target: read the disagreements.
 //   node tools/score-optimiser.mjs [--fresh] [setting…]
-// Settings (default: all): room, burst, single, weak, primed, grineer, corpus. Each takes ~30 s on 11
+// Settings (default: all): room, mix, burst, single, weak, primed, grineer, corpus. Each takes ~30 s on 11
 // threads; results are kept in tools/data/cache/score-optimiser.json (not in git) and reused
 // unless --fresh.
 
@@ -16,6 +16,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 const SETTINGS = {
   room: { label: 'Room clearing, any faction, armor stripped', scenario: 'room', opts: { enemy: '' } },
   burst: { label: 'Room clearing, any faction, armor stripped, burst (no reloads)', scenario: 'room', opts: { enemy: '', burst: true } },
+  mix: { label: 'Room clearing, the Grineer battlegroup without weaknesses, armor stripped', scenario: 'room', opts: { enemy: '' }, mix: true },
   single: { label: 'Single target, any faction, armor stripped', scenario: 'single', opts: { enemy: '' } },
   weak: { label: 'Weak points, any faction, armor stripped', scenario: 'weak', opts: { enemy: '' } },
   primed: { label: 'Room clearing, primed target', scenario: 'room', opts: { enemy: '', primed: true } },
@@ -38,7 +39,8 @@ if (!isMainThread) {
   const { SPLICED, STAT_BY_ID } = await import('../src/data/stats.js');
   const { pools } = await import('../src/cycle.js');
   const { picksFor, pickFamily } = await import('../src/picks.js');
-  const { targetOf } = await import('../src/enemies.js');
+  const { targetOf, roomOf } = await import('../src/enemies.js');
+  const { BATTLEGROUPS } = await import('../src/data/battlegroups.js');
   const E = await import('../src/data/enemies.js');
 
   const args = process.argv.slice(2);
@@ -71,7 +73,7 @@ if (!isMainThread) {
     const inputs = guns.map(g => {
       const pool = pools(g.cls, g.ips);
       return { weapon: g.name, cls: g.cls, shape: '+++-', scenario: s.scenario,
-        opts: { ...('opts' in s ? s.opts : {}), ...target, bow: g.bow },
+        opts: { ...('opts' in s ? s.opts : {}), ...target, ...('mix' in s ? { room: roomOf('grineer', BATTLEGROUPS.grineer.members, 150, true, true, E, '') } : {}), bow: g.bow },
         positives: [...pool.positive, ...SPLICED.filter(x => x.b[g.cls] !== undefined).map(x => x.id)], negatives: pool.negative };
     });
     /** @type {Record<string, any>} */

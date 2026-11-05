@@ -11,9 +11,10 @@ import { pools } from '../cycle.js';
 import { VALENCE_TYPES } from '../sim.js';
 import { cycleOf, evolutionsOf, isForm, takesAdapter } from '../incarnon.js';
 import { combosFor, PLAIN } from '../melee.js';
-import { arcaneNames } from '../build.js';
+import { arcaneNames, SCENARIOS } from '../build.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
-import { targetOf } from '../enemies.js';
+import { targetOf, roomOf } from '../enemies.js';
+import { BATTLEGROUPS } from '../data/battlegroups.js';
 import { picksFor, communityFit } from '../picks.js';
 import { el, statName, segmented, select, ipsOf } from './dom.js';
 import { oneOf } from './state.js';
@@ -42,6 +43,7 @@ export const modelState = {
   steelPath: false,
   armor: 0,                                   // 0 = stripped; else full (2700 without a faction)
   primed: false,                              // every status type on the target
+  energy: 0,                                  // the frame's Max Energy (Primary Overcharge; 0: not counted)
   spread: false,                              // judge builds on a third of the level and three times it too
   burst: false,
   valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
@@ -67,7 +69,7 @@ export function modelFields() {
   return {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
-    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '',
+    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '',
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
     arc: s.arcane === null ? '' : s.arcane || '-', combo: s.combo === 'build' ? '' : s.combo, sc2: s.stanceCombo,
@@ -103,6 +105,7 @@ export function restoreModel(raw) {
   if (raw.sc2) modelState.stanceCombo = raw.sc2;
   if (raw.hv === '1') modelState.heavy = true;
   const count = (/** @type {string | undefined} */ v, /** @type {number} */ max) => (v && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= max ? Number(v) : null);
+  modelState.energy = count(raw.en, 9999) ?? 0;
   modelState.nearby = count(raw.near, 20) || modelState.nearby;
   modelState.heavyAt = count(raw.hvat, 12) || modelState.heavyAt;
   modelState.close = count(raw.close, 40) ?? modelState.close;
@@ -234,6 +237,10 @@ export function modelBlock(weapon, cls, rerender) {
   const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies.DEFAULT_UNIT[pick]) ?? null;
   const targetAt = (/** @type {number} */ lvl) => (unit ? targetOf(group ? unit : { ...unit, types: '' }, lvl, s.steelPath, !s.armor, enemies) : null);
   const target = targetAt(s.level);
+  // Room clearing fights the faction's battlegroup, unless a unit is chosen.
+  const battlegroup = SCENARIOS[s.scenario].kills ? BATTLEGROUPS[pick] ?? null : null;
+  const mix = battlegroup && !s.unit ? battlegroup : null;
+  const roomAt = (/** @type {number} */ lvl) => (mix ? { room: roomOf(pick, mix.members, lvl, s.steelPath, !s.armor, enemies, group ? undefined : '') } : {});
   // A third of the level and three times it: 150 is judged at 50 and 450 as well.
   const levels = [Math.max(1, Math.round(s.level / 3)), Math.min(9999, s.level * 3)];
   // The arcane: one of this weapon's slot, or the best found.
@@ -247,8 +254,9 @@ export function modelBlock(weapon, cls, rerender) {
     mode, ...(cycle ? { incarnon: cycle } : {}), enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
     ...(s.arcane !== null ? { arcane: s.arcane } : {}),
     ...(isMelee ? { melee: { attacks: chosen?.combo.attacks ?? PLAIN, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
-    ...(target ? { target } : { armor: s.armor }),
-    ...(target && s.spread ? { spread: /** @type {import('../sim.js').Target[]} */ (levels.map(targetAt)) } : {}),
+    ...(target ? { target, ...roomAt(s.level) } : { armor: s.armor }),
+    ...(target && s.spread ? { spread: levels.map(l => ({ target: /** @type {import('../sim.js').Target} */ (targetAt(l)), ...roomAt(l) })) } : {}),
+    ...(s.energy ? { maxEnergy: s.energy } : {}),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
     ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
   };
@@ -302,11 +310,13 @@ export function modelBlock(weapon, cls, rerender) {
     select('Build', SCENARIO, s.scenario, v => set({ scenario: /** @type {'room' | 'single' | 'weak'} */ (v) })),
     ...(arcanes.length ? [select('Arcane', [['*', 'Best (searched)'], ['-', 'None'], ...arcanes.map(a => /** @type {[string, string]} */ ([a, a]))],
       s.arcane === null ? '*' : s.arcane || '-', v => set({ arcane: v === '*' ? null : v === '-' ? '' : v }))] : []),
+    ...(arcanes.includes('Primary Overcharge') ? [num('Max Energy', s.energy, 9999, v => set({ energy: v }))] : []),
     ...meleeControls,
     select('Enemy', [['', 'Any (no faction bonus)'], ...enemies.GROUPS.map(g => /** @type {[string, string]} */ ([g.id, g.name]))], group?.id ?? '',
       v => set({ enemy: v, unit: '' })),
     ...(unit ? [
-      select('Target', units.map(u => /** @type {[string, string]} */ ([u.name, u.name])), unit.name, v => set({ unit: v })),
+      select('Target', [...(battlegroup ? [/** @type {[string, string]} */ (['', 'Battlegroup (mixed)'])] : []), ...units.map(u => /** @type {[string, string]} */ ([u.name, u.name]))],
+        mix ? '' : unit.name, v => set({ unit: v })),
       el('label', { class: 'field' }, [el('span', {}, ['Level']), level]),
       el('div', { class: 'field' }, [el('span', {}, ['Judged at']), segmented('Judged at', ['one', 'spread'], s.spread ? 'spread' : 'one',
         v => set({ spread: v === 'spread' }), v => (v === 'spread' ? 'A spread' : 'This level'),
@@ -335,7 +345,8 @@ export function modelBlock(weapon, cls, rerender) {
       : ''}${s.primed
       ? 'Primed target: every status type on it (a primer companion’s or the squad’s work), Viral and Corrosive at 10 stacks, Heat burning. '
       : 'Per status type bonuses (Galvanized) count the status types the weapon keeps up by itself. '}`
-    + (unit && target ? `Target: ${unit.name}${group ? (group.bane ? '' : ` (${group.name}: no riven faction stat applies)`) : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
+    + (mix ? `Target: the Simulacrum’s ${mix.name} battlegroup${group ? '' : ' without its faction weaknesses'} (${mix.members.map(([name, n]) => `${n} ${name}`).join(', ')}), level ${s.level}${s.steelPath ? ' Steel Path' : ''}, ${s.armor ? 'full armor' : 'armor stripped'}, killed one after another: DPS is their health and shields over the time the 20 take, shots and seconds an average kill’s, the first shot on the toughest. ` : '')
+    + (!mix && unit && target ? `Target: ${unit.name}${group ? (group.bane ? '' : ` (${group.name}: no riven faction stat applies)`) : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
       + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
     + (isMelee ? `${s.heavy && w.melee?.heavy ? `Heavy attacks: ${w.melee.heavy} damage x the combo multiplier, one hit after the ${w.melee.windUp} s wind up (Wind Up Speed shortens it, attack speed doesn’t; no recovery counted), ${s.combo === 'build' ? `spending the combo at ${s.heavyAt}x, keeping Heavy Attack Efficiency’s share (at most 90%); spent Initial Combo returns at 40 a second` : 'every attack, the counter held'}; True Steel’s and rivens’ Critical Chance count twice. ` : ''}Melee: no slams or finishers yet, a swing being the next attack of the stance combo (${comboName}): its hits’ multipliers and counts, not its timing. `
@@ -345,6 +356,7 @@ export function modelBlock(weapon, cls, rerender) {
     + (cycle && !s.burst ? `Incarnon: normal fire until the gauge fills (${cycle.hits} ${cycle.any ? 'hits' : `weak point hits, each pellet counting, ${s.scenario === 'weak' ? 'every hit' : '75% of hits'} on them while charging, which speeds the gauge but isn’t counted as damage`}), a reload’s time to transform, then the form’s ${cycle.ammo} ammo, and under a second back. ${s.scenario === 'single' ? 'The gauge starts full. ' : ''}` : '')
     + (incarnon === 'on' && s.burst ? 'Incarnon, burst: the whole fight in the form. ' : '')
     + (opts.spread ? `Judged at levels ${levels[0]}, ${s.level} and ${levels[1]}: DPS and percentages are the geometric mean of the three (each level counts the same); shots and seconds are level ${s.level}’s. ` : '')
+    + (arcanes.includes('Primary Overcharge') ? (s.energy ? `Primary Overcharge at ${s.energy} Max Energy: +${Math.round(Math.min(350, 0.35 * s.energy))}% Multishot, taken to be always on (it wants 90% Energy or more). ` : 'Primary Overcharge counts for nothing until you give your Max Energy. ') : '')
     + (isBeam ? `A beam: Multishot rolls to a whole number each tick and multiplies its damage and status chance, not its crits, so it counts twice in damage over time and Hunter Munitions rolls once a tick. It starts each target at ${Math.round(w.modes[mode].held * 100)}% damage, full after 0.6 s. ` : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);

@@ -1179,17 +1179,29 @@ A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study doz
   each level counts the same in proportion (adding them up would leave only the toughest). `opts.spread`
   in `worth`; a study costs three times the fights. Off by default until the user has tried it.
 
-- **A faction's mix of units in room clearing** (the user, 2026-11-04). Twenty Heavy Gunners isn't a
-  real room: use a composition per faction (fodder, heavies, the odd tough unit), each unit's share
-  of the kills, health and armor. It also matters for weapons that hit several targets at once: they
-  build kill stacks faster, and not every part of a hit gets every bonus (explosions don't count gun
-  Condition Overload), so what a kill-stacking buff is worth depends on the room.
-  Waiting on the user: which units, in what shares, per faction. `opts.spread` is most of the
-  mechanism (a room would add the times, not average the DPS).
+- [x] **A faction's mix of units in room clearing** (the user, 2026-11-04; done 2026-11-05). Twenty Heavy
+  Gunners isn't a real room. `src/data/battlegroups.js`: DE's own Simulacrum battlegroups, from the
+  user's screenshots, 20 enemies each, for Grineer, Corpus, Infested, Orokin, Sentient, Narmer, Scaldra,
+  Techrot and the Murmur. The default target for room and weak point builds; "any faction" fights the
+  Grineer's without weaknesses; choosing a unit fights that unit. Each unit is fought alone and the
+  room's DPS is its health and shields over the time all of it takes (`clear` in `src/fight.js`).
+  - Narmer's Shield Lancer and Scorpion aren't in the unit data: the Grineer's stand in, with Narmer's
+    weaknesses. Its Lancer and Heavy Gunner match the Grineer's, so these should too.
+  - Kuva, Amalgam, Deimos, Zariman and Anarchs have no battlegroup: their default unit, as before.
+  - The Scaldra Dedicant's Overguard isn't counted, nor are Eximus. Sentients don't adapt.
+- Against the community's picks (`tools/score-optimiser.mjs mix`, the Grineer battlegroup, against twenty
+  Heavy Gunners): first choices in the top 6 59% to 60%, slot 1 in the top 3 46% to 43%, in the best riven
+  46% both, curses 49% to 50%. Ammo Efficiency in the model's top 3 fell from 55 guns to 44. Flat again.
+- [ ] **Hitting several enemies at once**, still open: beam chains (Boar's form: up to 3 beams, each
+  chaining to 2 enemies within 10 m at 80%; Amprex), Punch Through, explosions and Blast's radial. A
+  weapon that hits several also builds kill stacks faster, and not every part of a hit gets every
+  bonus (explosions don't count gun Condition Overload). Needs how clumped a room is: the melee
+  settings have one (`nearby`, `close`, `clump`), and guns would want each attack's radius.
 
-Primary Overcharge (+35% Multishot per 100 Max Energy at or above 90% Energy, up to +350%) isn't
-modelled: it needs the frame's Max Energy, and the arcane search can't see it until then. At the cap
-it would beat most arcanes on multishot guns (the user had it at +350% on Garuda Prime).
+- [x] **Primary Overcharge** (2026-11-05): a Max Energy setting for guns with a primary arcane slot. 35% of
+  Max Energy as Multishot, to +350% at 1000, added to the mods' (in game: 45.6 pellets on Boar Prime with
+  Hell's Chamber). Taken to be always on: it wants 90% Energy or more, which is the player's to keep.
+  At 0, the default, the arcane does nothing, as before.
 
 External buffs and companions are Phase 14. The first step there is buffs as pieces added to a
 build's totals (Nourish's Viral makes a riven's Viral worth less without any change to the fight).

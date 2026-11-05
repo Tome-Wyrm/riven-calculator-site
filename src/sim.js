@@ -148,7 +148,9 @@ export const HEADS = {
  * @property {boolean} [bow]       a bow: Fire Rate rolls count double
  * @property {number} [armor]      the enemy's armor without a target (default 0: stripped)
  * @property {Target} [target]     the unit fought, at its level (overrides armor)
- * @property {Target[]} [spread]   the same unit at other levels: builds are judged on all of them (src/build.js `worth`)
+ * @property {RoomUnit[]} [room]   a mix of units to clear, in place of the target (src/fight.js)
+ * @property {{target: Target, room?: RoomUnit[]}[]} [spread]  the same at other levels: builds are judged on all of them (src/build.js `worth`)
+ * @property {number} [maxEnergy]  the frame's Max Energy, for Primary Overcharge (src/build.js)
  * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
  * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)
  * @property {Valence} [valence]   an adversary weapon's Valence bonus
@@ -156,6 +158,8 @@ export const HEADS = {
  * @property {IncarnonCycle} [incarnon] fight in the charge and form cycle (src/fight.js)
  * @property {string} [arcane]     the arcane the build carries (src/build.js arcanePool: '' for none; unset: the best found)
  */
+
+/** Some of a mix of units: how many, and what one is. @typedef {{n: number, target: Target}} RoomUnit */
 
 /**
  * How a melee weapon fights: its stance combo's attacks (each a swing), the combo counter (held at

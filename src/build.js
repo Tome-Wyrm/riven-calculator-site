@@ -232,6 +232,18 @@ export function arcaneNames(cls) {
   return GUN_ARCANES.filter(a => a.slot === slot && !(cls === 'rifle' && /^Shotgun /.test(a.name))).map(a => a.name);
 }
 
+/** Primary Overcharge: Multishot, as a raw value, per point of Max Energy, and at most. */
+const OVERCHARGE_PER_ENERGY = 0.0035, OVERCHARGE_MAX = 3.5;
+
+/**
+ * An arcane's effects. Primary Overcharge's depend on the frame: 35% of its Max Energy as Multishot,
+ * to +350%, added to the mods' (in game, Boar Prime: 45.6 pellets). Taken to be always on: it wants
+ * 90% Energy or more, which is the player's to keep.
+ * @param {typeof GUN_ARCANES[number]} a @param {SimOptions} opts @returns {Effect[]}
+ */
+const arcaneEffects = (a, opts) => (a.name === 'Primary Overcharge' && opts.maxEnergy
+  ? [{ stat: 'multishot', value: Math.min(OVERCHARGE_MAX, OVERCHARGE_PER_ENERGY * opts.maxEnergy) }] : a.effects);
+
 /**
  * The arcanes (as pieces) a weapon's arcane slot takes: those that do something here, or only the
  * one chosen (opts.arcane: '' for none), which the build then always carries.
@@ -241,10 +253,10 @@ export function arcanePool(cls, sc, opts) {
   const names = arcaneNames(cls);
   if (opts.arcane !== undefined) {
     const a = GUN_ARCANES.find(x => x.name === opts.arcane && names.includes(x.name));
-    return a ? [{ ...piece(a.name, a.effects, sc, opts), chosen: /** @type {const} */ (true) }] : [];
+    return a ? [{ ...piece(a.name, arcaneEffects(a, opts), sc, opts), chosen: /** @type {const} */ (true) }] : [];
   }
   return GUN_ARCANES.filter(a => names.includes(a.name))
-    .map(a => piece(a.name, a.effects, sc, opts)).filter(p => Object.keys(p.stats).length || p.elements.length);
+    .map(a => piece(a.name, arcaneEffects(a, opts), sc, opts)).filter(p => Object.keys(p.stats).length || p.elements.length);
 }
 
 /** Whether a piece can join the others (not the same mod, and no exclusion either way). @param {Piece} p @param {Piece[]} others */
@@ -275,9 +287,10 @@ export function fightOf(w, b, opts) {
 export function worth(w, b, opts) {
   const t = totalsOf(b.arcane ? [...b.slots, b.arcane] : b.slots);
   if (!opts.target) return dpsOf(w, t, opts);
-  const targets = [opts.target, ...(opts.spread ?? [])];
-  if (targets.length === 1) return fight(w, t, { ...opts, target: opts.target }).dps;
-  return Math.exp(targets.reduce((s, target) => s + Math.log(Math.max(1e-9, fight(w, t, { ...opts, target }).dps)), 0) / targets.length);
+  const main = { ...opts, target: opts.target };
+  if (!opts.spread?.length) return fight(w, t, main).dps;
+  const levels = [main, ...opts.spread.map(s => ({ ...main, ...s }))];
+  return Math.exp(levels.reduce((s, level) => s + Math.log(Math.max(1e-9, fight(w, t, level).dps)), 0) / levels.length);
 }
 
 /**
