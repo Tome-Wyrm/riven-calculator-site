@@ -895,6 +895,7 @@ chance curse good, and the model had it as a cost)
     base (the wiki's quantizing; the model doesn't do this yet).
   - 6 or 7: Multishot 6.3 (1 + 1.2 + 0.6 + the arcane's 3.5, which the Arsenal doesn't show), rolled to
     a whole number on each tick. Armor is exactly 0.1 at 2700. Radiation stacks add nothing.
+    Over the three clips 256 of 834 sightings were on 7: 30.7%, against the 30% expected.
   - Lower numbers in the first second: probably the beam locking on (the user).
   - Chained enemies take body hits: 587 = 2,199 / 3 x 80%.
 - [ ] **Beams and Multishot** (kengineer's video, from the user; the 6 and 7 above agree). A beam doesn't
@@ -1122,6 +1123,10 @@ A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study doz
     (`orBetter`: scoring them is cheap). This fixed baselines that had stuck: Lex Prime's empty slot
     was 0.326M, really 0.450M, so its percentages were inflated.
   - Tried and dropped: starting a search with the last build's arcane. 2.6x, but it sticks.
+- [x] **Reading clips** (`tools/read-clip.py`, 2026-11-05): damage numbers from a recorded clip, by colour,
+  with their shares. Found all 50 numbers read by eye in three clips. Sightings are frames, not hits:
+  shares estimate how often a number comes up, counts don't. An addon reading the game was ruled out:
+  EE.log has no hit data, and game memory is a risk to the account for little gain.
 - **Workers.** The next speed-up, and it can't change a result: split a study's searches over the cores.
 - **Precomputed results.** Ship the default settings' studies as data, so common weapons open at once.
 - **GPU: not now.** The fight is a branching, per-shot loop with queues: it would need rewriting in
