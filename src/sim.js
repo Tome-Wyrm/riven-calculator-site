@@ -6,6 +6,7 @@
 // Per part of a fire mode (an attack and what hangs off it, e.g. a projectile and its explosion):
 //
 //   hit     = (1 + Damage) × (physical × (1 + Impact/Puncture/Slash) + other innate + base × Elements)
+//             each damage type rounded to 1/32 of the attack's total (the wiki's quantization)
 //   crit    = 1 + CC × (CD − 1)                         (average; holds past 100% crit chance)
 //   direct  = hit × faction × crit × multishot × fire rate
 //   DoT     = procs/s × share of DoT types × tick × ticks × (1 + Status Duration) × (1 + Status Damage)
@@ -337,8 +338,10 @@ export function withPerStatus(stats, n) {
 
 /**
  * A part's hit before Damage mods, by type: physical types scaled by their own stats; the build's
- * elements (shares of the base, in slot order) combined with the weapon's own (combineElements).
- * Null for a part that does no damage.
+ * elements (shares of the base, in slot order) combined with the weapon's own (combineElements). Each
+ * type is rounded to the nearest 1/32 of the attack's listed total, as the game does before anything
+ * multiplies it (Damage and faction mods scale that total too, so they don't change the rounding).
+ * DoTs aren't rounded: they scale from `base`. Null for a part that does no damage.
  * @param {Part} p @param {Totals} t @param {(id: string) => number} m @param {Valence} [valence]
  */
 export function hitByType(p, t, m, valence) {
@@ -355,13 +358,15 @@ export function hitByType(p, t, m, valence) {
   if (valence?.value) own[valence.type] = (own[valence.type] ?? 0) + valence.value * listed;
   // (`p.base`: an incarnon perk can put more into the hit than the mods scale from: src/incarnon.js.)
   const base = (p.base ?? listed) * (1 + (valence?.value ?? 0));
+  const step = listed * (1 + (valence?.value ?? 0)) / 32;
+  const rounded = (/** @type {number} */ v) => Math.floor(v / step + 0.5) * step;
   for (const [type, v] of Object.entries(own)) {
-    if (PHYSICAL.includes(type)) byType[type] = v * Math.max(0, 1 + m(type));
+    if (PHYSICAL.includes(type)) byType[type] = rounded(v * Math.max(0, 1 + m(type)));
     else if (ELEMENTS.includes(type)) innate[type] = v;
-    else byType[type] = v;                                  // Tau, Void, True: as they are
+    else byType[type] = rounded(v);                         // Tau, Void, True
   }
   const combined = combineElements(t.elements.map(e => ({ type: e.type, value: e.value * base })), innate);
-  for (const [type, v] of Object.entries(combined)) byType[type] = (byType[type] ?? 0) + v;
+  for (const [type, v] of Object.entries(combined)) byType[type] = (byType[type] ?? 0) + rounded(v);
   const hit = Object.values(byType).reduce((s, v) => s + v, 0);
   return hit > 0 ? { base, byType, hit } : null;
 }

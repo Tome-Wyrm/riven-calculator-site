@@ -43,12 +43,18 @@ test('Boar Prime with Fortress Salvo lands what the game showed (2026-11-05)', a
   const w = withPerks(WEAPON_STATS['Boar Prime'], 'Boar Prime', picks);
   for (const m of w.modes) for (const p of m.parts) p.cc = 0;
   const head = (/** @type {object} */ t, /** @type {number} */ mode, stats = {}, elements = /** @type {{type: string, value: number}[]} */ ([])) => fight(w, { stats, elements }, { target: { health: 1e9, shields: 0, armor: 0, weak: {}, shieldWeak: {}, ...t }, mode, weakpoint: 1, enemy: 'grineer', targets: 20, burst: true }).perShot;
-  // A pellet, non-crit, on heads (within what the game's rounding moves): an Ancient Healer's, no
-  // armor, Slash +50%: 236; a level 235 Heavy Gunner's, 2700 armor, Impact +50%: 28.6.
-  near(head({ weak: { slash: 0.5 } }, 0) / 8, 236, 2);
-  near(head({ armor: 2700, weak: { impact: 0.5 } }, 0) / 8, 28.6, 0.2);
-  // The form with Primed Charged Shell: 122.19 x 3 x Multishot 6.3 (2,199 and 2,566 a tick, as rolled).
-  near(head({}, 1, { multishot: 5.3 }, [{ type: 'electricity', value: 1.65 }]), 121.9 * 3 * 6.3, 1);
+  // A pellet, non-crit, on heads: an Ancient Healer's, no armor, Slash +50%: 236; a level 235 Heavy
+  // Gunner's, 2700 armor, Impact +50%: 29 (143 crit, x 5). 8 pellets: exactly what the game rounds to.
+  assert.equal(Math.round(head({ weak: { slash: 0.5 } }, 0) / 8), 236);
+  assert.equal(Math.round(head({ armor: 2700, weak: { impact: 0.5 } }, 0) / 8), 29);
+  assert.equal(Math.round(head({ armor: 2700, weak: { impact: 0.5 } }, 0) / 8 * 5), 143);
+  // The form with Primed Charged Shell: 122.1875 x 3 and Multishot, rolled 6 and 7 a tick in game:
+  // 2,199 and 2,566, on armor 220 and 257.
+  const tick = (/** @type {number} */ rolled, /** @type {object} */ t = {}) => Math.round(head(t, 1, { multishot: rolled - 1 }, [{ type: 'electricity', value: 1.65 }]));
+  assert.equal(tick(6), 2199);
+  assert.equal(tick(7), 2566);
+  assert.equal(tick(6, { armor: 2700 }), 220);
+  assert.equal(tick(7, { armor: 2700 }), 257);
 });
 
 test('the non-crit bonus: 50% chance of +2000% on hits that don’t crit, gone at 100% crit', () => {

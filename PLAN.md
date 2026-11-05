@@ -888,11 +888,17 @@ chance curse good, and the model had it as a cost)
   The form's hit takes it once: Heat 46, and its Total (62) isn't real. Checked on one gun: a
   single-projectile gun could still differ. Reified Bane's +14 from reloading reaches the form in the
   Arsenal (Heat 54) and isn't modelled.
+- [x] **Quantization** (`hitByType`, 2026-11-05; the wiki's Damage/Calculation): each damage type rounds to
+  1/32 of the attack's listed total before anything multiplies it; DoTs don't round. Every in-game reading
+  above now matches to the digit (236, 29, 143, 2,199, 2,566, 220, 257). The Arsenal shows values
+  before rounding. Still to take from that page: the +1 on DoT seeds, Blast's stacks and detonation,
+  continuous weapons' damage ramp-up, no reload delay on Vectis, and its weak point formula against
+  the one in `weakPointMult`.
 - **The beam's hits, solved** (three videos, 2026-11-05: Boar Prime's form, heads, Radiation, Primary
   Overcharge running). On an Ancient Healer (no armor) non-crit 2,199 and 2,566, on a level 235 Heavy
   Gunner 220 and 257, crits 5.4x. That's 122.19 x 3 (head) x 6 or 7:
   - 122.19: the form's real number is the line, not the Total: 46 + 165% of 46, rounded to 1/32 of the
-    base (the wiki's quantizing; the model doesn't do this yet).
+    base.
   - 6 or 7: Multishot 6.3 (1 + 1.2 + 0.6 + the arcane's 3.5, which the Arsenal doesn't show), rolled to
     a whole number on each tick. Armor is exactly 0.1 at 2700. Radiation stacks add nothing.
     Over the three clips 256 of 834 sightings were on 7: 30.7%, against the 30% expected.
