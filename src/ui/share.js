@@ -3,12 +3,15 @@
 // inventory import. Sending is anonymous: it posts to a Discord channel through a webhook (no
 // account needed). Or people copy the data and share it wherever they like.
 //
-// The webhook URL is public (it's in this file). Anyone could post to that one channel with it;
-// if that's abused, delete the webhook in Discord, make a new one, and replace WEBHOOK below.
+// The webhook can't be kept secret: anyone reading the page can rebuild it, and post to that one
+// channel or delete it. HOOK only keeps it from bots that search GitHub for webhook URLs (one
+// spammed and deleted the last webhook). To replace it: make a new one in Discord, put it in .env
+// as DISCORD_WEBHOOK_URL, run `node tools/hide-webhook.mjs`, then delete the old one.
 
 import { el } from './dom.js';
 
-const WEBHOOK = 'https://discord.com/api/webhooks/1565937153924661349/mR8hZoabx_6xRHE7SGN_l9cqR9QjzXiLxweNezIAM6diVs7EK5eEsnDJ4d8b-gY4P2Ke';
+const HOOK = 'y-uvNeFo-irxu_3sjwPLCJUnGLa8aXBT9dsBq3UGRZikCfUGnqqpKeDOD1tzmEs4wLdM/3122807323380208651';   // the webhook's id/token, backwards
+const webhook = () => `https://discord.com/api/webhooks/${[...HOOK].reverse().join('')}`;
 const ISSUES_URL = 'https://github.com/Tome-Wyrm/riven-calculator-site/issues/new';
 const COOLDOWN_MS = 30_000;
 const MAX_IMAGE = 8 * 1024 * 1024;        // Discord's limit for webhook files without boosts
@@ -46,7 +49,7 @@ async function send(offer) {
     const ext = (offer.image.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
     form.append('files[1]', offer.image, `screenshot.${ext}`);
   }
-  const res = await fetch(WEBHOOK, { method: 'POST', body: form });
+  const res = await fetch(webhook(), { method: 'POST', body: form });
   if (!res.ok) throw new Error(`Discord said ${res.status}`);
 }
 
