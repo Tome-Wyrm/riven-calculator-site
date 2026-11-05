@@ -77,10 +77,12 @@ function showCards(cards) {
   if (missing.length) status.append(el('p', { class: 'note warn' }, [`Couldn't read ${missing.join('; ')}.`]));
 }
 
-/** @param {Blob} blob */
-async function showScreenshot(blob) {
+/** @param {Blob} file */
+async function showScreenshot(file) {
   say(['Reading the screenshot… (the first time also downloads the text recogniser, a few MB)']);
   try {
+    // A copy in memory: a File still points at the disk, and sending it later fails if it has changed.
+    const blob = new Blob([await file.arrayBuffer()], { type: file.type });
     const read = await readScreenshot(blob);
     const raw = el('details', {}, [el('summary', {}, ['Text that was read']), el('pre', { class: 'ocr-raw' }, [read.text])]);
     if (read.cards) {

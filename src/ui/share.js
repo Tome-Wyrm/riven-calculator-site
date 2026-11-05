@@ -74,7 +74,9 @@ export function offerShare(offer) {
       setTimeout(() => card?.remove(), 2500);
     } catch (e) {
       sendBtn.disabled = false;
-      status.textContent = `Couldn’t send (${e instanceof Error ? e.message : e}). Copying the data and posting it yourself works too.`;
+      // fetch throws a TypeError when no answer came back at all; a refusal from Discord has a status.
+      const why = e instanceof TypeError ? 'couldn’t reach Discord: an ad blocker, VPN or network filter can do this' : e instanceof Error ? e.message : e;
+      status.textContent = `Couldn’t send (${why}). Copying the data and posting it yourself works too.`;
     }
   });
 
