@@ -7,7 +7,7 @@ names given in brackets here.
 ## 1. In progress
 
 - [ ] **Brozime reference builds** ([table](docs/reference-builds.md), drafted from the clips). Check the tabs marked
-      `?`, settle each frame's main build, add shards, and look at the builds whose Strength doesn't add up.
+      `?`, settle each frame's main build, and check the Strength shards it infers.
   - [ ] Jade: find the builds in the video's showcase.
   - [ ] Excalibur: 185 on the panel, 95 from its mods. Possibly an old Arsenal or Simulacrum bug.
 - [ ] **New submissions.** Check x332–x346 against their images, then run `tools/ocr-check.html`. The weapon is
@@ -18,8 +18,8 @@ names given in brackets here.
 Needs the reference builds.
 
 - [ ] **Strength per frame** (14), replacing one Strength and Duration for all buffs. The panel is only the
-      general total, so each build also needs what it leaves out: Molt Augmented's +60, and Precision Intensify's
-      +90 for the 4th slot. Abilities snapshot, so a buff takes its Strength at cast.
+      general total, so each build also needs what it leaves out: Molt Augmented's +60, Precision Intensify's
+      +90 for the 4th slot, and Arcane Bellicose rising with Health in play. Abilities snapshot, so a buff takes its Strength at cast.
 - [ ] **Pick a frame** (14c): its abilities, augments and a subsume, with the optimiser building around them.
 - [ ] **Primers from the companions' own weapons** (14d), replacing the "Primer stacks" setting.
 - [ ] **Buffs still missing**: Demonium's Vythelas rune; Resupply's other elements; the second list of frames (14f).

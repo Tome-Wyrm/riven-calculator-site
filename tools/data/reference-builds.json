@@ -17,7 +17,8 @@
    "Primed Sure Footed",
    "Narrow Minded",
    "Steel Charge",
-   "Umbral Intensify"
+   "Umbral Intensify",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Arcane Crepuscular",
@@ -25,9 +26,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 55,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Atlas",
@@ -58,9 +66,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 44,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 44,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Atlas",
@@ -92,7 +107,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Banshee",
@@ -121,9 +143,18 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 100,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Transient Fortitude"
+  ],
+  "crimson": 3
  },
  {
   "frame": "Banshee",
@@ -154,9 +185,16 @@
   ],
   "molt": false,
   "precision": true,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Banshee",
@@ -189,7 +227,11 @@
   "precision": true,
   "left": 135,
   "addsUp": false,
-  "note": null
+  "note": null,
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Baruuk",
@@ -217,9 +259,18 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 55,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Transient Fortitude"
+  ],
+  "crimson": 0
  },
  {
   "frame": "Baruuk",
@@ -249,7 +300,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Caliban",
@@ -280,9 +338,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 75,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 5,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
  },
  {
   "frame": "Chroma",
@@ -313,9 +378,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Chroma",
@@ -345,9 +417,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 55,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 25,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Chroma",
@@ -375,9 +454,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 52,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Chroma",
@@ -408,9 +494,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Citrine",
@@ -439,9 +532,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Cyte-09",
@@ -460,7 +560,8 @@
    "Umbral Intensify",
    "Blind Rage",
    "Primed Sure Footed",
-   "Equilibrium"
+   "Equilibrium",
+   "Augur Secrets"
   ],
   "arcanes": [
    "Arcane Acceleration",
@@ -468,9 +569,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 24,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Dagath",
@@ -501,9 +609,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Dante",
@@ -535,7 +650,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Ember",
@@ -566,9 +688,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Ember",
@@ -599,9 +728,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Ember",
@@ -631,9 +767,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Equinox",
@@ -663,7 +806,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Excalibur",
@@ -696,7 +846,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Excalibur",
@@ -727,7 +884,11 @@
   "precision": true,
   "left": 90,
   "addsUp": false,
-  "note": "Suspect: 90 more than its mods and shards give. Possibly an Arsenal or Simulacrum bug; 95 if so."
+  "note": "Suspect: 90 more than its mods and shards give. Possibly an Arsenal or Simulacrum bug; 95 if so.",
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Excalibur",
@@ -758,7 +919,11 @@
   "precision": true,
   "left": 145,
   "addsUp": false,
-  "note": null
+  "note": null,
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Follie",
@@ -789,7 +954,14 @@
   "precision": true,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Follie",
@@ -818,7 +990,14 @@
   "precision": true,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Frost",
@@ -848,9 +1027,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 60,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
  },
  {
   "frame": "Frost",
@@ -881,9 +1067,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 60,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
  },
  {
   "frame": "Gara",
@@ -914,7 +1107,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Gara",
@@ -945,7 +1145,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Gara",
@@ -976,7 +1183,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Garuda",
@@ -1008,7 +1222,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Garuda",
@@ -1037,9 +1258,18 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 99,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Blind Rage"
+  ],
+  "crimson": 2
  },
  {
   "frame": "Garuda",
@@ -1055,7 +1285,8 @@
   "mods": [
    "Steel Charge",
    "Overextended",
-   "Umbral Intensify"
+   "Umbral Intensify",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Molt Reconstruct",
@@ -1063,9 +1294,18 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 79,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Augur Secrets"
+  ],
+  "crimson": 2
  },
  {
   "frame": "Gauss",
@@ -1097,7 +1337,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Gauss",
@@ -1128,7 +1375,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Gauss",
@@ -1149,7 +1403,8 @@
    "Umbral Intensify",
    "Fast Deflection",
    "Narrow Minded",
-   "Continuity"
+   "Continuity",
+   "Augur Secrets"
   ],
   "arcanes": [
    "Molt Augmented",
@@ -1157,9 +1412,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 24,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Grendel",
@@ -1190,9 +1452,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 117,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Grendel",
@@ -1223,9 +1492,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 117,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Grendel",
@@ -1253,9 +1529,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 139,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Gyre",
@@ -1287,7 +1570,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Harrow",
@@ -1319,7 +1609,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Hildryn",
@@ -1350,9 +1647,16 @@
   ],
   "molt": false,
   "precision": true,
-  "left": 60,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
  },
  {
   "frame": "Hydroid",
@@ -1383,9 +1687,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Hydroid",
@@ -1415,9 +1726,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Inaros",
@@ -1439,7 +1757,8 @@
    "Umbral Vitality",
    "Umbral Fiber",
    "Elemental Sandstorm",
-   "Transient Fortitude"
+   "Transient Fortitude",
+   "Blind Rage"
   ],
   "arcanes": [
    "Arcane Grace",
@@ -1447,9 +1766,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 99,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Ivara",
@@ -1479,9 +1805,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Jade",
@@ -1511,9 +1844,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Khora",
@@ -1546,7 +1886,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Koumei",
@@ -1578,7 +1925,14 @@
   "precision": true,
   "left": 0,
   "addsUp": true,
-  "note": "A floor: her Decrees raise it during a mission."
+  "note": "A floor: her Decrees raise it during a mission.",
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Kullervo",
@@ -1609,9 +1963,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 102,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Lavos",
@@ -1642,9 +2003,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 38,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 38,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Lavos",
@@ -1677,7 +2045,14 @@
   "precision": true,
   "left": 0,
   "addsUp": true,
-  "note": "From the older 2024 Build Refresh."
+  "note": "From the older 2024 Build Refresh.",
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Limbo",
@@ -1709,7 +2084,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Limbo",
@@ -1742,7 +2124,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Limbo",
@@ -1774,7 +2163,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Loki",
@@ -1806,7 +2202,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Mag",
@@ -1838,7 +2241,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Mesa",
@@ -1871,7 +2281,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Mirage",
@@ -1900,9 +2317,18 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 85,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Transient Fortitude"
+  ],
+  "crimson": 3
  },
  {
   "frame": "Narin",
@@ -1935,7 +2361,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Narin",
@@ -1962,7 +2395,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Narin",
@@ -1982,7 +2422,8 @@
    "Augur Message",
    "Archon Flow",
    "Stretch",
-   "Umbral Intensify"
+   "Umbral Intensify",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Arcane Ice Storm",
@@ -1990,9 +2431,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 55,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Narin",
@@ -2023,7 +2471,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Nekros",
@@ -2056,7 +2511,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Nezha",
@@ -2087,7 +2549,11 @@
   "precision": false,
   "left": -10,
   "addsUp": false,
-  "note": null
+  "note": null,
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Nidus",
@@ -2117,9 +2583,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 67,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 37,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Nokko",
@@ -2151,7 +2624,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Nokko",
@@ -2179,9 +2659,19 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 54,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Intensify",
+   "Augur Secrets"
+  ],
+  "crimson": 0
  },
  {
   "frame": "Nova",
@@ -2214,7 +2704,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Nyx",
@@ -2247,7 +2744,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Oberon",
@@ -2269,7 +2773,8 @@
    "Growing Power",
    "Fortitude",
    "Power Drift",
-   "Primed Continuity"
+   "Primed Continuity",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Molt Augmented",
@@ -2277,9 +2782,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 55,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Octavia",
@@ -2312,7 +2824,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
  },
  {
   "frame": "Octavia",
@@ -2341,9 +2860,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
  },
  {
   "frame": "Oraxia",
@@ -2376,7 +2902,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Oraxia",
@@ -2409,7 +2942,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Oraxia",
@@ -2440,7 +2980,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Protea",
@@ -2470,9 +3017,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 15,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 1,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 1
  },
  {
   "frame": "Protea",
@@ -2503,9 +3057,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 15,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 1,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 1
  },
  {
   "frame": "Protea",
@@ -2536,9 +3097,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 15,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 1,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 1
  },
  {
   "frame": "Qorvex",
@@ -2568,9 +3136,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Revenant",
@@ -2592,7 +3167,8 @@
    "Blind Rage",
    "Streamline",
    "Augur Secrets",
-   "Corrosive Projection"
+   "Corrosive Projection",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Molt Efficiency",
@@ -2600,9 +3176,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 85,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Revenant",
@@ -2620,7 +3203,9 @@
    "Primed Flow",
    "Precision Intensify",
    "Primed Continuity",
-   "Dreamer's Bond"
+   "Dreamer's Bond",
+   "Blind Rage",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Arcane Precision",
@@ -2628,9 +3213,16 @@
   ],
   "molt": true,
   "precision": true,
-  "left": 184,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Revenant",
@@ -2650,7 +3242,9 @@
    "Energy Siphon",
    "Fleeting Expertise",
    "Mesmer Shield",
-   "Narrow Minded"
+   "Narrow Minded",
+   "Blind Rage",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Arcane Consequence",
@@ -2658,9 +3252,16 @@
   ],
   "molt": true,
   "precision": true,
-  "left": 184,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Rhino",
@@ -2691,9 +3292,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Saryn",
@@ -2715,7 +3323,8 @@
    "Growing Power",
    "Primed Continuity",
    "Fortitude",
-   "Umbral Vitality"
+   "Umbral Vitality",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Molt Augmented",
@@ -2723,9 +3332,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 77,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Saryn",
@@ -2758,7 +3374,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Sevagoth",
@@ -2789,9 +3412,16 @@
   ],
   "molt": true,
   "precision": true,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Sevagoth",
@@ -2821,9 +3451,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Sevagoth",
@@ -2854,9 +3491,16 @@
   ],
   "molt": true,
   "precision": true,
-  "left": 45,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Sirius & Orion",
@@ -2884,9 +3528,16 @@
   ],
   "molt": false,
   "precision": true,
-  "left": 60,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
  },
  {
   "frame": "Sirius & Orion",
@@ -2905,7 +3556,8 @@
    "Umbral Intensify",
    "Streamline",
    "Blind Rage",
-   "Augur Message"
+   "Augur Message",
+   "Power Drift"
   ],
   "arcanes": [
    "Arcane Energize",
@@ -2913,9 +3565,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 75,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
  },
  {
   "frame": "Styanax",
@@ -2947,7 +3606,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  },
  {
   "frame": "Temple",
@@ -2980,7 +3646,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Titania",
@@ -3011,9 +3684,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
  },
  {
   "frame": "Titania",
@@ -3044,9 +3724,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 30,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
  },
  {
   "frame": "Trinity",
@@ -3079,7 +3766,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
  },
  {
   "frame": "Uriel",
@@ -3112,7 +3806,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Uriel",
@@ -3133,7 +3834,8 @@
    "Umbral Intensify",
    "Stretch",
    "Archon Vitality",
-   "Brief Respite"
+   "Brief Respite",
+   "Transient Fortitude"
   ],
   "arcanes": [
    "Arcane Concentration",
@@ -3141,9 +3843,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 55,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Uriel",
@@ -3170,9 +3879,18 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 24,
-  "addsUp": false,
-  "note": null
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Augur Secrets"
+  ],
+  "crimson": 0
  },
  {
   "frame": "Valkyr",
@@ -3205,7 +3923,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Vauban",
@@ -3238,7 +3963,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Vauban",
@@ -3269,7 +4001,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Vauban",
@@ -3302,7 +4041,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Volt",
@@ -3333,9 +4079,16 @@
   ],
   "molt": true,
   "precision": false,
-  "left": 75,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 5,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
  },
  {
   "frame": "Voruna",
@@ -3368,7 +4121,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Voruna",
@@ -3401,7 +4161,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Wisp",
@@ -3430,9 +4197,16 @@
   ],
   "molt": false,
   "precision": false,
-  "left": 25,
+  "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 25,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Wukong",
@@ -3465,7 +4239,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Xaku",
@@ -3497,7 +4278,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
  },
  {
   "frame": "Yareli",
@@ -3529,7 +4317,14 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
  },
  {
   "frame": "Zephyr",
@@ -3560,6 +4355,13 @@
   "precision": false,
   "left": 0,
   "addsUp": true,
-  "note": null
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
  }
 ]

@@ -10,6 +10,8 @@ For Ability Strength per frame (PLAN.md, section 2). Checked 2026-11-05 against 
 - **What the arrow compares:** the left number is the build the Arsenal was loaded with, the right number the tab being viewed. Backing out and going back in equips the viewed build, which then becomes the left number. Limbo with Succ equipped reads `183 > 178` on Sunder and `183 > 40` on Boxer. Drops are red and rises green.
 - **Conditionals:** almost none show on the panel, only those met by base stats. The Arsenal doesn't even count as max energy. So a panel value is a floor, and conditional Strength has to come from the build's mods and arcanes.
 - **Snapshotting:** an ability keeps the Strength it was cast with until it expires, and later changes don't reach it (wiki: Snapshotting). So a temporary Strength bonus counts for as long as the ability cast under it lasts.
+- **Arcane Bellicose:** +6% Strength per 250 Max Health, up to +72% at 3,000 Health. It is on the panel, at the Health the Arsenal shows, and rises in play with Arcane Blessing. Lavos at 1,600 Health shows 38.
+- **Archon Shards:** a colour doesn't name the buff. Crimson can be Strength or Duration, among others, so a crimson count is only a limit.
 - **Molt Augmented:** not on the panel at full value. Each kill adds Strength, up to +60 at 250 kills, so Mag's 84 becomes 144.
 
 ## Strength confirmed by hand
