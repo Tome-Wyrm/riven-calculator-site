@@ -353,7 +353,8 @@ export function hitByType(p, t, m, valence) {
   // In game, Coda Bassocyst's 808 with 60% Heat totals 1292.8, and Incendiary Coat's 90% adds 1163.5.
   const own = { ...p.dmg };
   if (valence?.value) own[valence.type] = (own[valence.type] ?? 0) + valence.value * listed;
-  const base = listed * (1 + (valence?.value ?? 0));
+  // (`p.base`: an incarnon perk can put more into the hit than the mods scale from: src/incarnon.js.)
+  const base = (p.base ?? listed) * (1 + (valence?.value ?? 0));
   for (const [type, v] of Object.entries(own)) {
     if (PHYSICAL.includes(type)) byType[type] = v * Math.max(0, 1 + m(type));
     else if (ELEMENTS.includes(type)) innate[type] = v;

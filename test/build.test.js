@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compatFor, liveFactor, modPool, arcanePool, optimise, optimiseEach, rivenPiece, rivenWorth, SCENARIOS } from '../src/build.js';
+import { compatFor, liveFactor, modPool, arcanePool, optimise, optimiseEach, rivenPiece, rivenWorth, shortlist, withoutOutclassed, SCENARIOS } from '../src/build.js';
 import { combineElements, COMBINED } from '../src/elements.js';
 import { WEAPON_STATS } from '../src/data/weapon-stats.js';
 import { GUN_MODS } from '../src/data/mods.js';
@@ -170,4 +170,36 @@ test('a curse is never worth more than a search\'s luck: Felarx ++-, single targ
 test('Ammo Efficiency from a mod takes off the cost, as a riven\'s does', () => {
   const { stats } = arcanePool('rifle', SCENARIOS.weak, {}).find(a => a.name === 'Primary Crux') ?? { stats: {} };
   assert.ok(Math.abs((stats.ammoEfficiency ?? 0) + 0.6) < 1e-9, String(stats.ammoEfficiency));
+});
+
+test('pruning: a mod goes only if something at least as good excludes it', () => {
+  const mod = (/** @type {string} */ name, /** @type {Record<string, number>} */ stats, /** @type {string[]} */ excl = [], /** @type {{type: string, value: number}[]} */ elements = []) => ({ name, stats, elements, excl });
+  const names = (/** @type {ReturnType<typeof mod>[]} */ pool) => withoutOutclassed(pool).map(p => p.name);
+  // Primed replaces the base mod; the Amalgam's extra stat keeps it.
+  assert.deepEqual(names([mod('Base', { damage: 0.9 }, ['Primed']), mod('Primed', { damage: 1.65 }, ['Base'])]), ['Primed']);
+  assert.deepEqual(names([mod('Base', { damage: 0.9, fireRate: 0.1 }, ['Primed']), mod('Primed', { damage: 1.65 }, ['Base'])]), ['Base', 'Primed']);
+  // Mods that can share a build both stay: the weaker can be the second.
+  assert.deepEqual(names([mod('Disruptor', { impact: 0.9 }), mod('Full Contact', { impact: 1.2 })]), ['Disruptor', 'Full Contact']);
+  // More isn't always better here: Devastating Attrition, Heat's strip.
+  assert.equal(names([mod('Low', { critChance: 0.5 }, ['High']), mod('High', { critChance: 1 }, ['Low'])]).length, 2);
+  assert.equal(names([mod('Short', { statusDuration: 0.5 }, ['Long']), mod('Long', { statusDuration: 1 }, ['Short'])]).length, 2);
+  // Elements: the same type only. Two equals that exclude each other: one stays.
+  assert.deepEqual(names([mod('Weak', {}, ['Strong'], [{ type: 'cold', value: 0.9 }]), mod('Strong', {}, ['Weak'], [{ type: 'cold', value: 1.65 }])]), ['Strong']);
+  assert.equal(names([mod('Cold', {}, ['Heat'], [{ type: 'cold', value: 0.9 }]), mod('Heat', {}, ['Cold'], [{ type: 'heat', value: 1 }])]).length, 2);
+  assert.deepEqual(names([mod('One', { damage: 1 }, ['Two']), mod('Two', { damage: 1 }, ['One'])]), ['One']);
+  // A better mod that excludes something else as well may not fit where the weaker one does.
+  assert.equal(names([mod('Weak', { damage: 1 }, ['Strong']), mod('Strong', { damage: 2 }, ['Weak', 'Other'])]).length, 2);
+});
+
+test('the shortlist keeps the build, every element and the best of each stat', () => {
+  const w = WEAPON_STATS.Felarx;
+  const o = { ...opts, enemy: 'grineer', weakpoint: 0.02, targets: 20, target: { health: 300000, shields: 0, armor: 0, weak: {}, shieldWeak: {} } };
+  const pool = withoutOutclassed(modPool('shotgun', w, SCENARIOS.room, o));
+  const build = optimise(w, pool, [], o);
+  const short = shortlist(w, pool, o, build);
+  assert.ok(short.length < pool.length, `${short.length} of ${pool.length}`);
+  assert.ok(build.slots.every(p => short.includes(p)));
+  assert.ok(pool.filter(p => p.elements.length).every(p => short.includes(p)));
+  const stat = (/** @type {string} */ k) => short.some(p => k in p.stats);
+  for (const k of ['magazine', 'reloadSpeed', 'fireRate', 'multishot', 'statusChance']) assert.ok(stat(k), k);
 });

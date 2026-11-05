@@ -172,6 +172,57 @@ export function modPool(cls, w, sc, opts) {
     .map(({ p }) => p);
 }
 
+/** Stats where more isn't always better (Devastating Attrition's crit chance, Heat's strip against Status Duration, a cost). */
+const TWO_SIDED = new Set(['critChance', 'statusDuration', 'ammoEfficiency']);
+
+/**
+ * Whether `a` can never beat `b`: they exclude each other, so a build holds one, and `b` has at least
+ * as much of everything, without excluding anything more. (Mods that can share a build both stay:
+ * the weaker can be the second.)
+ * @param {Piece} a @param {Piece} b
+ */
+function outclassed(a, b) {
+  if (!a.excl.includes(b.name) && !b.excl.includes(a.name)) return false;
+  if (b.excl.some(n => n !== a.name && !a.excl.includes(n))) return false;
+  for (const k of new Set([...Object.keys(a.stats), ...Object.keys(b.stats)])) {
+    const x = a.stats[k] ?? 0, y = b.stats[k] ?? 0;
+    if (TWO_SIDED.has(k) ? x !== y : x > y) return false;
+  }
+  return a.elements.length === b.elements.length
+    && a.elements.every((e, i) => e.type === b.elements[i].type && e.value <= b.elements[i].value);
+}
+
+/** The pool without mods that can never be the better choice. @param {Piece[]} pool */
+export const withoutOutclassed = pool => pool.filter(a => !pool.some(b => b !== a && outclassed(a, b) && !(outclassed(b, a) && pool.indexOf(b) > pool.indexOf(a))));
+
+/**
+ * A shorter pool for the many searches around one gun, from the best build found without a riven: the
+ * build's mods, every elemental mod (either half of a combined element looks poor alone), the `keep`
+ * that do most swapped into the build, and the mod with the most of each stat, so a riven that changes
+ * what the build needs still finds what it wants. (Most of the stat, not the best score: a build on
+ * Acuity scores every Multishot mod at nothing, and a riven can make Multishot the better way.)
+ * @param {WeaponStats} w @param {Piece[]} pool @param {SimOptions} opts @param {Build} build @param {number} [keep]
+ */
+export function shortlist(w, pool, opts, build, keep = 12) {
+  const scored = pool.filter(p => !p.elements.length && !build.slots.includes(p)).map(p => {
+    let value = -Infinity;
+    for (let i = 0; i < build.slots.length; i++) {
+      const rest = build.slots.filter((_, j) => j !== i);
+      if (!fitsWith(p, rest)) continue;
+      value = Math.max(value, worth(w, { slots: [...rest, p], arcane: build.arcane }, opts));
+    }
+    return { p, value };
+  }).sort((a, b) => b.value - a.value);
+  const chosen = new Set(pool.filter(p => p.elements.length || build.slots.includes(p)));
+  for (const { p } of scored.slice(0, keep)) chosen.add(p);
+  const stats = new Set(scored.flatMap(({ p }) => Object.keys(p.stats)));
+  for (const k of stats) {
+    const most = scored.reduce((/** @type {Piece | null} */ m, { p }) => ((p.stats[k] ?? 0) > (m?.stats[k] ?? 0) ? p : m), null);
+    if (most) chosen.add(most);
+  }
+  return pool.filter(p => chosen.has(p));
+}
+
 /**
  * The arcanes a weapon's arcane slot takes, by name (each one, whether the model sees it do anything).
  * @param {WeaponClass} cls
@@ -259,29 +310,13 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
       slots = [...slots, pick];
       best = pickValue;
     }
-    // Then the single best change, again and again: swap a mod out, swap two slots, or put in two
-    // elemental mods at once (a combined element needs both halves; either alone may not earn its
-    // slot, so one swap at a time would never find Viral).
+    // Then the single best change, again and again: swap a mod out, swap two slots, or, when neither
+    // helps, put in two elemental mods at once (a combined element needs both halves; either alone
+    // may not earn its slot, so one swap at a time would never find Viral).
     const hasElements = (/** @type {Piece} */ p) => p.elements.length > 0;
     for (let round = 0; round < 50; round++) {
-      let move = null, moveValue = best * (1 + 1e-9);
-      for (let i = 0; i < slots.length; i++) {
-        if (slots[i].riven) continue;
-        for (let j = i + 1; j < slots.length; j++) {
-          if (slots[j].riven) continue;
-          const rest = slots.filter((_, k) => k !== i && k !== j);
-          for (const a of pairReps) {
-            for (const b of pairReps) {
-              if (a === b || a.elements[0].type === b.elements[0].type || !fitsWith(a, rest) || !fitsWith(b, [...rest, a])) continue;
-              const next = [...slots];
-              next[i] = a;
-              next[j] = b;
-              const v = value(next, arc);
-              if (v > moveValue) { move = next; moveValue = v; }
-            }
-          }
-        }
-      }
+      /** @type {Piece[] | null} */
+      let move = null, pair = null, moveValue = best * (1 + 1e-9);
       for (let i = 0; i < slots.length; i++) {
         if (slots[i].riven) continue;
         const rest = slots.filter((_, j) => j !== i);
@@ -300,6 +335,24 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
           if (v > moveValue) { move = next; moveValue = v; }
         }
       }
+      for (let i = 0; !move && i < slots.length; i++) {
+        if (slots[i].riven) continue;
+        for (let j = i + 1; j < slots.length; j++) {
+          if (slots[j].riven) continue;
+          const rest = slots.filter((_, k) => k !== i && k !== j);
+          for (const a of pairReps) {
+            for (const b of pairReps) {
+              if (a === b || a.elements[0].type === b.elements[0].type || !fitsWith(a, rest) || !fitsWith(b, [...rest, a])) continue;
+              const next = [...slots];
+              next[i] = a;
+              next[j] = b;
+              const v = value(next, arc);
+              if (v > moveValue) { pair = next; moveValue = v; }
+            }
+          }
+        }
+      }
+      move ??= pair;
       if (!move) break;
       slots = move;
       best = moveValue;
@@ -308,6 +361,8 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
   };
 
   const start = o.riven ? [o.riven, ...(o.start ?? []).filter(p => !p.riven).slice(0, size - 1)] : (o.start ?? []).slice(0, size);
+  // (Mods first, then the arcane: starting with the last build's arcane is quicker, but it sticks.
+  // Rubico Prime with a Status Chance riven found 41.7k that way, 60.7k this way.)
   let { slots, dps } = search(start, null);
   // The arcane: the best for these mods, then the mods again around it.
   let arc = null;

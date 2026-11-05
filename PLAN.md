@@ -875,9 +875,37 @@ chance curse good, and the model had it as a cost)
   (unevolved) to +2.9%. At level 150 the evolved Felarx one-shots, so crit stops mattering at all.
 - [x] Devastating Attrition is x21 (+2000%), rolled per pellet (in game 2026-11-03, unmodded Felarx:
       pellets 27, a boosted one 561 = 26.7 x 21; x20 would show 561 next to 28s).
-- [x] "Increase Damage by +X" is per shot: a shotgun's pellets share it (in game 2026-11-03, Boar at
-      level 235: Fortress Salvo +16 and Reified Bane +10 both show pellets of 10 and crits of 24; per
-      pellet, +16 would be 19% more).
+- **Form stats against the Arsenal** (the user, 2026-11-05). Felarx matches on every line (Wracking
+  Wrath); Laetum too, and its radial attack is real, every shot (Elemental Excess's status doesn't
+  reach it: fixed), so its form really is about 7x its normal fire. Boar Prime's form is a beam
+  (Held, 8 ticks a second, range 20, Punch Through 8): single target it's weak, and the model doesn't
+  count the enemies behind the first. All 91 perks with a value per variant hold the right one.
+- [x] **Base damage perks** (the user, 2026-11-05, Boar Prime, replacing "+X per shot" below). Per pellet,
+  in proportion. Normal fire counts it twice: the Arsenal's lines have it once and elements scale
+  from that (40 + 16 = 56; Primed Charged Shell 92.4), its Total has it again, and that's what hits: 72
+  a pellet, 236 on an Ancient Healer's head (1,182 crit), 28.6 on a level 235 Heavy Gunner's. Rounded
+  by the game (47.25, 11.25, 13.5) those come to 236.25 and 28.69. Reified Bane: lines 50, Total 480.
+  The form's hit takes it once: Heat 46, and its Total (62) isn't real. Checked on one gun: a
+  single-projectile gun could still differ. Reified Bane's +14 from reloading reaches the form in the
+  Arsenal (Heat 54) and isn't modelled.
+- **The beam's hits, solved** (three videos, 2026-11-05: Boar Prime's form, heads, Radiation, Primary
+  Overcharge running). On an Ancient Healer (no armor) non-crit 2,199 and 2,566, on a level 235 Heavy
+  Gunner 220 and 257, crits 5.4x. That's 122.19 x 3 (head) x 6 or 7:
+  - 122.19: the form's real number is the line, not the Total: 46 + 165% of 46, rounded to 1/32 of the
+    base (the wiki's quantizing; the model doesn't do this yet).
+  - 6 or 7: Multishot 6.3 (1 + 1.2 + 0.6 + the arcane's 3.5, which the Arsenal doesn't show), rolled to
+    a whole number on each tick. Armor is exactly 0.1 at 2700. Radiation stacks add nothing.
+  - Lower numbers in the first second: probably the beam locking on (the user).
+  - Chained enemies take body hits: 587 = 2,199 / 3 x 80%.
+- [ ] **Beams and Multishot** (kengineer's video, from the user; the 6 and 7 above agree). A beam doesn't
+  fire more beams: each tick rolls Multishot to a whole number and multiplies its damage and status
+  chance. One proc at most a tick, stronger rather than more of them. Crit isn't multiplied, so
+  Hunter Munitions rolls once a tick. Zones from beams (Ignis Wraith, Galaxy) get no Multishot.
+  The model treats a beam's Multishot as pellets: right for direct damage on average, wrong on those.
+- The form is up to 3 beams, each chaining to 2 enemies within 10 m at 80% of the one before (the
+  wiki): count that with the room's mix of units.
+- Superseded: "+X per shot, shared by the pellets" (2026-11-03, from pellets of 10 and crits of 24 at
+  level 235, which is 72 a pellet on the body with a 2.5x crit: the rule above).
 - [x] Perk fire rate adds to the mods (in game 2026-11-03: Laetum with +100% from mods shows 5 without
       Rapid Wrath, 5.5 with it = 2.5 x (1 + 1 + 0.2); a separate x1.2 would be 6). Reload speed is
       taken the same way (`WeaponStats.bonus`). Shotgun splits go by base pellets (the user: Multishot
@@ -1079,12 +1107,22 @@ Decisions (the user's, 2026-11-03):
 
 ### Speed and pruning (the user's ideas, 2026-11-04; not started)
 
-A study takes 1–6 s on most guns and up to 38 s on fast ones against full armor (Soma Prime: ~300
-shots a fight, thousands of fights). In order:
-- **Prune mods before the search.** Drop mods another beats outright, then score the rest once per
-  weapon and setting and keep the best few. Elemental mods stay in (a combined element needs both
-  halves, so either alone looks poor). Check that a pruned search finds the same builds as a full one.
-- **Workers.** The candidates in a search round don't depend on each other: split them over the cores.
+A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study dozens of searches.
+- [x] **Prune mods before the search** (2026-11-05). 38 studies across 11 guns and 4 settings, against
+  the unpruned search: 311 s to 215 s (1.44x); 1,305 of 1,444 stats' best DPS within 1%, 135 better, 4
+  worse (all Heat or Electricity near the bottom of the table); the best riven never worse, and up
+  to 14.5% better (Rubico Prime). Where it moved, the old search had stuck.
+  - `withoutOutclassed`: a mod goes only if something at least as good excludes it (mods that can
+    share a build both stay), and crit chance, Status Duration and Ammo Efficiency never count as
+    "more is better". Costs nothing: same builds.
+  - `shortlist`: from the best build, its mods, every elemental mod, the 12 best swapped in, and the
+    mod with the most of each stat (not the best score: Acuity builds score Multishot at nothing).
+  - Elemental pair moves only when no single move helps.
+  - Each stat, and the empty riven slot, then tries the mods every other stat's search found
+    (`orBetter`: scoring them is cheap). This fixed baselines that had stuck: Lex Prime's empty slot
+    was 0.326M, really 0.450M, so its percentages were inflated.
+  - Tried and dropped: starting a search with the last build's arcane. 2.6x, but it sticks.
+- **Workers.** The next speed-up, and it can't change a result: split a study's searches over the cores.
 - **Precomputed results.** Ship the default settings' studies as data, so common weapons open at once.
 - **GPU: not now.** The fight is a branching, per-shot loop with queues: it would need rewriting in
   WGSL and keeping in step with the JavaScript, and WebGPU isn't everywhere. Reconsider if the above

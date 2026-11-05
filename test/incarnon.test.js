@@ -26,12 +26,29 @@ test('perks change the base numbers: crit and status per form, base damage to no
   near(normal.sc, w.modes[0].parts[0].sc + 0.025);        // +2.5% per projectile
   near(form.sc, w.modes[1].parts[0].sc + 0.1);            // +10% for Incarnon Form
   assert.equal(w.modes[0].parts[0].cc, 0.2);              // the original is untouched
-  // Boar's Fortress Salvo: +16 damage a shot, shared by its 8 pellets, each type in proportion,
-  // normal attacks only.
-  const b = WEAPON_STATS.Boar;
-  const salvo = withPerks(b, 'Boar', perk('Boar', 'Fortress Salvo'));
+  // Boar Prime's Fortress Salvo (in game): each pellet 40 + 16 for mods to scale from, 72 in the hit,
+  // each type in proportion; the form's Heat 30 + 16, once.
+  const b = WEAPON_STATS['Boar Prime'];
+  const salvo = withPerks(b, 'Boar Prime', perk('Boar Prime', 'Fortress Salvo'));
   const sum = d => Object.values(d).reduce((x, y) => x + y, 0);
-  near(sum(salvo.modes[0].parts[0].dmg), sum(b.modes[0].parts[0].dmg) + 16 / 8, 1e-6);
+  near(sum(salvo.modes[0].parts[0].dmg), 72, 1e-6);
+  near(salvo.modes[0].parts[0].base ?? 0, 56, 1e-6);
+  near(sum(salvo.modes[1].parts[0].dmg), 46, 1e-6);
+  near(salvo.modes[1].parts[0].base ?? 0, 46, 1e-6);
+});
+
+test('Boar Prime with Fortress Salvo lands what the game showed (2026-11-05)', async () => {
+  const { fight } = await import('../src/fight.js');
+  const picks = evolutionsOf('Boar Prime').map(e => e.perks.findIndex(p => p.name === 'Fortress Salvo'));
+  const w = withPerks(WEAPON_STATS['Boar Prime'], 'Boar Prime', picks);
+  for (const m of w.modes) for (const p of m.parts) p.cc = 0;
+  const head = (/** @type {object} */ t, /** @type {number} */ mode, stats = {}, elements = /** @type {{type: string, value: number}[]} */ ([])) => fight(w, { stats, elements }, { target: { health: 1e9, shields: 0, armor: 0, weak: {}, shieldWeak: {}, ...t }, mode, weakpoint: 1, enemy: 'grineer', targets: 20, burst: true }).perShot;
+  // A pellet, non-crit, on heads (within what the game's rounding moves): an Ancient Healer's, no
+  // armor, Slash +50%: 236; a level 235 Heavy Gunner's, 2700 armor, Impact +50%: 28.6.
+  near(head({ weak: { slash: 0.5 } }, 0) / 8, 236, 2);
+  near(head({ armor: 2700, weak: { impact: 0.5 } }, 0) / 8, 28.6, 0.2);
+  // The form with Primed Charged Shell: 122.19 x 3 x Multishot 6.3 (2,199 and 2,566 a tick, as rolled).
+  near(head({}, 1, { multishot: 5.3 }, [{ type: 'electricity', value: 1.65 }]), 121.9 * 3 * 6.3, 1);
 });
 
 test('the non-crit bonus: 50% chance of +2000% on hits that don’t crit, gone at 100% crit', () => {
@@ -110,4 +127,12 @@ test('perks follow the mode: normal fire, the form and the cycle can each want d
   // The cycle reloads and swaps, so it takes the reload perk the form alone has no use for.
   assert.ok(cycle.includes('Rapid Reinforcement') && !inForm.includes('Rapid Reinforcement'), String(cycle));
   assert.notDeepEqual(cycle, normal);
+});
+
+test('a form\'s status perk reaches its hit, not its radial attack (in game: Laetum, 42% and 22.2%)', () => {
+  const w = withPerks(WEAPON_STATS.Laetum, 'Laetum', [0, 0, 2, 0]);
+  const form = w.modes.find(m => /incarnon/i.test(m.name));
+  near(form?.parts[0].sc ?? 0, 0.42);
+  near(form?.parts[1].sc ?? 0, 0.22);
+  near(w.modes[0].parts[0].sc, 0.42);
 });

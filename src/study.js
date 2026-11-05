@@ -6,7 +6,7 @@
 import { WEAPON_STATS } from './data/weapon-stats.js';
 import { STAT_BY_ID, SHAPES } from './data/stats.js';
 import { rawValue, displayValue, format } from './engine.js';
-import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, fightOf, worth, SCENARIOS } from './build.js';
+import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, fightOf, worth, withoutOutclassed, shortlist, SCENARIOS } from './build.js';
 import { NO_DPS, VALENCE_TYPES } from './sim.js';
 import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
 
@@ -55,7 +55,7 @@ export function study(input) {
   const perks = !evolutionsOf(input.weapon).length || cls === 'melee' || input.adapter === false ? []
     : Array.isArray(input.perks) ? input.perks : bestPerks(plain, input.weapon, cls, { ...opts, valence: undefined });
   const w = withPerks(plain, input.weapon, perks);
-  const pool = modPool(cls, w, sc, opts);
+  const pool = withoutOutclassed(modPool(cls, w, sc, opts));
   const arcanes = arcanePool(cls, sc, opts);
   // Each Valence element, by its best build without a riven (the elements it leaves the mods to
   // make change with it); the study goes on with the best one.
@@ -74,7 +74,7 @@ export function study(input) {
   const raw = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign) => rawValue(STAT_BY_ID[id], cls, shape, sign, sign === '+' ? medianU(id) : 0.5);
   const shown = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign) => format(STAT_BY_ID[id], displayValue(STAT_BY_ID[id], cls, shape, sign, sign === '+' ? medianU(id) : 0.5));
   /** @param {Record<string, number>} roll @param {Build} from */
-  const withRiven = (roll, from) => optimise(w, pool, arcanes, opts, { riven: rivenPiece(roll), start: from.slots });
+  const withRiven = (roll, from) => optimise(w, short, arcanes, opts, { riven: rivenPiece(roll), start: from.slots });
   // The search can stick on a poor build, and where it starts decides which: `own`, unless the riven
   // does better on the mods of one of `others`; then a search from the best of those.
   const orBetter = (/** @type {Record<string, number>} */ roll, /** @type {Build} */ own, /** @type {Build[]} */ others) => {
@@ -85,14 +85,23 @@ export function study(input) {
   };
 
   const none = found ?? optimise(w, pool, arcanes, opts);
+  // Every search from here is around this gun: a shorter pool, from the build just found.
+  const short = shortlist(w, pool, opts, none);
   const shownBuild = (/** @type {Build} */ b) => summary(b, fightOf(w, b, opts));
-  const empty = withRiven({}, none);
+  // (The whole pool: every percentage below is measured from here.)
+  const start = optimise(w, pool, arcanes, opts, { riven: rivenPiece({}), start: none.slots });
 
-  // Each positive alone in the riven's slot, against the slot empty.
-  const singles = input.positives.map(id => {
-    const b = withRiven({ [id]: raw(id, '+') }, empty);
-    return { id, shown: shown(id, '+'), change: b.dps / empty.dps - 1 };
+  // Each positive alone in the riven's slot, against the slot empty. Each search lands somewhere a
+  // little different, so each stat, and the empty slot, then gets the best mods any of them found.
+  const alone = input.positives.map(id => { const roll = { [id]: raw(id, '+') }; return { id, roll, b: withRiven(roll, start) }; });
+  const distinct = (/** @type {Build[]} */ builds) => [...new Map(builds.map(b => [b.slots.filter(p => !p.riven).map(p => p.name).sort().join('|') + (b.arcane?.name ?? ''), b])).values()];
+  const foundAlone = distinct(alone.map(a => a.b));
+  const empty = orBetter({}, start, foundAlone);
+  const singles = alone.map(({ id, roll, b }) => {
+    const better = orBetter(roll, b, foundAlone);
+    return { id, shown: shown(id, '+'), change: better.dps / empty.dps - 1, b: better };
   }).sort((a, b) => b.change - a.change);
+  const foundSingles = distinct(singles.map(s => s.b));
 
   // The best rivens: sets of as many positives as the shape holds (at most one spliced), from the
   // best singles, each against no riven at all.
@@ -109,8 +118,9 @@ export function study(input) {
   };
   pick(0, []);
   const sets = combos.map(ids => {
-    const b = withRiven(Object.fromEntries(ids.map(id => [id, raw(id, '+')])), empty);
-    return { ids, change: b.dps / none.dps - 1, build: shownBuild(b) };
+    const roll = Object.fromEntries(ids.map(id => [id, raw(id, '+')]));
+    const b = orBetter(roll, withRiven(roll, empty), foundSingles);
+    return { ids, change: b.dps / none.dps - 1, build: shownBuild(b), b };
   }).sort((a, b) => b.change - a.change).slice(0, 5);
 
   // Each curse on the best riven, against that riven without it.
@@ -119,7 +129,7 @@ export function study(input) {
   let curses = [];
   if (best && SHAPES[shape].negatives) {
     const roll = Object.fromEntries(best.ids.map(id => [id, raw(id, '+')]));
-    let base = withRiven(roll, empty);
+    let base = withRiven(roll, best.b);
     // A curse can shake the search loose onto mods that do better without the curse too: then it was
     // the mods, not the curse (a −Magazine showed +5% so), so the riven without it gets them as well.
     const ids = input.negatives.filter(id => !best.ids.includes(id));
@@ -141,11 +151,11 @@ export function study(input) {
   }
   // Each best riven gets the best mods any of them found: one that stuck mustn't rank below the others.
   const rollOf = (/** @type {typeof sets[number] & {curse?: {id: string}}} */ set) => ({ ...Object.fromEntries(set.ids.map(id => [id, raw(id, '+')])), ...(set.curse ? { [set.curse.id]: raw(set.curse.id, '-') } : {}) });
-  const searched = sets.map(set => withRiven(rollOf(set), empty));
+  const searched = sets.map(set => withRiven(rollOf(set), set.b));
   for (const [i, set] of sets.entries()) {
     const b = orBetter(rollOf(set), searched[i], searched);
     Object.assign(set, { change: b.dps / none.dps - 1, build: shownBuild(b) });
   }
   sets.sort((a, b) => b.change - a.change);
-  return { none: shownBuild(none), empty: empty.dps, singles, cursesOn: best?.ids ?? [], sets: /** @type {(typeof sets[number] & {curse?: {id: string, shown: string}})[]} */ (sets), curses, valences, valence: opts.valence ?? null, perks };
+  return { none: shownBuild(none), empty: empty.dps, singles: singles.map(({ b: _, ...s }) => s), cursesOn: best?.ids ?? [], sets: /** @type {(Omit<typeof sets[number], 'b'> & {curse?: {id: string, shown: string}})[]} */ (sets.map(({ b: _, ...s }) => s)), curses, valences, valence: opts.valence ?? null, perks };
 }

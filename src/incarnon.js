@@ -3,11 +3,16 @@
 // the rest of the model sees an evolved weapon. Perk data: src/data/incarnons.js (Underframe).
 //
 // How each effect lands (Underframe's upgrade types; the wiki's Incarnon page):
-// - base damage ("Increase Damage by +42"): added to each normal-mode attack's total per shot, so a
-//   shotgun's pellets share it (in game: Boar's +16 and +10 show the same pellet numbers, 10 and 24,
-//   which only a share of 2 or 1.25 per pellet does), every damage type in proportion. The Incarnon Form's own numbers already include its evolutions.
+// - base damage ("Increase Damage by +16"): per pellet, every damage type in proportion. In normal
+//   fire it counts twice: the Arsenal's lines show it once and elemental mods scale from that (Boar
+//   Prime: 40 + 16 = 56, 165% Electricity 92.4), but its Total has it again, and that's what hits
+//   (72: 236 on an unarmored head, 28.6 on a level 235 Heavy Gunner's). The Incarnon Form's hit takes
+//   it once (Heat 30 + 16: 122.19 Radiation with that mod, exactly what its ticks land; its Total's
+//   second +16 isn't real). A perk's conditional part (Reified Bane's reload bonus, which the
+//   Arsenal gives the form) isn't counted.
 // - crit and status chance, crit multiplier, multishot, magazine: added to the weapon's base
-//   (status per form: "+2.5% per projectile, +10% for Incarnon Form").
+//   (status per form: "+2.5% per projectile, +10% for Incarnon Form"; not on a form's radial attack:
+//   in game, Laetum's Elemental Excess shows 42% on the hit and 22.2% on the radial).
 // - a flat crit chance after mods (Elemental Excess), a weapon headshot bonus, and the non-crit
 //   bonus (Devastating Attrition): fields on each attack the damage model reads (src/sim.js).
 // - fire rate and reload speed: added to the mods' bonus (WeaponStats.bonus; checked in game on
@@ -62,14 +67,17 @@ export function withPerks(w, weapon, picks) {
       for (const p of mode.parts) {
         if (kind === 'cc') p.cc = Math.max(0, p.cc + value);
         else if (kind === 'cd') p.cd += value;
-        else if (kind === 'sc') p.sc = Math.max(0, p.sc + (form ? incarnon ?? value : value));
+        else if (kind === 'sc') { if (!form || !p.aoe) p.sc = Math.max(0, p.sc + (form ? incarnon ?? value : value)); }
         else if (kind === 'ccFlat') p.ccFlat = (p.ccFlat ?? 0) + value;
         else if (kind === 'hs') { if ((p.hs ?? 0) > -1) p.hs = (p.hs ?? 0) + value; }
         else if (kind === 'nonCrit') p.nonCrit = { chance: chance ?? 1, mult: value };
         else if (!form && kind === 'ms') p.ms += value;
-        else if (!form && kind === 'baseDamage') {
+        else if (kind === 'baseDamage' && !(form && p.aoe)) {
           const total = Object.values(p.dmg).reduce((a, b) => a + b, 0);
-          if (total > 0) for (const t of Object.keys(p.dmg)) p.dmg[t] *= (total + value / Math.max(1, p.ms)) / total;
+          if (total > 0) {
+            p.base = (p.base ?? total) + value;
+            for (const t of Object.keys(p.dmg)) p.dmg[t] *= (total + (form ? value : 2 * value)) / total;
+          }
         }
       }
     }

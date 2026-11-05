@@ -21,3 +21,6 @@ tools/data/*.wiki
 tools/data/*.xlsx
 # Who may open Recommended rolls (names; only their hashes are published: tools/build-allowlist.mjs)
 tools/data/allowlist.txt
+
+# Tesseract language data, fetched for OCR work
+eng.traineddata
