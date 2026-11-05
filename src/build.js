@@ -91,7 +91,7 @@ export function compatFor(cls, kind) {
 
 /**
  * One thing in a build (a mod, the riven, the arcane) reduced to what it adds in a scenario.
- * @typedef {{name: string, stats: Record<string, number>, elements: {type: string, value: number}[], excl: string[], riven?: true, chosen?: true}} Piece
+ * @typedef {{name: string, stats: Record<string, number>, elements: {type: string, value: number, loose?: boolean}[], excl: string[], riven?: true, chosen?: true}} Piece
  */
 
 /**
@@ -269,12 +269,15 @@ const fitsWith = (p, others) => others.every(o => o.name !== p.name && !o.excl.i
  * @property {number} dps
  */
 
+/** A build's totals: its mods, its arcane, and any buffs. @param {Pick<Build, 'slots' | 'arcane'>} b @param {SimOptions} opts */
+const buildTotals = (b, opts) => totalsOf([...b.slots, ...(b.arcane ? [b.arcane] : []), ...(opts.buffs ? [opts.buffs] : [])]);
+
 /**
  * A build's fight against the target (src/fight.js), or null without one.
  * @param {WeaponStats} w @param {Build} b @param {SimOptions} opts
  */
 export function fightOf(w, b, opts) {
-  return opts.target ? fight(w, totalsOf(b.arcane ? [...b.slots, b.arcane] : b.slots), { ...opts, target: opts.target }) : null;
+  return opts.target ? fight(w, buildTotals(b, opts), { ...opts, target: opts.target }) : null;
 }
 
 /**
@@ -285,7 +288,7 @@ export function fightOf(w, b, opts) {
  * @param {WeaponStats} w @param {Pick<Build, 'slots' | 'arcane'>} b @param {SimOptions} opts
  */
 export function worth(w, b, opts) {
-  const t = totalsOf(b.arcane ? [...b.slots, b.arcane] : b.slots);
+  const t = buildTotals(b, opts);
   if (!opts.target) return dpsOf(w, t, opts);
   const main = { ...opts, target: opts.target };
   if (!opts.spread?.length) return fight(w, t, main).dps;

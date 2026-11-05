@@ -26,7 +26,7 @@ const BODY = 0.6, PATH = 1.5;
 export const crowdRadius = crowd => 20 * (1 - 0.75 * Math.min(1, Math.max(0, crowd.clump)));
 
 /** Enemies of the crowd within `metres` of the target. @param {Crowd} crowd @param {number} metres */
-const within = (crowd, metres) => crowd.close * Math.min(1, (metres / crowdRadius(crowd)) ** 2);
+export const within = (crowd, metres) => crowd.close * Math.min(1, (metres / crowdRadius(crowd)) ** 2);
 
 /**
  * What's left of an explosion on average over its disc: full to `from`, down by `cut` at `to`.
@@ -43,6 +43,18 @@ function chained(c, crowd) {
   for (let k = 1; k <= c.links; k++) links += link ** k * (c.flat ? c.share : c.share ** k);
   const more = ((c.beams ?? 1) - 1) * (1 - Math.exp(-crowd.close));
   return (1 + links) * (1 + more) - 1;
+}
+
+/**
+ * Breach Surge's sparks, if there's another enemy within 10 m. On 10% of hits they carry `sparks` of a
+ * hit (it's the average of them). A kill always sends one, carrying ten times that of the hit that
+ * killed: a kill of `shots` takes about 1 / `shots` of the target's health, and a spark can kill one
+ * enemy at most, whose kill sends none. So a room falls up to twice as fast from those alone.
+ * @param {number} sparks @param {Crowd} crowd @param {number} [shots]  a kill's
+ */
+export function sparkReach(sparks, crowd, shots = 1) {
+  const near = 1 - Math.exp(-within(crowd, 10));
+  return near * (sparks + Math.min(1, 10 * sparks / Math.max(1, shots)));
 }
 
 /**

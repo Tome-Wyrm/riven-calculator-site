@@ -897,9 +897,9 @@ chance curse good, and the model had it as a cost)
     and Gas add it once per tick for all their stacks, which is a point in a tick of thousands.
   - Blast: stacks last 1.5 s and pay 30% of their hit, or 300% when 10 detonate. At a fixed rate that's
     a cliff, so `blastPay` uses the Poisson chance of 7 or more in 1.5 s, within 0.04 of a simulation of
-    the stacks. Not followed: the radial reaching other enemies, the detonation on death, the cap of 4
-    on bosses. H is taken to be a DoT's seed (faction twice, Status Damage): the page says "the damage
-    of the hit". Unverified.
+    the stacks. H is a DoT's seed: base, Damage mods, crits, faction, no elements, then Status Damage
+    and faction again, as the Blast Xata video below shows. Detonations reach the crowd within 5 m,
+    at 10 stacks and when a target dies. Not followed: the cap of 4 on bosses.
   - Sustained DPS: the fight spread a reload less one shot's interval, which the page keeps for Vectis
     and Vectis Prime (`quickReload`). Every other gun now waits it out, as the closed form did. Epitaph
     never reloads.
@@ -1007,6 +1007,59 @@ Prey of Dynar, Lycath's Hunt's Heavy Attack Efficiency; combo needs modelling).
 fire rate. Modelled as the statuses their weapons keep on the target (their own status chance, fire
 rate and elements), feeding status types and Viral / Corrosive stacks: the "primed (all)" switch
 becomes a choice of primer.
+
+**Done so far (2026-11-05): the plain buckets.** 45 buffs in `src/data/buffs.js`, written by hand from the
+wiki against Underframe (a generator was the plan, but its table needed a check per row: it has Grave
+Spirit at 100% where the wiki has 50%, and its ids don't say which bucket a bonus is in). A "Buffs" list on
+the page, by group, with Ability Strength and Duration; `buffPiece` makes one piece, which `buildTotals`
+adds to every build, so the optimiser builds around them. URL `buffs`, `str`, `dur`.
+- Damage adds with Serration; `anyFaction` with Bane mods, twice on DoTs; multipliers and vulnerabilities
+  multiply each other into `allDamage`, once on DoTs; `critFlat`, `critFlatHead` and `critDamageFlat` go
+  after the mods; elements are `loose`: never combined, summed with the same element.
+- One Strength and Duration for all, though buffs come from different frames. Per frame later.
+- What it does, Soma Prime against the Grineer battlegroup: Roar takes a Grineer riven from +36% to +25%,
+  Vex Armor takes Damage from +30% to +19%, Nourish takes Cold from +24% to +21% and Toxin from +39% to
+  +37%. Eclipse with Molecular Prime multiplies DPS by 3.9 and hardly moves the order, as the table says.
+
+**Blast Xata** (a video from the user, 2026-11-05, YouTube 2akiEldaL1o from 9:24, its captions and worked
+numbers; Prisma Grinlok, Akjagara Prime, Dex Pixia; Xata at 199% strength is 51%):
+- A Blast proc pays 0.3x modded base damage, no elements: 456 and 771 totals both proc 56. It takes crits, Damage,
+  faction; Elementalist on top; faction again. Alone it has no area. At 10 stacks, or when the target dies,
+  it's 3x in a fixed 5 m radius.
+- Xata's Whisper: a second hit of pure Void from all on-hit damage, rolling the weapon's status chance apart.
+  Weak points and faction a second time: 2000 on a body, 2000 x 3 x 1.55 x 0.51 x 3 x 1.55 = 22000 on a head
+  with Primed Bane. 10.4x in all.
+- **Blast explosions make a Xata hit.** No third head bonus, but it's from the whole hit, elements and all,
+  so elemental mods count. (248 + 50 + 198) x 0.3 x 1.9 = 282, and 1700 x 0.51 x 0.3 x 1.9 = 496 from it. With Bane
+  x 1.3 it's 477 and 1085: faction three times on the Xata hit. Their 10 stack detonation showed 118,000.
+- A Void proc makes a bubble that turns bullets to the body part that made it: all head hits, if it was a
+  head. Not modelled: it would raise a build's weak point share with Xata's Whisper.
+
+**The user's own list (2026-11-05)**: Nourish, Roar, Shock Trooper, Brightbonnet, Breach Surge, Jade Stars,
+Wrathful Advance, Xata's Whisper, Diriga, Panzer Vulpaphyla, Tenacious and Reinforced Bond.
+- Brightbonnet raises Ability Strength for the others, to +150% (+100% subsumed). Invigorated isn't followed.
+- Xata's Whisper: `extraVoid`, a share of the whole hit, faction and weak points again (the wiki's Extra Hit
+  and the ability's page). Its Void proc isn't counted as a status type: the model has none.
+- Breach Surge: `sparks`, in a crowd only. On 10% of hits, the damage dealt x 2 x 1.5 (100% crit) x 3 (they
+  seek heads) on another enemy: 0.9 of a hit at 100% Strength. Every kill sends one too, carrying 9 of the
+  killing hit, and a spark's kill sends none, so those add up to one kill a kill. Eclipse and Rift Torrent
+  multiply sparks again: the wiki says they "affect" them, read here as on top of the hit they already
+  raised. Every enemy is taken to be blinded (Overguard stops it).
+- Primers (14d, simply): `prime:<status>`, stacks held on the target doing no damage. They count for
+  Galvanized, Viral, Magnetic, Corrosive, Heat's full strip and Puncture's +5% crit chance a stack.
+  Diriga with Arc Coil: Electricity, Slash, Puncture, Impact, Heat, Radiation, Magnetic and Viral, as the user
+  listed. They stay up: Manifold Bond takes 3 s off Arc Coil's cooldown for each kill of an enemy with 3 or
+  more statuses, so it keeps firing (the user). Panzer Vulpaphyla: Viral. One companion at a time, so
+  they share a slot, and a "Primer stacks" setting: "plenty" (the user), and impractical to count, so
+  5 by default, an estimate. Jade Stars: Heat. Its motes' 500 Heat five times a second is nothing beside a
+  gun at these levels, so it's a primer here.
+- Wrathful Advance is melee only, so the list is on melee now, without the buffs that are guns' (`for`).
+- Reinforced Bond: +60% fire rate, not doubled on bows, not on archguns. Tenacious Bond wants a companion
+  at 50% crit chance or more, Reinforced Bond 1200 shields: both taken as met.
+
+Next, in order: more extra hits (Toxic Lash, Resupply, Silken Stride, which proc and triple-dip on their DoTs);
+weak point buffs (Sonar, Seek, Prowl); Valence Formation; Arcane Hot Shot and other arcanes; primers from
+the companions' own weapons, not stacks given; the hard ones (14e).
 
 **Steps**
 - **14a Data**: `tools/build-buffs.mjs` → `src/data/buffs.js` from Underframe's buffs, each with its
@@ -1204,6 +1257,7 @@ A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study doz
     first does, which is what puts the form at 7x in a crowd of 6. Unverified, and the biggest number here.
   - Punch Through: the enemies in a 1.5 m path behind the target, 0.6 m a body (the wiki's Butchers), no
     damage lost, none for area attacks or beams. A stat now in room builds: Soma Prime +23% for +1.5 m.
+  - Blast: detonations reach everyone within 5 m (see the Blast Xata notes).
   - What it does: Tonkor, Kuva Zarr and Kuva Bramma about 1.9x, Acceltra Prime 1.35x, Amprex 1.85x. Mostly a
     multiplier on the whole gun, so it moves builds less than it moves a gun's DPS, except Punch
     Through and anything that favours direct hits over explosions.
@@ -1211,7 +1265,7 @@ A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study doz
     slot 1 in the top 3 43% to 45%, in the best riven 46% to 47%, curses 50% to 52%. Punch Through leaves
     the most missed; Ammo Efficiency in the model's top 3 falls from 44 guns to 35.
   - Not followed: the others' armor and statuses, kill stacks building faster (they're counted as up),
-    Blast's radial, and beam zones (Ignis Wraith, Glaxion Vandal, Embolist, Catabolyst, Cortege: not in
+    and beam zones (Ignis Wraith, Glaxion Vandal, Embolist, Catabolyst, Cortege: not in
     the wiki's attack data, so those guns reach nothing).
 
 - [x] **Primary Overcharge** (2026-11-05): a Max Energy setting for guns with a primary arcane slot. 35% of
@@ -1239,6 +1293,54 @@ would show −78.0% and +130.0%). A Dax bow `+++-` riven at +138.4% Puncture con
 **0.01333** (0.013333 would show +138.5%). The wiki's Impact/Puncture/Slash split is correct. These are all Phase 2 golden tests. Fingerprint tags seen so far: `WeaponDamageAmountMod` (damage),
 `WeaponElectricityDamageMod`, `WeaponAmmoMaxMod`, `WeaponCritDamageMod`, `WeaponStunChanceMod`
 (status chance), `WeaponMeleeFinisherDamageMod`.
+
+## To test in game (the user)
+
+What the model assumes or takes from the wiki and no in-game test has checked yet, biggest effect first.
+Each says what it would change.
+
+Beams:
+- [ ] **Boar's form, its other beams.** Does a second or third beam do what the first does, and does each
+  need a further target? The model says yes to both, which gives 7x in a crowd of 6 (`src/crowd.js`).
+- [ ] **Multishot twice in DoTs.** Does a Heat or Slash tick on a single-beam gun scale with Multishot
+  twice, as the wiki says (`procsOf`)? Same gun, with and without a Multishot mod, against a target
+  that doesn't die.
+- [ ] **Innate beams.** Do Phage's 7 and Convectrix's 2 merge into one tick as Quanta's are said to, and does
+  Multishot then count twice on them? The wiki contradicts itself on Quanta and doesn't say for the others.
+- [ ] **The ramp on procs.** Do procs from the first ticks start as weak as the hits (`mode.held`)?
+- [ ] **Incarnon gauge on beams.** Does a beam's tick charge once, whatever Multishot rolled? Only pellets
+  were tested. Atomos or Gammacor in normal fire.
+- [ ] **Beam zones.** How far do the zones of Ignis Wraith, Glaxion Vandal, Embolist, Catabolyst and Cortege
+  reach, and how much do they do? They aren't in the wiki's attack data, so the model has none.
+
+Crowds:
+- [ ] **Area attacks with no radius in the data** (11: Sonicor and Helstrum's explosions, Phantasma's cluster
+  bombs, Ferrox's Attraction Field, Neutralizer's Cryo Grenade, Simulor's orb merging, Glory's alt fire,
+  Scyotid, Mausolon's charged shot). Their radius and falloff, for the guns you care about.
+- [ ] **Punch Through.** 0.6 m a body is from the wiki's Butchers. Does it hold for heavies, and is any
+  damage really lost? The 1.5 m path behind the target is an estimate.
+- [ ] **A real room against the settings.** How many enemies are usually within 20 m of a target, and how
+  tight? Six at 50% clumping (within about 12.5 m) is an estimate.
+
+Damage:
+- [ ] **Weak points with Weakpoint Damage.** A head hit with an Acuity mod. The wiki's pages disagree:
+  (multiplier + bonus), or (head + 1.5 x bonus) x (1 + headshot bonuses), which `weakPointMult` follows.
+- [x] **Blast.** H is a DoT's seed, faction twice, Status Damage, and a detonation pays 3x (the Blast Xata video).
+- [ ] **Base damage perks elsewhere.** Soma Prime's Arsenal should show lines 24, Total 36 (needs its adapter).
+  Proven on Boar Prime only.
+- [ ] **Reified Bane's +14 in form**, not modelled.
+
+Buffs:
+- [ ] **Do buff elements stay apart?** Shock Trooper with a Cold mod should show Cold and Electricity, not
+  Magnetic. And does a buff's element sum with a combined element of the same name (Nourish and a Viral build)?
+- [ ] **Covenant.** 50% added after the mods, 200% on heads, as the wiki has it.
+- [x] **Do primers stay up?** Yes: Diriga's do, with Manifold Bond (the user). How many stacks can't
+  practically be counted: "plenty", 5 by default, a setting.
+- [x] **Xata's Whisper on weak points.** The Void hit takes the head multiplier a second time (the user, and the video).
+- [ ] **Void's bubble.** How often does it turn a build's hits to heads? It's the difference between body and
+  head numbers for anything with Xata's Whisper, and the model doesn't count it.
+- [ ] **Breach Surge's sparks with Eclipse.** The damage rule is the wiki's. Does Eclipse multiply a spark again,
+  on top of the hit it already raised? A spark's number with and without it.
 
 ## Open questions
 

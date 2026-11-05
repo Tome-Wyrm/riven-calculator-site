@@ -370,6 +370,11 @@ table.picks { border-collapse: collapse; margin: 6px 0; }
 .model-title { margin: 24px 0 8px; padding-top: var(--gap); border-top: 1px solid var(--border); font-size: 1rem; }
 .panel h4 { margin: 14px 0 6px; font-size: 0.95rem; }
 .model-controls .field select { max-width: 14em; }
+.buffs { margin: 8px 0; }
+.buffs > summary { cursor: pointer; color: var(--muted); }
+.buffs fieldset { border: 0; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.buffs legend { padding: 0; font-size: 0.85rem; color: var(--muted); }
+.buffs label { font-size: 0.9rem; white-space: nowrap; }
 .model-sets { margin: 0 0 8px; padding-left: 1.6em; font-size: 0.92rem; }
 .model-sets li { margin: 2px 0; }
 .model-sets .link-button { color: var(--accent); margin-left: 6px; font-size: 0.85rem; }

@@ -24,3 +24,4 @@ tools/data/allowlist.txt
 
 # Tesseract language data, fetched for OCR work
 eng.traineddata
+*.mp4

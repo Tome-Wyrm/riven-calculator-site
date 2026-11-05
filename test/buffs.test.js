@@ -1,0 +1,203 @@
+// @ts-check
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { BUFFS, BUFF_GROUPS } from '../src/data/buffs.js';
+import { buffPiece } from '../src/buffs.js';
+import { BLAST_ALONE, blastPay, dpsOf, hitByType, critChanceOf } from '../src/sim.js';
+import { fight } from '../src/fight.js';
+import { sparkReach } from '../src/crowd.js';
+import { worth } from '../src/build.js';
+
+const near = (/** @type {number} */ a, /** @type {number} */ b, tol = 1e-6) => assert.ok(Math.abs(a - b) <= tol, `${a} is not ${b}`);
+/** @param {object} part @returns {any} */
+const gun = (part = {}) => ({ kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+  modes: [{ name: 'x', rate: 1, cost: 1, parts: [{ name: 'x', dmg: { impact: 32 }, cc: 0, cd: 2, sc: 0, ms: 1, ...part }] }] });
+const none = { stats: {}, elements: [] };
+const totals = (/** @type {string[]} */ ids, strength = 1, duration = 1) => { const p = buffPiece(ids, strength, duration); return { stats: p?.stats ?? {}, elements: p?.elements ?? [] }; };
+
+test('the table: ids unique, groups known', () => {
+  assert.equal(new Set(BUFFS.map(b => b.id)).size, BUFFS.length);
+  for (const b of BUFFS) assert.ok(BUFF_GROUPS.includes(b.group), b.name);
+  assert.equal(buffPiece([]), null);
+});
+
+test('strength and duration scale what they should', () => {
+  near(totals(['vex'], 2).stats.damage, 5.5);
+  near(totals(['gem'], 2, 1.5).stats.statusChance, 2);
+  near(totals(['gem'], 2, 1.5).stats.statusDuration, 1.5);
+  near(totals(['redline'], 2).stats.fireRate, 0.75);        // by the counter, not strength
+});
+
+test('Damage buffs add with Serration; multipliers and vulnerabilities multiply', () => {
+  near(dpsOf(gun(), { stats: { damage: 1.65 + totals(['vex']).stats.damage }, elements: [] }), 32 * (1 + 1.65 + 2.75));
+  // Eclipse and Molecular Prime: x3 and x2.
+  near(totals(['eclipse', 'prime']).stats.allDamage, 5);
+  near(dpsOf(gun(), totals(['eclipse', 'prime'])), 32 * 6);
+});
+
+test('multipliers reach DoTs once, Roar twice', () => {
+  const g = gun({ dmg: { slash: 32 }, sc: 1 });
+  const dot = (/** @type {any} */ t) => dpsOf(g, t) - dpsOf(gun({ dmg: { slash: 32 }, sc: 0 }), t);
+  near(dot(totals(['eclipse'])) / dot(none), 3);
+  // (32 x 1.5 + 1) x 0.35 x 1.5 against (32 + 1) x 0.35.
+  near(dot(totals(['roar'])) / dot(none), 49 * 1.5 / 33);
+});
+
+test('Roar adds with a Bane mod, and works with no Bane to add to', () => {
+  near(dpsOf(gun(), { stats: { grineer: 0.3, anyFaction: 0.5 }, elements: [] }, { enemy: 'grineer' }), 32 * 1.8);
+  near(dpsOf(gun(), totals(['roar'])), 32 * 1.5);
+});
+
+test('a buff element never combines, and joins the same element', () => {
+  const part = /** @type {any} */ ({ name: 'x', dmg: { impact: 32 }, cc: 0, cd: 1, sc: 0, ms: 1 });
+  const m = () => 0;
+  // Cold from a mod and Shock Trooper's Electricity stay apart: no Magnetic.
+  const mixed = { stats: {}, elements: [{ type: 'cold', value: 1 }, ...totals(['shock']).elements] };
+  assert.deepEqual(hitByType(part, mixed, m)?.byType, { impact: 32, cold: 32, electricity: 32 });
+  // A riven's Viral and Nourish's sum.
+  const viral = { stats: {}, elements: [{ type: 'cold', value: 0.5 }, { type: 'toxin', value: 0.5 }, ...totals(['nourish']).elements] };
+  assert.equal(hitByType(part, viral, m)?.byType.viral, 32 * 1.75);
+});
+
+test('Nourish makes a Viral riven worth less', () => {
+  const g = gun({ sc: 0.5 });
+  const target = { health: 1e6, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const riven = { name: 'Riven', stats: {}, excl: [], elements: [{ type: 'cold', value: 0.6 }, { type: 'toxin', value: 0.6 }], riven: true };
+  const gain = (/** @type {object} */ o) => worth(g, { slots: [riven], arcane: null }, { target, ...o }) / worth(g, { slots: [], arcane: null }, { target, ...o });
+  assert.ok(gain({ buffs: buffPiece(['nourish']) }) < gain({}), `${gain({ buffs: buffPiece(['nourish']) })} against ${gain({})}`);
+});
+
+test('flat crit chance goes after the mods, Covenant more on heads; flat crit damage on the multiplier', () => {
+  const p = /** @type {any} */ ({ cc: 0.1 });
+  near(critChanceOf(p, 1, 0.5), 0.7);
+  near(dpsOf(gun({ cc: 0.1 }), totals(['covenant'])), 32 * (1 + 0.6 * 1));
+  near(dpsOf(gun({ cc: 0.1 }), totals(['covenant']), { weakpoint: 1, headMult: 1, headcrit: false }), 32 * (1 + 2.1 * 1));
+  near(dpsOf(gun({ cc: 1 }), totals(['tenacious'])), 32 * 3.2);
+});
+
+test('a fight agrees with the closed form on buffs', () => {
+  const target = { health: 32 * 6 * 5, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  near(fight(gun(), totals(['eclipse', 'prime']), { target }).shotsPerKill, 5);
+  near(fight(gun(), totals(['roar']), { target: { ...target, health: 32 * 1.5 * 4 } }).shotsPerKill, 4);
+});
+
+test('a build carries its buffs', () => {
+  const target = { health: 1e4, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const b = { slots: [], arcane: null };
+  near(worth(gun(), b, { target, buffs: buffPiece(['eclipse']) }) / worth(gun(), b, { target }), 3);
+});
+
+test('Brightbonnet raises Ability Strength for the others, to its cap', () => {
+  near(totals(['roar', 'bonnet']).stats.anyFaction, 0.5 * 1.3);
+  near(totals(['roar', 'bonnet'], 2).stats.anyFaction, 0.5 * 2.6);
+  near(totals(['roar', 'bonnet'], 6).stats.anyFaction, 0.5 * 7.5);          // +150% at most
+  near(totals(['roar', 'bonnet-sub'], 6).stats.anyFaction, 0.5 * 7);        // +100% subsumed
+});
+
+test('Xata\'s Whisper: a share of the whole hit as Void, faction again, weak points again', () => {
+  const t = totals(['xata']);
+  near(dpsOf(gun(), t), 32 * 1.26);
+  // Bane +30%: 32 x 1.3, then 26% of that x 1.3.
+  const baned = { stats: { ...t.stats, grineer: 0.3 }, elements: [] };
+  near(dpsOf(gun(), baned, { enemy: 'grineer' }), 32 * 1.3 * (1 + 0.26 * 1.3));
+  const heads = { weakpoint: 1, headMult: 3, headcrit: false };
+  near(dpsOf(gun(), t, heads), 32 * 3 * (1 + 0.26 * 3));
+  const target = { health: 1e6, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  near(fight(gun(), t, { target }).dps, 32 * 1.26, 1e-3);
+});
+
+test('Breach Surge\'s sparks need another enemy nearby', () => {
+  const crowd = { close: 6, clump: 0.5 };
+  const near10 = 1 - Math.exp(-6 * (10 / 12.5) ** 2);
+  // A kill in one shot sends a spark that kills another; a kill in 20 shots, 45% of one.
+  near(sparkReach(0.9, crowd, 1), near10 * 1.9);
+  near(sparkReach(0.9, crowd, 20), near10 * (0.9 + 0.45));
+  const target = { health: 1e4, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const t = totals(['surge']);
+  near(fight(gun(), t, { target, targets: 1, crowd }).dps, fight(gun(), none, { target, targets: 1 }).dps);
+  assert.ok(fight(gun(), t, { target, targets: 20, crowd }).dps > 1.5 * fight(gun(), none, { target, targets: 20, crowd }).dps);
+});
+
+test('primers hold statuses on the target, doing no damage themselves', () => {
+  const target = { health: 1e4, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const held = (/** @type {string} */ id, /** @type {number} */ stacks) => { const p = buffPiece([id], 1, 1, stacks); return { stats: p?.stats ?? {}, elements: [] }; };
+  // One Viral stack doubles damage to health, five x 3.
+  near(fight(gun(), held('panzer', 1), { target }).dps, 32 * 2);
+  near(fight(gun(), held('panzer', 5), { target }).dps, 32 * 3);
+  // Diriga's Puncture adds 5% crit chance a stack, to 25%: on a 2x gun, x 1.25 at 5 stacks.
+  near(fight(gun(), held('diriga', 5), { target }).dps, 32 * 3 * 1.25);
+  near(fight(gun(), held('diriga', 10), { target }).dps, 32 * 4.25 * 1.25);
+});
+
+test('Eclipse and Rift Torrent reach sparks again', () => {
+  near(totals(['surge', 'eclipse']).stats.sparks, 0.9 * 3);
+  near(totals(['surge', 'torrent', 'eclipse-sub']).stats.sparks, 0.9 * 4 * 1.3);
+  assert.equal(totals(['eclipse']).stats.sparks, undefined);
+  assert.equal(totals(['eclipse']).stats.sparkMore, undefined);
+});
+
+test('one companion: Diriga and the Panzer share a slot', () => {
+  const only = BUFFS.filter(b => b.only === 'companion').map(b => b.id).sort();
+  assert.deepEqual(only, ['diriga', 'panzer']);
+});
+
+test('primers count for Galvanized, Heat\'s strip and Puncture\'s crit chance', () => {
+  const target = { health: 1e4, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const p = buffPiece(['diriga'], 1, 1, 1);
+  const t = { stats: p?.stats ?? {}, elements: [] };
+  const with8 = { stats: { ...t.stats, directDamagePerStatus: 0.1 }, elements: [] };
+  // 8 types up: +80% Direct Damage, x 2 Viral, Puncture's crit chance.
+  near(fight(gun(), with8, { target }).dps, 32 * 1.8 * 2 * 1.05);
+  // 0.05 of crit chance from a stack of Puncture, on a 2x gun; none on an area attack.
+  near(dpsOf(gun(), t), 32 * 2 * 1.05);
+  near(dpsOf(gun({ aoe: 1 }), t), 32 * 2);
+  // Heat's strip: half of the armor, as long as the primer holds it.
+  const armored = { ...target, armor: 2700 };
+  const kept = (/** @type {number} */ armor) => 1 - 0.9 * Math.sqrt(armor / 2700);
+  near(fight(gun(), totals(['stars']), { target: armored }).dps, 32 * kept(1350), 1e-3);
+});
+
+test('Reinforced Bond isn\'t doubled on a bow', () => {
+  near(dpsOf(gun(), totals(['reinforced']), { bow: true }), 32 * 1.6);
+});
+
+test('Blast and Xata\'s Whisper: the numbers worked in the video', () => {
+  // Prisma Grinlok, modded base 496, whole hit 1700, Elementalist +90%, Xata at 51%, no faction:
+  // a proc alone 282, its Xata hit 496.
+  const blast = { name: 'x', dmg: { blast: 187 }, cc: 0, cd: 1, sc: 1, ms: 1 };
+  const base = 187 * (1 + 1.65);
+  near(base * BLAST_ALONE * 1.9, 282, 1);
+  near(1700 * 0.51 * BLAST_ALONE * 1.9, 494, 3);
+  // With Bane +30%: the proc's faction twice, the Xata hit's three times: 477 and 1085.
+  near(base * 1.3 * BLAST_ALONE * 1.9 * 1.3, 477, 1);
+  near(1700 * 1.3 * 0.51 * 1.3 * BLAST_ALONE * 1.9 * 1.3, 1085, 3);
+  // In the model: one proc a second, so the proc pays `blastPay(1)`.
+  const gunOf = /** @type {any} */ ({ kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0, modes: [{ name: 'x', rate: 1, cost: 1, parts: [blast] }] });
+  const pay = blastPay(1);
+  const stats = { damage: 1.65, statusDamage: 0.9, extraVoid: 0.51, grineer: 0.3 };
+  const hit = 187 * 2.65 * 1.3;
+  const expected = hit + hit * 0.51 * 1.3 + base * 1.3 * pay * 1.9 * 1.3 + hit * 0.51 * 1.3 * pay * 1.9 * 1.3;
+  near(dpsOf(gunOf, { stats, elements: [] }, { enemy: 'grineer' }), expected, 1);
+  const target = { health: 1e7, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  near(fight(gunOf, { stats, elements: [] }, { enemy: 'grineer', target }).dps, expected, 1);
+});
+
+test('the Xata hit from Blast takes no third head bonus', () => {
+  const blast = { dmg: { blast: 100 }, sc: 1 };
+  const gunOf = gun(blast);
+  const stats = { extraVoid: 0.5 };
+  const pay = blastPay(1);
+  const opts = { weakpoint: 1, headMult: 3, headcrit: false };
+  // The hit x 3; its Xata x 3 again; a proc's seed x 3; the proc's Xata as the hit's, no more.
+  near(dpsOf(gunOf, { stats, elements: [] }, opts), 300 + 300 * 0.5 * 3 + 300 * pay + 300 * 0.5 * 3 * pay);
+});
+
+test('Blast detonations reach the crowd within 5 m', () => {
+  const crowd = { close: 6, clump: 0.5 };
+  const target = { health: 1e4, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const plain = gun({ dmg: { blast: 100 }, sc: 0 }), proccing = gun({ dmg: { blast: 100 }, sc: 3 });
+  const o = { target, targets: 20 };
+  const gain = (/** @type {any} */ g) => fight(g, none, { ...o, crowd }).dps / fight(g, none, o).dps;
+  assert.equal(gain(plain), 1);
+  assert.ok(gain(proccing) > 1);
+});

@@ -70,12 +70,14 @@
 // 0.6 s on the target (the wiki's Continuous Weapon). Its procs start as weak as its hits: the wiki says
 // only "damage", and the game draws them from the hit. A reload's decay isn't followed (under a quarter
 // of a second's damage a magazine, and most of it on a long fight).
-// Blast (src/sim.js `blastPay`): each proc lands what it pays on average, at once.
+// Blast (src/sim.js `blastPay`): each proc lands what it pays on average, at once, its Extra Hit too.
+// In a crowd its detonations reach everyone within 5 m: those at 10 stacks, and the one a dying target
+// sets off with the stacks it has, which is all on the others.
 // Not modelled yet: extra hits, abilities (Phase 14), random rolls (a Monte Carlo run
 // could check the averages).
 
-import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, beamCount, blastPay, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
-import { reachOf } from './crowd.js';
+import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, beamCount, blastDetonates, blastPay, BLAST_DETONATED, critFlatOf, extraWeak, factionOf, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
+import { reachOf, sparkReach, within } from './crowd.js';
 import { comboTier, swingOf, heavyMult, ANIMOSITY_HITS, COMBO_REGEN, MAX_COMBO, MAX_EFFICIENCY, MAX_TIER, TIER_POINTS } from './melee.js';
 
 /** The elemental statuses Melee Influence spreads (not physical, Void or Tau). */
@@ -200,10 +202,11 @@ function engage(w, t, opts) {
   const crowd = targets > 1 && !(w.melee && opts.melee) ? opts.crowd : undefined;
   const enemy = opts.enemy ?? '';
   const wp = opts.weakpoint ?? 0;
-  const faction = enemy ? Math.max(0, 1 + raw(enemy)) : 1;
+  const faction = factionOf(raw, enemy);
   const D = Math.max(0, 1 + raw('damage'));
+  const more = Math.max(0, 1 + raw('allDamage'));         // damage multipliers and vulnerabilities
   const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
-  const rate = mode.rate * (raw('fireRateLocked') ? 1 : Math.max(0.05, 1 + raw('fireRate') * (opts.bow ? 2 : 1) + (w.bonus?.fireRate ?? 0)));
+  const rate = mode.rate * (raw('fireRateLocked') ? 1 : Math.max(0.05, 1 + raw('fireRate') * (opts.bow ? 2 : 1) + raw('fireRateFlat') + (w.bonus?.fireRate ?? 0)));
   const crit = critScale;
   const duration = STATUS_SECONDS * Math.max(0, 1 + raw('statusDuration'));
   const stripStep = 0.5 * duration / STATUS_SECONDS;
@@ -213,6 +216,8 @@ function engage(w, t, opts) {
   for (const e of t.elements) matching[e.type] = (matching[e.type] ?? 0) + e.value;
   // Galvanized's Direct Damage per status type on the target (the only per status type bonus).
   const directPer = raw('directDamagePerStatus');
+  // The status types primers hold on the target.
+  const held = STATUS_TYPES.filter(type => raw(`prime:${type}`) > 0);
 
   // What one shot carries, before Galvanized's per-status Direct Damage (which depends on the target).
   // Melee: at each combo tier (Blood Rush's crit chance, Weeping Wounds' status chance per tier).
@@ -224,12 +229,12 @@ function engage(w, t, opts) {
     if (typed === undefined) hitOf.set(p, typed = hitByType(p, t, raw, opts.valence));
     if (!typed) return [];
     const { base, byType, hit } = typed;
-    const cc = critChanceOf(p, raw('critChance'));
+    const cc = critChanceOf(p, raw('critChance'), critFlatOf(p, raw));
     // Melee Doughty: +1x Critical Damage per whole 10% of Puncture status chance.
     const punctureChance = Math.max(0, p.sc * (1 + raw('statusChance'))) * (byType.puncture ?? 0) / hit;
-    const cd = p.cd * (1 + raw('critDamage')) + (raw('doughty') ? Math.floor(punctureChance * 10 + 1e-9) * raw('doughty') : 0);
+    const cd = p.cd * (1 + raw('critDamage')) + raw('critDamageFlat') + (raw('doughty') ? Math.floor(punctureChance * 10 + 1e-9) * raw('doughty') : 0);
     const onWp = p.aoe ? 0 : wp;
-    const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) * crit(critChanceOf(p, raw('critChance') + raw('weakpointCrit')), headcrit ? 2 * cd : cd, p);
+    const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) * crit(critChanceOf(p, raw('critChance') + raw('weakpointCrit'), critFlatOf(p, raw) + raw('critFlatHead')), headcrit ? 2 * cd : cd, p);
     // Melee Duplicate: a base (yellow) critical hit strikes again, crit and status rolled anew. A hit
     // is yellow with the chance it crits below 100%, and with 2 - CC between 100% and 200%.
     const yellow = cc < 1 ? Math.max(0, cc) : cc < 2 ? 2 - cc : 0;
@@ -246,10 +251,16 @@ function engage(w, t, opts) {
       const share = type === 'blast' ? 1 : DOT[/** @type {keyof typeof DOT} */ (type)] ?? 0;
       const own = type === 'blast' ? 1 : (1 + (matching[type] ?? 0));
       // (A seed starts from 1: not Blast's.)
-      procs.push([type, n, (base * D * faction * scale * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own]);
+      procs.push([type, n, (base * D * faction * scale * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own * more]);
     }
     const [coShare, coMult] = p.co ?? [1, 0];
-    return [{ hits: Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets])), coShare, coMult, procs,
+    const hits = Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets * more]));
+    // An Extra Hit: a share of the whole hit, faction and weak points again.
+    const extra = hits.reduce((s, [, v]) => s + v, 0) * raw('extraVoid') * faction * extraWeak(p, onWp, enemy, opts, raw);
+    if (extra) hits.push(['void', extra]);
+    // A Blast proc's Extra Hit: the pellet's, at what the proc pays, Status Damage and faction again.
+    const blastVoid = extra * procsOfType('blast').strength / Math.max(1e-9, pellets) * statusDamage * faction;
+    return [{ hits, coShare, coMult, procs, blastVoid,
       reach: crowd ? reachOf(p, mode, raw('punchThrough'), crowd) : 0 }];
   });
   const melee = w.melee && opts.melee ? opts.melee : null;
@@ -319,10 +330,10 @@ function engage(w, t, opts) {
   let spread = 1, aiming = 1;                               // and a shot's damage aimed, over as fought
   const first = opts.incarnon ? mode.parts.find(p => !p.aoe) : null;
   if (first) {
-    const cd = first.cd * (1 + raw('critDamage'));
+    const cd = first.cd * (1 + raw('critDamage')) + raw('critDamageFlat');
     const head = weakPointMult(first, enemy, opts, raw);
-    const body = rolls(first, critChanceOf(first, raw('critChance')), cd);
-    const onHead = rolls(first, critChanceOf(first, raw('critChance') + raw('weakpointCrit')), headcrit ? 2 * cd : cd);
+    const body = rolls(first, critChanceOf(first, raw('critChance'), critFlatOf(first, raw)), cd);
+    const onHead = rolls(first, critChanceOf(first, raw('critChance') + raw('weakpointCrit'), critFlatOf(first, raw) + raw('critFlatHead')), headcrit ? 2 * cd : cd);
     const moment = (/** @type {number} */ share, /** @type {number} */ power) => body.reduce((s, [c, v]) => s + (1 - share) * c * v ** power, 0)
       + onHead.reduce((s, [c, v]) => s + share * c * (v * head) ** power, 0);
     const aim = opts.incarnon?.share ?? 0.75;
@@ -364,17 +375,19 @@ function engage(w, t, opts) {
     // Stacks still up at `at` (expired ones leave their queue for good: time only moves forward).
     const count = (/** @type {string} */ type, /** @type {number} */ at) => {
       if (opts.primed) return 10;
+      const kept = raw(`prime:${type}`);                   // a primer's stacks
       const q = stacks.get(type);
-      if (!q) return 0;
+      if (!q) return Math.min(10, kept);
       while (q.head < q.list.length && q.list[q.head].until <= at) q.sum -= q.list[q.head++].n;
-      return Math.min(10, q.sum);
+      return Math.min(10, kept + q.sum);
     };
     // The target's state at a moment: what armor keeps, Viral and Magnetic.
     const snap = (/** @type {number} */ at) => {
       const c = count('corrosive', at);
       const stripped = c < 1 ? 0.26 * c : 0.2 + 0.06 * c;
-      const burning = opts.primed || heat.until > at;
-      const strip = !burning ? 0 : opts.primed ? HEAT_STRIP[HEAT_STRIP.length - 1] : heatStrip((at - heat.start) / stripStep);
+      const held = opts.primed || raw('prime:heat') > 0;
+      const burning = held || heat.until > at;
+      const strip = !burning ? 0 : held ? HEAT_STRIP[HEAT_STRIP.length - 1] : heatStrip((at - heat.start) / stripStep);
       const armor = target.armor * (1 - stripped) * (1 - strip);
       return { kept: 1 - 0.9 * Math.sqrt(Math.min(armor, 2700) / 2700), viral: amplify(count('viral', at)), magnetic: count('magnetic', at) };
     };
@@ -441,7 +454,11 @@ function engage(w, t, opts) {
       const dotKilled = health <= 0;
       let types = 0;
       if (opts.primed) types = STATUS_TYPES.length;
-      else if (directPer) for (const type of stacks.keys()) types += 1 - Math.exp(-count(type, now));
+      else if (directPer) {
+        // (A type a primer holds is up; the weapon's own are up as likely as their stacks say.)
+        types = held.length;
+        for (const type of stacks.keys()) if (!held.includes(type)) types += 1 - Math.exp(-count(type, now));
+      }
       const direct = raw('directDamage') + types * directPer;
       // Melee: this swing's attack (its multiplier and hit count) at the combo's tier now.
       const tier = !melee ? 1 : comboTier(melee.combo === 'max' ? MAX_COMBO : combo);
@@ -465,7 +482,11 @@ function engage(w, t, opts) {
           q.sum += n;
           const perTick = perProc * n;
           if (!perTick) continue;
-          if (type === 'blast') { land('blast', perTick * blastPay(n / step), s); continue; }
+          if (type === 'blast') {
+            land('blast', perTick * blastPay(n / step), s);
+            land('void', v.blastVoid * Dshot * mult * ramp * blastPay(n / step), s);
+            continue;
+          }
           const dotType = type === 'slash' ? 'slash-dot' : type;
           let ticks = ticksOf(type, duration);
           // Electricity and Gas: the first tick at once.
@@ -541,8 +562,23 @@ function engage(w, t, opts) {
     const r = one();
     // How much further a shot goes in a crowd: each attack's reach, by its share of the shot.
     let landed = 0, beyond = 0;
-    if (crowd) for (const v of volleysOf(1)) for (const [, amount] of v.hits) { landed += amount; beyond += amount * v.reach; }
-    const reached = 1 + Math.min(crowd?.close ?? 0, beyond / Math.max(1e-9, landed));
+    if (crowd) {
+      for (const v of volleysOf(1)) {
+        for (const [, amount] of v.hits) { landed += amount * D; beyond += amount * D * v.reach; }
+        // Blast: what its stacks carry, a stack at a time.
+        const proc = v.procs.find(([type]) => type === 'blast');
+        if (!proc) continue;
+        const [, n, perProc] = proc;
+        const carried = perProc * n + v.blastVoid * D;
+        const near = within(crowd, 5);
+        landed += carried * blastPay(n / interval);
+        beyond += carried * BLAST_DETONATED * near * blastDetonates(n / interval);
+        // A dying target's stacks, a shot's share: as many as it took, and were still up, to 10.
+        const up = Math.min(10, n * Math.min(r.shots, 1.5 / interval));
+        beyond += carried / n * up * BLAST_DETONATED * near / Math.max(1, r.shots);
+      }
+    }
+    const reached = 1 + Math.min(crowd?.close ?? 0, beyond / Math.max(1e-9, landed) + (crowd ? sparkReach(raw('sparks'), crowd, r.shots) : 0));
     return { dps: reached * ehp / Math.max(1e-9, r.pace), timePerKill: r.time / reached, shotsPerKill: r.shots / reached, perShot, interval, reload, hits, spread, aimed: perShot * aiming, ...(melee ? { tier: lastTier } : {}) };
   }
   {
