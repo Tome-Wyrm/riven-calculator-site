@@ -891,9 +891,21 @@ chance curse good, and the model had it as a cost)
 - [x] **Quantization** (`hitByType`, 2026-11-05; the wiki's Damage/Calculation): each damage type rounds to
   1/32 of the attack's listed total before anything multiplies it; DoTs don't round. Every in-game reading
   above now matches to the digit (236, 29, 143, 2,199, 2,566, 220, 257). The Arsenal shows values
-  before rounding. Still to take from that page: the +1 on DoT seeds, Blast's stacks and detonation,
-  continuous weapons' damage ramp-up, no reload delay on Vectis, and its weak point formula against
-  the one in `weakPointMult`.
+  before rounding.
+- [x] **The rest of that page** (2026-11-05):
+  - A DoT seed starts from 1: (40 + 1) x 0.5 x 1.6 = 32.8. Added per proc; the game's Heat, Electricity
+    and Gas add it once per tick for all their stacks, which is a point in a tick of thousands.
+  - Blast: stacks last 1.5 s and pay 30% of their hit, or 300% when 10 detonate. At a fixed rate that's
+    a cliff, so `blastPay` uses the Poisson chance of 7 or more in 1.5 s, within 0.04 of a simulation of
+    the stacks. Not followed: the radial reaching other enemies, the detonation on death, the cap of 4
+    on bosses. H is taken to be a DoT's seed (faction twice, Status Damage): the page says "the damage
+    of the hit". Unverified.
+  - Sustained DPS: the fight spread a reload less one shot's interval, which the page keeps for Vectis
+    and Vectis Prime (`quickReload`). Every other gun now waits it out, as the closed form did. Epitaph
+    never reloads.
+  - [ ] Weak points, unresolved: this page has (multiplier + bonus), the Enemy Body Parts page (Update 44)
+    has (head + 1.5 x Weakpoint Damage) x (1 + headshot bonuses), which `weakPointMult` follows. The
+    in-game checks so far had no Weakpoint Damage on them. Needs a head shot with an Acuity mod.
 - **The beam's hits, solved** (three videos, 2026-11-05: Boar Prime's form, heads, Radiation, Primary
   Overcharge running). On an Ancient Healer (no armor) non-crit 2,199 and 2,566, on a level 235 Heavy
   Gunner 220 and 257, crits 5.4x. That's 122.19 x 3 (head) x 6 or 7:
@@ -904,11 +916,25 @@ chance curse good, and the model had it as a cost)
     Over the three clips 256 of 834 sightings were on 7: 30.7%, against the 30% expected.
   - Lower numbers in the first second: probably the beam locking on (the user).
   - Chained enemies take body hits: 587 = 2,199 / 3 x 80%.
-- [ ] **Beams and Multishot** (kengineer's video, from the user; the 6 and 7 above agree). A beam doesn't
-  fire more beams: each tick rolls Multishot to a whole number and multiplies its damage and status
-  chance. One proc at most a tick, stronger rather than more of them. Crit isn't multiplied, so
-  Hunter Munitions rolls once a tick. Zones from beams (Ignis Wraith, Galaxy) get no Multishot.
-  The model treats a beam's Multishot as pellets: right for direct damage on average, wrong on those.
+- [x] **Beams and Multishot** (2026-11-05; kengineer's video, from the user, the wiki's Multishot and
+  Continuous Weapon pages; the 6 and 7 above agree). A beam doesn't fire more beams: each tick rolls
+  Multishot to a whole number and multiplies its damage and status chance, its crit chance staying a
+  single beam's. A proc carries the whole tick, so Multishot counts twice in DoTs ("affected twice",
+  the wiki). Forced procs and Hunter Munitions come after the merge: one roll a tick, carrying the
+  tick, so fewer of them for a gun's damage. Status chance past 100% keeps its average.
+  - Which attacks: `mode.held`, a held trigger firing hit-scan, not the BEAM tag (Tenet Spirex has it,
+    Boar's form doesn't). 45 guns. Onos's held form is a projectile, so it isn't one.
+  - Innate beams (Quanta 2, Phage 7, Phantasma 6) merge the same way. The wiki says so for Quanta, then
+    contradicts itself ("2 instances per tick"), and says nothing of Phage's. Unverified.
+  - An Incarnon gauge takes one hit a tick, whatever merged into it. Assumed: only pellets were tested.
+  - Zones (Ignis Wraith, Glaxion Vandal) get no Multishot, but aren't in the data, so aren't modelled.
+  - What it does to a build: Convectrix +53%, Phantasma Prime +26%, Ignis Wraith +17% (the ramp below
+    included, level 150).
+- [x] **The ramp** (2026-11-05; the wiki's Continuous Weapon, and the user's "lower numbers in the first
+  second"): a beam starts each target at 20% and reaches full damage over 0.6 s (`mode.held` is the
+  start: Convectrix 60% and 80%, Phage 70%, Embolist 30%). Procs start as weak as the hits: the wiki
+  says only "damage". A reload's decay isn't followed. Worth a beam 1.4% on a long fight, and 80% on a
+  target a tick kills.
 - The form is up to 3 beams, each chaining to 2 enemies within 10 m at 80% of the one before (the
   wiki): count that with the room's mix of units.
 - Superseded: "+X per shot, shared by the pellets" (2026-11-03, from pellets of 10 and crits of 24 at
@@ -1133,20 +1159,33 @@ A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study doz
   with their shares. Found all 50 numbers read by eye in three clips. Sightings are frames, not hits:
   shares estimate how often a number comes up, counts don't. An addon reading the game was ruled out:
   EE.log has no hit data, and game memory is a risk to the account for little gain.
-- **Workers.** The next speed-up, and it can't change a result: split a study's searches over the cores.
+- [x] **Workers** (2026-11-05). `studySteps` yields batches of searches that don't need each other;
+  `study` runs them here, `studyWith` hands them out (`src/worker.js`, up to 8 helpers in
+  `src/search-worker.js`, cores less two). One code path, so results match to the digit: checked in the
+  browser on four guns, and a test runs a study with the searches copied and in reverse order. 2.2-2.7x
+  (Rubico Prime 852 to 501 ms, Soma Prime 1,334 to 504 ms): the first two searches come before anything
+  can be shared. A helper that fails leaves its search to the coordinator.
+- Against the community's picks (`tools/score-optimiser.mjs room`, 235 families, 2026-11-05), all of the
+  above against the last commit: first choices in the top 6 60% to 59%, slot 1 in the top 3 45% to 46%,
+  in the best riven 48% to 46%, curses 47% to 49%. Flat, as it should be with 45 of 235 families moving.
+  Two things rose in the model's top 3 that the community doesn't list: Ammo Efficiency 38 to 55 (a
+  reload now costs a shot's interval more) and spliced Blast, 0 to 18 (Blast pays now). Worth a look.
 - **Precomputed results.** Ship the default settings' studies as data, so common weapons open at once.
 - **GPU: not now.** The fight is a branching, per-shot loop with queues: it would need rewriting in
   WGSL and keeping in step with the JavaScript, and WebGPU isn't everywhere. Reconsider if the above
   isn't enough.
-- **Score across levels** (from "overkill counts"): judge a build on a spread of target levels, not
-  one, so statuses count for builds that one-shot this target. Costs a fight per level, so it wants
-  the speed-ups first.
+- [x] **Score across levels** (from "overkill counts", 2026-11-05). An option, "Judged at: A spread": a
+  third of the level and three times it too (150: 50, 150, 450), by the geometric mean of the DPS, so
+  each level counts the same in proportion (adding them up would leave only the toughest). `opts.spread`
+  in `worth`; a study costs three times the fights. Off by default until the user has tried it.
 
 - **A faction's mix of units in room clearing** (the user, 2026-11-04). Twenty Heavy Gunners isn't a
   real room: use a composition per faction (fodder, heavies, the odd tough unit), each unit's share
   of the kills, health and armor. It also matters for weapons that hit several targets at once: they
   build kill stacks faster, and not every part of a hit gets every bonus (explosions don't count gun
   Condition Overload), so what a kill-stacking buff is worth depends on the room.
+  Waiting on the user: which units, in what shares, per faction. `opts.spread` is most of the
+  mechanism (a room would add the times, not average the DPS).
 
 Primary Overcharge (+35% Multishot per 100 Max Energy at or above 90% Energy, up to +350%) isn't
 modelled: it needs the frame's Max Energy, and the arcane search can't see it until then. At the cap

@@ -42,6 +42,7 @@ export const modelState = {
   steelPath: false,
   armor: 0,                                   // 0 = stripped; else full (2700 without a faction)
   primed: false,                              // every status type on the target
+  spread: false,                              // judge builds on a third of the level and three times it too
   burst: false,
   valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
   valencePct: 60,                             // and its size, 25–60%
@@ -66,7 +67,7 @@ export function modelFields() {
   return {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
-    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '',
+    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '',
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
     arc: s.arcane === null ? '' : s.arcane || '-', combo: s.combo === 'build' ? '' : s.combo, sc2: s.stanceCombo,
@@ -89,6 +90,7 @@ export function restoreModel(raw) {
   modelState.steelPath = raw.sp === '1';
   modelState.primed = raw.primed === '1';
   modelState.burst = raw.burst === '1';
+  modelState.spread = raw.spread === '1';
   if (VALENCE_TYPES.includes(raw.val ?? '')) modelState.valence = raw.val;
   const pct = Number(raw.valp);
   if (raw.valp && pct >= 25 && pct <= 60) modelState.valencePct = pct;
@@ -167,16 +169,16 @@ const bar = (x, max) => el('span', { class: `dps-bar${x < 0 ? ' neg' : ''}`, sty
  * A build's shots (melee: swings) to kill: a button that shows its DPS, kill time and per-shot damage
  * on a line below (a tap on a phone, where there's no hover), and hides them again. Nothing without a fight.
  * @param {{dps: number, fight: {shots: number, seconds: number, perShot: number, tier?: number, inForm?: number} | null}} b
- * @param {boolean} [melee]
+ * @param {boolean} [melee] @param {boolean} [beam]
  */
-const killText = (b, melee = false) => {
+const killText = (b, melee = false, beam = false) => {
   const f = b.fight;
   if (!f) return [];
   const shots = f.shots < 10 ? f.shots.toFixed(1).replace(/\.0$/, '') : String(Math.round(f.shots));
   const word = melee ? 'swing' : 'shot';
   const detail = el('span', { class: 'kill-detail', hidden: '' }, [melee
     ? `${big(b.dps)} DPS · first swing ${big(f.perShot)} · ${f.seconds.toFixed(2)} s a kill · ${f.tier ?? 1}x combo at the kill`
-    : `${big(b.dps)} DPS · ${big(f.perShot)} a shot (the first, on a fresh target) · ${f.seconds.toFixed(2)} s a kill at the sustained rate${f.inForm === undefined ? '' : ` · ${Math.round(f.inForm * 100)}% of the time in the form`}`]);
+    : `${big(b.dps)} DPS · ${big(f.perShot)} a ${beam ? 'tick at full damage' : 'shot (the first, on a fresh target)'} · ${f.seconds.toFixed(2)} s a kill at the sustained rate${f.inForm === undefined ? '' : ` · ${Math.round(f.inForm * 100)}% of the time in the form`}`]);
   const button = el('button', { type: 'button', class: 'kill-shots', 'aria-expanded': 'false' }, [`${shots} ${word}${shots === '1' ? '' : 's'} to kill`]);
   button.addEventListener('click', () => {
     const open = detail.hidden;
@@ -222,6 +224,7 @@ export function modelBlock(weapon, cls, rerender) {
   const incarnon = !evolutions.length ? 'normal' : s.incarnon === 'normal' && !takesAdapter(weapon) ? 'off' : s.incarnon;
   const modes = w.modes.flatMap((m, i) => (isForm(m) === (incarnon === 'on') ? [i] : []));
   const mode = modes.includes(s.mode) ? s.mode : modes.includes(w.main) ? w.main : modes[0];
+  const isBeam = w.modes[mode]?.held != null;
   const cycle = incarnon === 'on' ? cycleOf(weapon, w) : null;
   // The target: one of the faction's units at its level. Any faction: a Grineer unit's health and
   // armor without faction weaknesses (builds are judged by fights, src/fight.js, so there's always one).
@@ -229,7 +232,10 @@ export function modelBlock(weapon, cls, rerender) {
   const pick = group?.id ?? 'grineer';
   const units = enemies.UNITS[pick] ?? [];
   const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies.DEFAULT_UNIT[pick]) ?? null;
-  const target = unit ? targetOf(group ? unit : { ...unit, types: '' }, s.level, s.steelPath, !s.armor, enemies) : null;
+  const targetAt = (/** @type {number} */ lvl) => (unit ? targetOf(group ? unit : { ...unit, types: '' }, lvl, s.steelPath, !s.armor, enemies) : null);
+  const target = targetAt(s.level);
+  // A third of the level and three times it: 150 is judged at 50 and 450 as well.
+  const levels = [Math.max(1, Math.round(s.level / 3)), Math.min(9999, s.level * 3)];
   // The arcane: one of this weapon's slot, or the best found.
   const arcanes = arcaneNames(cls);
   if (s.arcane && !arcanes.includes(s.arcane)) s.arcane = null;
@@ -242,6 +248,7 @@ export function modelBlock(weapon, cls, rerender) {
     ...(s.arcane !== null ? { arcane: s.arcane } : {}),
     ...(isMelee ? { melee: { attacks: chosen?.combo.attacks ?? PLAIN, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
     ...(target ? { target } : { armor: s.armor }),
+    ...(target && s.spread ? { spread: /** @type {import('../sim.js').Target[]} */ (levels.map(targetAt)) } : {}),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
     ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
   };
@@ -301,6 +308,9 @@ export function modelBlock(weapon, cls, rerender) {
     ...(unit ? [
       select('Target', units.map(u => /** @type {[string, string]} */ ([u.name, u.name])), unit.name, v => set({ unit: v })),
       el('label', { class: 'field' }, [el('span', {}, ['Level']), level]),
+      el('div', { class: 'field' }, [el('span', {}, ['Judged at']), segmented('Judged at', ['one', 'spread'], s.spread ? 'spread' : 'one',
+        v => set({ spread: v === 'spread' }), v => (v === 'spread' ? 'A spread' : 'This level'),
+        v => (v === 'spread' ? `Builds are judged at levels ${levels[0]}, ${s.level} and ${levels[1]} together` : 'Builds are judged at this level alone'))]),
       el('div', { class: 'field' }, [el('span', {}, ['Mode']), segmented('Mode', ['normal', 'sp'], s.steelPath ? 'sp' : 'normal',
         v => set({ steelPath: v === 'sp' }), v => (v === 'sp' ? 'Steel Path' : 'Normal'))]),
     ] : []),
@@ -334,6 +344,8 @@ export function modelBlock(weapon, cls, rerender) {
       + `Melee Influence spreads elemental procs to ${s.close} enem${s.close === 1 ? 'y' : 'ies'} within 20 m, each taking 1 + ${s.clump}% x the others as copies (clumped enemies pass it on to each other). ` : '')
     + (cycle && !s.burst ? `Incarnon: normal fire until the gauge fills (${cycle.hits} ${cycle.any ? 'hits' : `weak point hits, each pellet counting, ${s.scenario === 'weak' ? 'every hit' : '75% of hits'} on them while charging, which speeds the gauge but isn’t counted as damage`}), a reload’s time to transform, then the form’s ${cycle.ammo} ammo, and under a second back. ${s.scenario === 'single' ? 'The gauge starts full. ' : ''}` : '')
     + (incarnon === 'on' && s.burst ? 'Incarnon, burst: the whole fight in the form. ' : '')
+    + (opts.spread ? `Judged at levels ${levels[0]}, ${s.level} and ${levels[1]}: DPS and percentages are the geometric mean of the three (each level counts the same); shots and seconds are level ${s.level}’s. ` : '')
+    + (isBeam ? `A beam: Multishot rolls to a whole number each tick and multiplies its damage and status chance, not its crits, so it counts twice in damage over time and Hunter Munitions rolls once a tick. It starts each target at ${Math.round(w.modes[mode].held * 100)}% damage, full after 0.6 s. ` : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
 
@@ -396,7 +408,7 @@ export function modelBlock(weapon, cls, rerender) {
     plan.addEventListener('click', () => loadTargetIntoPlanner({
       weapon, cls, positives: x.ids.filter(id => !STAT_BY_ID[id].spliced), spliced: x.ids.find(id => STAT_BY_ID[id].spliced) ?? null, negative: x.curse?.id ?? null,
     }));
-    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')}${x.curse ? `, −${name(x.curse.id)}` : ''} `, ...killText(x.build, isMelee), ' ', plan,
+    return el('li', {}, [el('strong', {}, [pct(x.change)]), ` ${x.ids.map(name).join(' + ')}${x.curse ? `, −${name(x.curse.id)}` : ''} `, ...killText(x.build, isMelee, isBeam), ' ', plan,
       el('details', { class: 'set-build' }, [el('summary', {}, ['Its build']), buildGrid(x.build),
         ...(isMelee ? [el('p', { class: 'note' }, [`Stance: ${comboName}. Its hits’ damage multipliers and counts count; its timing doesn’t (each attack is one swing at the weapon’s attack speed).`])] : [])])]);
   }));
@@ -426,7 +438,7 @@ export function modelBlock(weapon, cls, rerender) {
       })));
   }
   const out = [head, controls, about, ...perkBlock, ...valenceBlock,
-    el('h4', {}, ['Best build without a riven']), ...(result.none.fight ? [el('p', {}, killText(result.none, isMelee))] : []), buildGrid(result.none),
+    el('h4', {}, ['Best build without a riven']), ...(result.none.fight ? [el('p', {}, killText(result.none, isMelee, isBeam))] : []), buildGrid(result.none),
     el('h4', {}, [`Best rivens (${k} positives${SHAPES[s.shape].negatives ? ' and a curse' : ''}) over no riven`]), setList,
     el('h4', {}, ['Each positive in the riven slot']),
     el('p', { class: 'note' }, ['Against the riven slot left empty, with the other seven mods re-chosen each time.']),

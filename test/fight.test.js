@@ -28,8 +28,8 @@ test('shots to kill: overkill still takes a shot, and the killing shot counts fo
 
 test('room clearing spreads reloads over the kills: a 5-round magazine and a 2 s reload, one shot a kill', () => {
   const r = fight(gun({ impact: 100 }, {}, { mag: 5, reload: 2 }), none, { target: target(100), targets: 20 });
-  // Five kills take 4 shot intervals and the reload: 6 s.
-  near(r.timePerKill, 1.2);
+  // Five kills take 5 shot intervals and the reload: 7 s (the wiki's Average Sustained DPS).
+  near(r.timePerKill, 1.4);
 });
 
 test('shields go first, then health; Toxin skips them', () => {
@@ -58,10 +58,10 @@ test('Electricity ticks at once, Toxin a second later: the same proc kills soone
 test('single target spreads reloads too: a kill that only just fits a magazine is no cliff', () => {
   // Five shots to kill, a 2 s reload: five rounds or four only move each shot's share of the reload.
   const time = (/** @type {number} */ mag) => fight(gun({ impact: 100 }, {}, { mag, reload: 2 }), none, { target: target(500) }).timePerKill;
-  near(time(5), 5 * 1.2);
-  near(time(4), 5 * 1.25);
-  // A reload shorter than a shot's interval costs nothing (it can't speed the gun up).
-  near(fight(gun({ impact: 100 }, {}, { mag: 1, reload: 0.5 }), none, { target: target(500) }).timePerKill, 5);
+  near(time(5), 5 * 1.4);
+  near(time(4), 5 * 1.5);
+  // Vectis starts its reload as it fires: one shorter than a shot's interval costs nothing.
+  near(fight(gun({ impact: 100 }, {}, { mag: 1, reload: 0.5, quickReload: 1 }), none, { target: target(500) }).timePerKill, 5);
 });
 
 test('more damage never slows a kill: a kill by the shot runs into one by the DoT after it', () => {
@@ -86,7 +86,7 @@ test('a faster reload never hurts: where a shot falls against Heat\'s strip step
 
 test('Ammo Efficiency stops at 75%: a magazine lasts four times as long at most', () => {
   const time = (/** @type {number} */ ammoEfficiency) => fight(gun({ impact: 100 }, {}, { mag: 2, reload: 3 }), { stats: { ammoEfficiency }, elements: [] }, { target: target(100), targets: 20 }).timePerKill;
-  near(time(-0.75), 1 + 2 / 8);
+  near(time(-0.75), 1 + 3 / 8);
   near(time(-0.9), time(-0.75));
   assert.ok(time(-0.5) > time(-0.75));
 });

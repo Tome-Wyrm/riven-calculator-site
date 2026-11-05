@@ -172,20 +172,20 @@ test('DoT ticks scale with their own element’s mods (the wiki’s Supra Vandal
   const { dpsOf } = await import('../src/sim.js');
   const heatGun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
     modes: [{ name: 'Normal Attack', rate: 1, cost: 1, parts: [{ name: 'Normal Attack', dmg: { heat: 40 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
-  // A hit of 40 x 1.6, rounded to 1/32 of 40: 63.75 a second; a Heat proc a second, 6 ticks of 0.5 x 40, x1.6: 192.
+  // A hit of 40 x 1.6, rounded to 1/32 of 40: 63.75 a second; a Heat proc a second, 6 ticks of (40 + 1) x 0.5 x 1.6.
   const heat = { stats: {}, elements: [{ type: 'heat', value: 0.6 }] };
-  assert.ok(Math.abs(dpsOf(heatGun, heat) - (63.75 + 192)) < 1e-6, String(dpsOf(heatGun, heat)));
+  assert.ok(Math.abs(dpsOf(heatGun, heat) - (63.75 + 6 * 32.8)) < 1e-6, String(dpsOf(heatGun, heat)));
 });
 
 test('a Slash proc per tick: the wiki’s Damage over Time example (faction twice)', async () => {
   const { dpsOf } = await import('../src/sim.js');
   // 100 Slash, Serration (+165%), Bane of Grineer (+30%), +90% Status Damage, against Grineer:
-  // a bleed tick is 100 x 2.65 x 0.35 x 1.3² x 1.9 = 297.8202; the hit 100 x 2.65 x 1.3 = 344.5.
+  // a bleed tick is (100 x 2.65 x 1.3 + 1) x 0.35 x 1.3 x 1.9 = 298.6847; the hit 100 x 2.65 x 1.3 = 344.5.
   const slashGun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
     modes: [{ name: 'Normal Attack', rate: 1, cost: 1, parts: [{ name: 'Normal Attack', dmg: { slash: 100 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
   const build = { stats: { damage: 1.65, grineer: 0.3, statusDamage: 0.9 }, elements: [] };
   // One proc a second, 6 ticks each.
-  assert.ok(Math.abs(dpsOf(slashGun, build, { enemy: 'grineer' }) - (344.5 + 6 * 297.8202)) < 1e-3);
+  assert.ok(Math.abs(dpsOf(slashGun, build, { enemy: 'grineer' }) - (344.5 + 6 * 298.6847)) < 1e-3);
 });
 
 test('the Valence bonus: the weapon’s own element, after the mods (HCET), in the base the mods scale from', async () => {
@@ -213,6 +213,33 @@ test('the Valence bonus: the weapon’s own element, after the mods (HCET), in t
   shows({ value: coated?.hit, base: coated?.base }, 2456.3, 3);
   shows({ value: altCoated?.byType.heat, base: altCoated?.base }, 618.1, 1);
   shows({ value: altCoated?.hit, base: altCoated?.base }, 921.1, 3);
+});
+
+test('a DoT seed starts from 1: the wiki\'s Supra Vandal, (40 + 1) x 0.5 x 1.6 a tick', async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  const gun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+    modes: [{ name: 'x', rate: 1, cost: 1, parts: [{ name: 'x', dmg: { heat: 40 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
+  // One proc a second: the hit, and 6 ticks of it. Heat mods raise the hit too.
+  near(dpsOf(gun, { stats: {}, elements: [{ type: 'heat', value: 0.6 }] }), 63.75 + 6 * 32.8);
+});
+
+test('sustained DPS: the wiki\'s shots / (rate x reload + shots), less one shot on Vectis', async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  const gun = (/** @type {object} */ extra) => ({ kind: 'Rifle', mag: 2, reload: 1, ammo: null, trigger: 'Auto', tags: [], main: 0, ...extra,
+    modes: [{ name: 'x', rate: 2, cost: 1, parts: [{ name: 'x', dmg: { impact: 32 }, cc: 0, cd: 1, sc: 0, ms: 1 }] }] });
+  const none = { stats: {}, elements: [] };
+  near(dpsOf(gun({}), none), 64 * 2 / (2 * 1 + 2));
+  near(dpsOf(gun({ quickReload: 1 }), none), 64 * 2 / (2 * 1 + 2 - 1));
+});
+
+test('Blast: 30% of the hit alone, 300% once stacks reach 10 inside 1.5 s, a slope between', async () => {
+  const { blastPay, dpsOf } = await import('../src/sim.js');
+  near(blastPay(0), 0.3);
+  near(blastPay(100), 3);
+  for (let r = 0; r < 30; r += 0.5) assert.ok(blastPay(r + 0.5) >= blastPay(r) && blastPay(r + 0.5) - blastPay(r) < 0.4);
+  const gun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+    modes: [{ name: 'x', rate: 1, cost: 1, parts: [{ name: 'x', dmg: { blast: 100 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
+  near(dpsOf(gun, { stats: {}, elements: [] }), 100 + 100 * blastPay(1));
 });
 
 test('quantization: each type rounds to 1/32 of the total (the wiki\'s examples)', async () => {

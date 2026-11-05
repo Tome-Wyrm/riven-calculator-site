@@ -21,8 +21,8 @@
 //   just either side of a step differ by 15%: luck, which made a faster reload worse). Shields
 //   breaking deal 3% of the max shields per Magnetic stack as Electricity.
 // - Reloads: a magazine of shots (Ammo Efficiency stretches it), then the reload; bursts ignore them.
-//   Every shot carries its share of the reload (each magazine's reload in place of a shot's
-//   interval), so a fight runs at the gun's sustained rate, DoTs ticking and statuses fading through
+//   Every shot carries its share of the reload (Vectis starts it as it fires: the reload in place of
+//   a shot's interval), so a fight runs at the gun's sustained rate, DoTs ticking and statuses fading through
 //   it. Not the real reload's place in the fight: where it falls depends on what the magazine held
 //   when the fight began, and a kill that only just fits a full magazine isn't worth 3x one that
 //   doesn't (the cliff: one round more or less swung a build from 1.4 s a kill to 5 s).
@@ -58,10 +58,16 @@
 // Heavy Attack Efficiency's share (at most 90%); it adds no combo, and spent Initial Combo comes back
 // at 40 points a second. A held counter heavy attacks every time. True Steel's and rivens' crit chance
 // count twice, Melee Animosity adds 42% per normal hit since the last heavy (all 420% on a held counter).
-// Not modelled yet: Blast stacks, extra hits, abilities (Phase 14), random rolls (a Monte Carlo run
+// Beams (a Held mode): a shot is a tick. Multishot counts as src/sim.js has it (`procsOf`), and a beam
+// starts each target at a share of its damage (20% for most: the mode's `held`), reaching all of it over
+// 0.6 s on the target (the wiki's Continuous Weapon). Its procs start as weak as its hits: the wiki says
+// only "damage", and the game draws them from the hit. A reload's decay isn't followed (under a quarter
+// of a second's damage a magazine, and most of it on a long fight).
+// Blast (src/sim.js `blastPay`): each proc lands what it pays on average, at once.
+// Not modelled yet: extra hits, abilities (Phase 14), random rolls (a Monte Carlo run
 // could check the averages).
 
-import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
+import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, beamCount, blastPay, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
 import { comboTier, swingOf, heavyMult, ANIMOSITY_HITS, COMBO_REGEN, MAX_COMBO, MAX_EFFICIENCY, MAX_TIER, TIER_POINTS } from './melee.js';
 
 /** The elemental statuses Melee Influence spreads (not physical, Void or Tau). */
@@ -83,6 +89,8 @@ const heatStrip = steps => {
   const i = Math.min(HEAT_STRIP.length - 2, Math.floor(x));
   return HEAT_STRIP[i] + (HEAT_STRIP[i + 1] - HEAT_STRIP[i]) * (x - i);
 };
+/** Seconds of hitting a target for a beam to reach its full damage. */
+const BEAM_RAMP = 0.6;
 /** Seconds simulated on one target before the rest is extrapolated. */
 const TARGET_SECONDS = 20;
 
@@ -91,7 +99,7 @@ const TARGET_SECONDS = 20;
  * @property {number} dps          the targets' health and shields over the time taken, overkill counted
  * @property {number} timePerKill  seconds, from the first shot until the gun is ready for the next target
  * @property {number} shotsPerKill
- * @property {number} perShot      the first shot's damage to a fresh target (health and shields; overkill counts)
+ * @property {number} perShot      the first shot's damage to a fresh target (health and shields; overkill counts; a beam's at its full damage)
  * @property {number} [tier]       melee: the combo multiplier at the last kill
  * @property {number} [inForm]      Incarnon: the share of the time in the form
  */
@@ -195,16 +203,20 @@ function engage(w, t, opts) {
     // Melee Duplicate: a base (yellow) critical hit strikes again, crit and status rolled anew. A hit
     // is yellow with the chance it crits below 100%, and with 2 - CC between 100% and 200%.
     const yellow = cc < 1 ? Math.max(0, cc) : cc < 2 ? 2 - cc : 0;
-    const pellets = p.ms * (raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot'))) * (1 + Math.min(1, raw('duplicate')) * yellow);
-    const procsPerPellet = procsOf(p, byType, hit, cc, raw);
+    const multishot = raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot'));
+    const pellets = p.ms * multishot * (1 + Math.min(1, raw('duplicate')) * yellow);
+    const procsOfType = procsOf(p, byType, hit, cc, raw, pellets, mode.held != null ? beamCount(p, multishot) : null);
     /** @type {[string, number, number][]} per type: expected procs a shot, and a tick of its DoT per proc */
     const procs = [];
     for (const type of new Set([...Object.keys(byType), ...(p.forced ?? []), 'slash'])) {
-      const n = procsPerPellet(type) * pellets;
+      const { n, strength } = procsOfType(type);
       if (!(n > 0) || !STATUS_TYPES.includes(type)) continue;
-      // A tick: base x Damage x faction twice x crit x its share x Status Damage x its element's mods.
-      const share = DOT[/** @type {keyof typeof DOT} */ (type)] ?? 0;
-      procs.push([type, n, base * D * faction * faction * scale * share * statusDamage * (1 + (matching[type] ?? 0))]);
+      // A tick: base x Damage x faction twice x crit x its share x Status Damage x its element's mods,
+      // x what a proc carries.
+      const share = type === 'blast' ? 1 : DOT[/** @type {keyof typeof DOT} */ (type)] ?? 0;
+      const own = type === 'blast' ? 1 : (1 + (matching[type] ?? 0));
+      // (A seed starts from 1: not Blast's.)
+      procs.push([type, n, (base * D * faction * scale * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own]);
     }
     const [coShare, coMult] = p.co ?? [1, 0];
     return [{ hits: Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets])), coShare, coMult, procs }];
@@ -263,8 +275,9 @@ function engage(w, t, opts) {
   const shotsPerMag = reloads ? mag / (mode.cost * ammoCost(raw('ammoEfficiency'))) : Infinity;
   const reload = w.reload / Math.max(0.05, 1 + raw('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
   // A shot's interval at the sustained rate: its own, and its share of the reload.
-  const interval = 1 / rate + (Number.isFinite(shotsPerMag) ? Math.max(0, reload - 1 / rate) / shotsPerMag : 0);
-  const hits = Math.max(1, ...mode.parts.filter(p => !p.aoe).map(p => p.ms)) * (raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot')));
+  const interval = 1 / rate + (Number.isFinite(shotsPerMag) ? Math.max(0, reload - (w.quickReload ? 1 / rate : 0)) / shotsPerMag : 0);
+  // (A beam's tick is one hit, whatever merged into it.)
+  const hits = mode.held != null ? 1 : Math.max(1, ...mode.parts.filter(p => !p.aoe).map(p => p.ms)) * (raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot')));
   // A pellet's rolls, by chance and multiplier: its crit tiers, the non-crit bonus, on a body or a head.
   const rolls = (/** @type {import('./sim.js').Part} */ p, /** @type {number} */ cc, /** @type {number} */ cd) => {
     const tier = Math.floor(Math.max(0, cc)), over = Math.max(0, cc) - tier;
@@ -406,20 +419,22 @@ function engage(w, t, opts) {
       const mult = sw ? sw.mult : 1;
       const hitsPer = sw ? sw.hits : 1;
       const step = heavy ? Math.max(windUp, 1e-3) : interval;
+      const ramp = mode.held == null ? 1 : Math.min(1, mode.held + (1 - mode.held) * now / BEAM_RAMP);
       const volleys = heavy ? volleysOf(tier, melee?.combo === 'build' ? Math.min(ANIMOSITY_HITS, sinceHeavy) : ANIMOSITY_HITS) : volleysOf(tier);
       for (const v of volleys) {
         const Dshot = Math.max(0, v.coMult ? D * (1 + v.coShare * direct) : D + v.coShare * direct);
-        for (const [type, amount] of v.hits) land(type, amount * Dshot * mult, s);
+        for (const [type, amount] of v.hits) land(type, amount * Dshot * mult * ramp, s);
         for (const [type, n0, perProc0] of v.procs) {
           // Each hit of a swing rolls status; a proc's ticks follow its hit's multiplier (on average).
           const n = n0 * hitsPer;
-          const perProc = perProc0 * mult / hitsPer;
+          const perProc = perProc0 * mult * ramp / hitsPer;
           let q = stacks.get(type);
           if (!q) stacks.set(type, q = { list: [], head: 0, sum: 0 });
           q.list.push({ until: now + duration, n });
           q.sum += n;
           const perTick = perProc * n;
           if (!perTick) continue;
+          if (type === 'blast') { land('blast', perTick * blastPay(n / step), s); continue; }
           const dotType = type === 'slash' ? 'slash-dot' : type;
           let ticks = ticksOf(type, duration);
           // Electricity and Gas: the first tick at once.
@@ -475,7 +490,7 @@ function engage(w, t, opts) {
       if (sw && melee?.combo === 'build' && combo < initial) combo = Math.min(initial, combo + COMBO_REGEN * step);
       lastTier = tier;
       lastCombo = swungAt;
-      if (shots === 1) perShot = ehp - health - shields;
+      if (shots === 1) perShot = (ehp - health - shields) / ramp;
       if (health <= 0) {
         // Dead by this shot, or the DoTs before it: these count for the share of them that was needed
         // (crits make the real count a spread; this is its smooth average), but a kill always takes

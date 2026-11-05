@@ -56,8 +56,8 @@ test('a target: weaknesses on health, shields first (Toxin skips them, Heat does
   near(dpsOf(gun({ impact: 100 }), none, { target: shielded }), 100);
   // Heat: 1000 / 50 = 20 s on shields, then 10 s on health: 2000 / 30.
   near(dpsOf(gun({ heat: 100 }), none, { target: shielded }), 2000 / 30);
-  // Slash bleeds hit shields too (since Update 27.2): a proc a second, 35% x 6 ticks = 210 a second, plus 100.
-  near(dpsOf(gun({ slash: 100 }, { sc: 1 }), none, { target: { ...plain, shields: 1000 } }), 310);
+  // Slash bleeds hit shields too (since Update 27.2): a proc a second, 35% of 101 x 6 ticks = 212.1 a second, plus 100.
+  near(dpsOf(gun({ slash: 100 }, { sc: 1 }), none, { target: { ...plain, shields: 1000 } }), 312.1);
   // Primed: Magnetic at 10 stacks, x4.25 on shields; the break deals 3% x 10 of 1000 as Electricity
   // (x4.25 Viral = 1275), which finishes the 1000 health: 1000 / 425 s for 2000.
   near(dpsOf(gun({ impact: 100 }), none, { target: { ...plain, shields: 1000 }, primed: true }), 850);

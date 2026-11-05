@@ -267,11 +267,17 @@ export function fightOf(w, b, opts) {
 
 /**
  * What a build is worth: its fight against the target (src/fight.js) when there is one, else the
- * closed form. @param {WeaponStats} w @param {Pick<Build, 'slots' | 'arcane'>} b @param {SimOptions} opts
+ * closed form. With a spread of levels, the geometric mean of its DPS on each: every level counts
+ * the same in proportion. (Adding them up would leave only the toughest, whose DPS or time is the
+ * biggest; a build that doubles its DPS on one of three levels gains the same on any of them.)
+ * @param {WeaponStats} w @param {Pick<Build, 'slots' | 'arcane'>} b @param {SimOptions} opts
  */
 export function worth(w, b, opts) {
   const t = totalsOf(b.arcane ? [...b.slots, b.arcane] : b.slots);
-  return opts.target ? fight(w, t, { ...opts, target: opts.target }).dps : dpsOf(w, t, opts);
+  if (!opts.target) return dpsOf(w, t, opts);
+  const targets = [opts.target, ...(opts.spread ?? [])];
+  if (targets.length === 1) return fight(w, t, { ...opts, target: opts.target }).dps;
+  return Math.exp(targets.reduce((s, target) => s + Math.log(Math.max(1e-9, fight(w, t, { ...opts, target }).dps)), 0) / targets.length);
 }
 
 /**
@@ -384,25 +390,51 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
 }
 
 /**
+ * Searches that don't need each other, to run in any order or at once: what they share, and each
+ * one's riven roll (none: no riven), the build it starts from, and its own settings if they differ.
+ * @typedef {{w: WeaponStats, pool: Piece[], arcanes: Piece[], opts: SimOptions, jobs: Job[]}} Searches
+ * @typedef {{roll?: Record<string, number>, start?: Piece[], opts?: SimOptions}} Job
+ */
+
+/** One of the searches. @param {Omit<Searches, 'jobs'>} s @param {Job} job @returns {Build} */
+export const runJob = (s, job) => optimise(s.w, s.pool, s.arcanes, job.opts ?? s.opts,
+  { ...(job.roll ? { riven: rivenPiece(job.roll) } : {}), ...(job.start ? { start: job.start } : {}) });
+
+/**
+ * Runs a generator of searches to its end here and now: each yield is a batch, answered by its builds.
+ * @template T @param {Generator<Searches, T, Build[]>} steps @returns {T}
+ */
+export function runSteps(steps) {
+  let s = steps.next();
+  while (!s.done) { const batch = s.value; s = steps.next(batch.jobs.map(j => runJob(batch, j))); }
+  return s.value;
+}
+
+/**
+ * The steps of `optimiseEach`, as batches of searches.
+ * @param {WeaponStats} w @param {Piece[]} pool @param {Piece[]} arcanes @param {SimOptions[]} settings
+ * @returns {Generator<Searches, Build[], Build[]>}
+ */
+export function* optimiseEachSteps(w, pool, arcanes, settings) {
+  const batch = (/** @type {Job[]} */ jobs) => ({ w, pool, arcanes, opts: settings[0], jobs });
+  const builds = yield batch(settings.map(opts => ({ opts })));
+  const key = (/** @type {Build} */ b) => b.slots.map(p => p.name).sort().join('|');
+  const starts = [...new Map(builds.map(b => [key(b), b.slots])).entries()];
+  const jobs = settings.flatMap((opts, i) => starts.filter(([k]) => k !== key(builds[i])).map(([, start]) => ({ i, opts, start })));
+  const found = yield batch(jobs.map(({ opts, start }) => ({ opts, start })));
+  const best = [...builds];
+  // (In order: the first of equals stays, whichever finished first.)
+  for (const [n, { i }] of jobs.entries()) if (found[n].dps > best[i].dps) best[i] = found[n];
+  return best;
+}
+
+/**
  * The best build for each of several settings (a Valence element each, say). The search can stick
  * on a poor build, so each one restarts from every other setting's build and keeps the best.
  * @param {WeaponStats} w @param {Piece[]} pool @param {Piece[]} arcanes @param {SimOptions[]} settings
  * @returns {Build[]}
  */
-export function optimiseEach(w, pool, arcanes, settings) {
-  const builds = settings.map(opts => optimise(w, pool, arcanes, opts));
-  const key = (/** @type {Build} */ b) => b.slots.map(p => p.name).sort().join('|');
-  const starts = [...new Map(builds.map(b => [key(b), b.slots])).entries()];
-  return settings.map((opts, i) => {
-    let best = builds[i];
-    for (const [k, slots] of starts) {
-      if (k === key(builds[i])) continue;
-      const b = optimise(w, pool, arcanes, opts, { start: slots });
-      if (b.dps > best.dps) best = b;
-    }
-    return best;
-  });
-}
+export const optimiseEach = (w, pool, arcanes, settings) => runSteps(optimiseEachSteps(w, pool, arcanes, settings));
 
 /**
  * A riven's worth on a weapon: the best build with it against the best without it, and each stat's
