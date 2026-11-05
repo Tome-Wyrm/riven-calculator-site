@@ -47,7 +47,9 @@ export const modelState = {
   armor: 0,                                   // 0 = stripped; else full (2700 without a faction)
   primed: false,                              // every status type on the target
   buffs: /** @type {string[]} */ ([]),        // buffs from outside the build (src/data/buffs.js)
+  eximus: 5,                                  // how many of a battlegroup's 20 are Eximus
   panzer: 5,                                  // the stacks a primer companion keeps on the target
+  heads: 90,                                  // the share of hits on heads in Void's bubble, %
   strength: 100,                              // Ability Strength and Duration, %
   duration: 100,
   energy: 0,                                  // the frame's Max Energy (Primary Overcharge; 0: not counted)
@@ -77,7 +79,7 @@ export function modelFields() {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
     armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '',
-    buffs: s.buffs.join('.'), str: s.strength === 100 ? '' : s.strength, dur: s.duration === 100 ? '' : s.duration, pz: s.panzer === 5 ? '' : s.panzer,
+    buffs: s.buffs.join('.'), str: s.strength === 100 ? '' : s.strength, dur: s.duration === 100 ? '' : s.duration, pz: s.panzer === 5 ? '' : s.panzer, ex: s.eximus === 5 ? '' : s.eximus, hd: s.heads === 90 ? '' : s.heads,
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
     arc: s.arcane === null ? '' : s.arcane || '-', combo: s.combo === 'build' ? '' : s.combo, sc2: s.stanceCombo,
@@ -118,6 +120,8 @@ export function restoreModel(raw) {
   modelState.strength = count(raw.str, 999) ?? 100;
   modelState.duration = count(raw.dur, 999) ?? 100;
   modelState.panzer = count(raw.pz, 10) ?? 5;
+  modelState.eximus = count(raw.ex, 20) ?? 5;
+  modelState.heads = count(raw.hd, 100) ?? 90;
   modelState.nearby = count(raw.near, 20) || modelState.nearby;
   modelState.heavyAt = count(raw.hvat, 12) || modelState.heavyAt;
   modelState.close = count(raw.close, 40) ?? modelState.close;
@@ -254,7 +258,7 @@ export function modelBlock(weapon, cls, rerender) {
   // Room clearing fights the faction's battlegroup, unless a unit is chosen.
   const battlegroup = SCENARIOS[s.scenario].kills ? BATTLEGROUPS[pick] ?? null : null;
   const mix = battlegroup && !s.unit ? battlegroup : null;
-  const roomAt = (/** @type {number} */ lvl) => (mix ? { room: roomOf(pick, mix.members, lvl, s.steelPath, !s.armor, enemies, group ? undefined : '') } : {});
+  const roomAt = (/** @type {number} */ lvl) => (mix ? { room: roomOf(pick, mix.members, lvl, s.steelPath, !s.armor, enemies, group ? undefined : '', s.eximus) } : {});
   // A third of the level and three times it: 150 is judged at 50 and 450 as well.
   const levels = [Math.max(1, Math.round(s.level / 3)), Math.min(9999, s.level * 3)];
   // The arcane: one of this weapon's slot, or the best found.
@@ -274,7 +278,7 @@ export function modelBlock(weapon, cls, rerender) {
     ...(target ? { target, ...roomAt(s.level) } : { armor: s.armor }),
     ...(target && s.spread ? { spread: levels.map(l => ({ target: /** @type {import('../sim.js').Target} */ (targetAt(l)), ...roomAt(l) })) } : {}),
     ...(s.energy ? { maxEnergy: s.energy } : {}),
-    ...(chosenBuffs.length ? { buffs: buffPiece(chosenBuffs.map(b => b.id), s.strength / 100, s.duration / 100, s.panzer) } : {}),
+    ...(chosenBuffs.length ? { buffs: buffPiece(chosenBuffs.map(b => b.id), s.strength / 100, s.duration / 100, s.panzer, s.heads / 100) } : {}),
     ...(!isMelee && SCENARIOS[s.scenario].kills ? { crowd: { close: s.close, clump: s.clump / 100 } } : {}),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
     ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
@@ -320,7 +324,8 @@ export function modelBlock(weapon, cls, rerender) {
   const buffList = /** @type {HTMLDetailsElement} */ (el('details', { class: 'buffs', ...(buffsOpen ? { open: '' } : {}) }, [
     el('summary', {}, [`Buffs${chosenBuffs.length ? ` (${chosenBuffs.length})` : ''}`]),
     el('div', { class: 'controls' }, [num('Ability Strength %', s.strength, 999, v => set({ strength: v })), num('Ability Duration %', s.duration, 999, v => set({ duration: v })),
-      ...(chosenBuffs.some(b => b.only === 'companion') ? [num('Primer stacks', s.panzer, 10, v => set({ panzer: v }))] : [])]),
+      ...(chosenBuffs.some(b => b.only === 'companion') ? [num('Primer stacks', s.panzer, 10, v => set({ panzer: v }))] : []),
+      ...(chosenBuffs.some(b => b.id === 'xata') ? [num('Void bubble head hits %', s.heads, 100, v => set({ heads: v }))] : [])]),
     ...BUFF_GROUPS.filter(group => usable.some(b => b.group === group)).map(group => el('fieldset', {}, [el('legend', {}, [group]), ...usable.filter(b => b.group === group).map(b => {
       const box = /** @type {HTMLInputElement} */ (el('input', { type: 'checkbox', ...(s.buffs.includes(b.id) ? { checked: '' } : {}) }));
       // (One companion: taking one drops the other.)
@@ -349,6 +354,7 @@ export function modelBlock(weapon, cls, rerender) {
     select('Enemy', [['', 'Any (no faction bonus)'], ...enemies.GROUPS.map(g => /** @type {[string, string]} */ ([g.id, g.name]))], group?.id ?? '',
       v => set({ enemy: v, unit: '' })),
     ...(unit ? [
+      ...(mix ? [num('Eximus of the 20', s.eximus, 20, v => set({ eximus: v }))] : []),
       select('Target', [...(battlegroup ? [/** @type {[string, string]} */ (['', 'Battlegroup (mixed)'])] : []), ...units.map(u => /** @type {[string, string]} */ ([u.name, u.name]))],
         mix ? '' : unit.name, v => set({ unit: v })),
       el('label', { class: 'field' }, [el('span', {}, ['Level']), level]),
@@ -379,7 +385,7 @@ export function modelBlock(weapon, cls, rerender) {
       : ''}${s.primed
       ? 'Primed target: every status type on it (a primer companion’s or the squad’s work), Viral and Corrosive at 10 stacks, Heat burning. '
       : 'Per status type bonuses (Galvanized) count the status types the weapon keeps up by itself. '}`
-    + (mix ? `Target: the Simulacrum’s ${mix.name} battlegroup${group ? '' : ' without its faction weaknesses'} (${mix.members.map(([name, n]) => `${n} ${name}`).join(', ')}), level ${s.level}${s.steelPath ? ' Steel Path' : ''}, ${s.armor ? 'full armor' : 'armor stripped'}, killed one after another: DPS is their health and shields over the time the 20 take, shots and seconds an average kill’s, the first shot on the toughest. ` : '')
+    + (mix ? `Target: the Simulacrum’s ${mix.name} battlegroup${group ? '' : ' without its faction weaknesses'} (${mix.members.map(([name, n]) => `${n} ${name}`).join(', ')}), level ${s.level}${s.steelPath ? ' Steel Path' : ''}, ${s.armor ? 'full armor' : 'armor stripped'}, killed one after another, ${s.eximus} of them Eximus: DPS is their health, shields and Overguard over the time the 20 take, shots and seconds an average kill’s, the first shot on the toughest. ` : '')
     + (!mix && unit && target ? `Target: ${unit.name}${group ? (group.bane ? '' : ` (${group.name}: no riven faction stat applies)`) : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
       + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')

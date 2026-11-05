@@ -46,6 +46,18 @@ test('battlegroups: 20 enemies each, every unit in the data', () => {
   assert.deepEqual(roomOf('grineer', BATTLEGROUPS.grineer.members, 150, false, false, enemies, '')[0].target.weak, {});
 });
 
+test('Eximus: some of the 20, with Overguard, the rest shrinking in proportion', async () => {
+  const { overguardMultiplier } = await import('../src/enemies.js');
+  const room = roomOf('grineer', BATTLEGROUPS.grineer.members, 150, false, true, enemies, '', 5);
+  assert.equal(room.reduce((s, u) => s + u.n, 0), 20);
+  assert.equal(room.at(-1)?.n, 5);
+  assert.ok(Math.abs((room.at(-1)?.target.overguard ?? 0) - 12 * overguardMultiplier(150)) < 1e-6);
+  assert.equal(room[0].n, 2 * 15 / 20);
+  assert.equal(roomOf('grineer', BATTLEGROUPS.grineer.members, 150, false, true, enemies, '', 0).length, 5);
+  // All 20 leaves only them.
+  assert.equal(roomOf('grineer', BATTLEGROUPS.grineer.members, 150, false, true, enemies, '', 20).length, 1);
+});
+
 test('a room: its health and shields over the time all of it takes', () => {
   const w = /** @type {any} */ ({ kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
     modes: [{ name: 'x', rate: 1, cost: 1, parts: [{ name: 'x', dmg: { impact: 100 }, cc: 0, cd: 1, sc: 0, ms: 1 }] }] });

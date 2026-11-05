@@ -201,3 +201,60 @@ test('Blast detonations reach the crowd within 5 m', () => {
   assert.equal(gain(plain), 1);
   assert.ok(gain(proccing) > 1);
 });
+
+test('Void\'s bubble: with procs coming, a fight turns to heads, by the setting', () => {
+  const target = { health: 1e6, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  const proccing = gun({ sc: 1 }), none0 = gun({ sc: 0 });
+  const at = (/** @type {number} */ heads) => { const p = buffPiece(['xata'], 1, 1, 5, heads); return { stats: p?.stats ?? {}, elements: [] }; };
+  assert.ok(fight(proccing, at(0.9), { target }).dps > 2 * fight(proccing, at(0), { target }).dps);
+  near(fight(none0, at(0.9), { target }).dps, fight(none0, at(0), { target }).dps);
+  // A target dead in a shot never sees it.
+  const small = { ...target, health: 1 };
+  near(fight(proccing, at(0.9), { target: small }).shotsPerKill, fight(proccing, at(0), { target: small }).shotsPerKill);
+});
+
+test('Overguard goes first: no armor, Void 50% more, Magnetic multiplies, its break costs Electricity', () => {
+  const base = { health: 32, shields: 0, armor: 2700, weak: {}, shieldWeak: {} };
+  // 320 of Overguard at 32 a shot, armor doing nothing to it: 10 shots, then the health at 10%.
+  const r = fight(gun(), none, { target: { ...base, overguard: 320 } });
+  near(r.shotsPerKill, 20, 1e-3);
+  // Void takes it down faster.
+  const v = fight(gun({ dmg: { void: 32 } }), none, { target: { ...base, armor: 0, health: 32, overguard: 480 } });
+  near(v.shotsPerKill, 11, 1e-3);
+});
+
+test('Overguard scales on its own curves', async () => {
+  const { overguardMultiplier } = await import('../src/enemies.js');
+  near(overguardMultiplier(1), 1);
+  near(overguardMultiplier(11), 1 + 0.0015 * 10 ** 4);
+  near(overguardMultiplier(50), 1 + 260 * 49 ** 0.9);
+});
+
+test('Toxic Lash: the wiki\'s Extra Hit, with Infected Clip, and its proc', () => {
+  const target = { health: 1e7, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
+  // 100 base + 90% Toxin: 190 a hit, 57 extra, a tick of (57 + 1) x 1.9 x 0.5, 6 of them a proc.
+  const g = gun({ dmg: { impact: 100 }, sc: 0 });
+  const p = buffPiece(['lash']);
+  const t = { stats: p?.stats ?? {}, elements: [{ type: 'toxin', value: 0.9 }] };
+  const r = fight(g, t, { target });
+  // Over the 20 s fought, the ticks ramp up towards 6 for each shot.
+  near(r.perShot, 190 + 57, 1);
+  assert.ok(r.dps > 190 + 57 + 0.8 * 6 * 58 * 1.9 * 0.5 && r.dps < 190 + 57 + 6 * 58 * 1.9 * 0.5, String(r.dps));
+});
+
+test('weak point buffs: Seek adds to the head, Prowl to headshot bonuses, Sonar multiplies, not on DoTs', () => {
+  const opts = { weakpoint: 1, headMult: 3, headcrit: false };
+  near(dpsOf(gun(), totals(['seek']), opts), 32 * 3.75);
+  near(dpsOf(gun(), totals(['prowl']), opts), 32 * 3 * 1.4);
+  near(totals(['prowl'], 5).stats.headshotMultiplier, 1);           // capped at +100%
+  near(dpsOf(gun(), totals(['sonar']), opts), 32 * 3 * 5);
+  const bleeding = gun({ dmg: { slash: 32 }, sc: 1 });
+  const tick = (/** @type {any} */ t) => dpsOf(bleeding, t, opts) - dpsOf(gun({ dmg: { slash: 32 }, sc: 0 }), t, opts);
+  near(tick(totals(['sonar'])), tick(none), 1e-6);
+});
+
+test('Valence Formation: one element at a time, +200%, never combining', () => {
+  const only = BUFFS.filter(b => b.only === 'valence');
+  assert.equal(only.length, 4);
+  assert.deepEqual(totals(['valence-heat']).elements, [{ type: 'heat', value: 2, loose: true }]);
+});

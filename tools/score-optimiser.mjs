@@ -4,7 +4,7 @@
 // much of the community's first choices the best riven holds, and the curses. A check, not a
 // target: read the disagreements.
 //   node tools/score-optimiser.mjs [--fresh] [setting…]
-// Settings (default: all): room, mix, burst, single, weak, primed, grineer, corpus. Each takes ~30 s on 11
+// Settings (default: all): room, mix, armor, burst, single, weak, primed, grineer, corpus. Each takes ~30 s on 11
 // threads; results are kept in tools/data/cache/score-optimiser.json (not in git) and reused
 // unless --fresh.
 
@@ -17,6 +17,7 @@ const SETTINGS = {
   room: { label: 'Room clearing, any faction, armor stripped', scenario: 'room', opts: { enemy: '' } },
   burst: { label: 'Room clearing, any faction, armor stripped, burst (no reloads)', scenario: 'room', opts: { enemy: '', burst: true } },
   mix: { label: 'Room clearing, the Grineer battlegroup without weaknesses, armor stripped, a crowd of 6 at 50% clumping', scenario: 'room', opts: { enemy: '', crowd: { close: 6, clump: 0.5 } }, mix: true },
+  armor: { label: 'Room clearing, the Grineer battlegroup with its weaknesses, full armor, a crowd of 6 at 50% clumping', scenario: 'room', opts: { enemy: 'grineer', crowd: { close: 6, clump: 0.5 } }, mix: true, armored: true },
   single: { label: 'Single target, any faction, armor stripped', scenario: 'single', opts: { enemy: '' } },
   weak: { label: 'Weak points, any faction, armor stripped', scenario: 'weak', opts: { enemy: '' } },
   primed: { label: 'Room clearing, primed target', scenario: 'room', opts: { enemy: '', primed: true } },
@@ -73,17 +74,23 @@ if (!isMainThread) {
     const inputs = guns.map(g => {
       const pool = pools(g.cls, g.ips);
       return { weapon: g.name, cls: g.cls, shape: '+++-', scenario: s.scenario,
-        opts: { ...('opts' in s ? s.opts : {}), ...target, ...('mix' in s ? { room: roomOf('grineer', BATTLEGROUPS.grineer.members, 150, true, true, E, '') } : {}), bow: g.bow },
+        opts: { ...('opts' in s ? s.opts : {}), ...target, ...('mix' in s ? { room: roomOf('grineer', BATTLEGROUPS.grineer.members, 150, true, !('armored' in s), E, 'armored' in s ? undefined : '') } : {}), bow: g.bow },
         positives: [...pool.positive, ...SPLICED.filter(x => x.b[g.cls] !== undefined).map(x => x.id)], negatives: pool.negative };
     });
     /** @type {Record<string, any>} */
     const out = {};
     const queue = [...inputs];
     const t0 = Date.now();
+    let done = 0;
+    const tick = () => {
+      if (++done % 5) return;
+      const s = (Date.now() - t0) / 1000;
+      console.log(`${key}: ${done}/${inputs.length} guns, ${Math.round(s / 60)} min so far, about ${Math.round(s / done * (inputs.length - done) / 60)} min left`);
+    };
     await Promise.all(Array.from({ length: Math.max(1, availableParallelism() - 1) }, () => new Promise(resolve => {
       const w = new Worker(new URL(import.meta.url));
       const next = () => { const job = queue.shift(); if (job) w.postMessage(job); else { w.terminate(); resolve(null); } };
-      w.on('message', r => { out[r.weapon] = r; next(); });
+      w.on('message', r => { out[r.weapon] = r; tick(); next(); });
       next();
     })));
     console.log(`${key}: ${inputs.length} guns in ${((Date.now() - t0) / 1000).toFixed(0)} s`);

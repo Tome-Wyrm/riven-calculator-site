@@ -14,7 +14,11 @@
 // multiplier), fireRateFlat (not doubled on bows), and the ordinary ones. And:
 // - strength: raises Ability Strength for the others, at most the fourth entry (Brightbonnet).
 // - extraVoid: an Extra Hit, a share of the whole hit as Void (the wiki's Extra Hit: faction again, and
-//   weak points again, says Xata's Whisper's page).
+//   weak points again, says Xata's Whisper's page). voidHeads: the share of hits on heads in its bubble
+//   (`heads` as the value: the setting, 90% by the user's play).
+// - extra:<element>: an Extra Hit as that element, with a guaranteed proc whose seed is the extra hit:
+//   elements count in it, faction three times on its ticks.
+// - weakpointAdd: added into a head's sum (Seek). sonar: multiplies a weak point, no headcrits, not on DoTs.
 // - sparks: Breach Surge's, in a crowd only (src/crowd.js): on 10% of hits and every kill, the damage dealt
 //   x 2, as a 100% crit at 1.5x, homing on another enemy's head (x 3 on most): 0.9 of a hit on average.
 //   sparkMore: what multiplies a spark again (the wiki: they're affected by Eclipse and Rift Torrent).
@@ -24,7 +28,7 @@
 // `for`: 'guns' or 'melee', where a buff is only for those; `noArchgun` where it's not for archguns;
 // `only`: one buff of those sharing it (one companion at a time).
 
-/** @typedef {[what: string, value: number | 'stacks', scaling?: 's' | 'd' | '', cap?: number]} BuffEffect */
+/** @typedef {[what: string, value: number | 'stacks' | 'heads', scaling?: 's' | 'd' | '', cap?: number]} BuffEffect */
 /** @typedef {{id: string, name: string, from: string, group: string, effects: BuffEffect[], for?: 'guns' | 'melee', noArchgun?: boolean, only?: string}} Buff */
 
 /** The groups, in the page's order. */
@@ -66,19 +70,31 @@ export const BUFFS = [
   { id: 'shock', name: 'Shock Trooper', from: 'Volt', group: 'Elements', effects: [['element:electricity', 1, 's']] },
   { id: 'frenzy', name: 'Fireball Frenzy', from: 'Ember', group: 'Elements', effects: [['element:heat', 1, 's']] },
   { id: 'freeze', name: 'Freeze Force', from: 'Frost', group: 'Elements', effects: [['element:cold', 1, 's']] },
+  { id: 'valence-heat', name: 'Valence Formation (Heat)', from: 'Lavos', group: 'Elements', only: 'valence', effects: [['element:heat', 2]] },
+  { id: 'valence-cold', name: 'Valence Formation (Cold)', from: 'Lavos', group: 'Elements', only: 'valence', effects: [['element:cold', 2]] },
+  { id: 'valence-electricity', name: 'Valence Formation (Electricity)', from: 'Lavos', group: 'Elements', only: 'valence', effects: [['element:electricity', 2]] },
+  { id: 'valence-toxin', name: 'Valence Formation (Toxin)', from: 'Lavos', group: 'Elements', only: 'valence', effects: [['element:toxin', 2]] },
 
-  { id: 'xata', name: 'Xata’s Whisper', from: 'Xaku', group: 'Extra hits', effects: [['extraVoid', 0.26, 's']] },
+  { id: 'xata', name: 'Xata’s Whisper', from: 'Xaku', group: 'Extra hits', effects: [['extraVoid', 0.26, 's'], ['voidHeads', 'heads']] },
+  { id: 'lash', name: 'Toxic Lash', from: 'Saryn', group: 'Extra hits', for: 'guns', effects: [['extra:toxin', 0.3, 's']] },
+  { id: 'lash-melee', name: 'Toxic Lash', from: 'Saryn', group: 'Extra hits', for: 'melee', effects: [['extra:toxin', 0.6, 's']] },
+  { id: 'resupply', name: 'Resupply (Electricity)', from: 'Protea', group: 'Extra hits', for: 'guns', noArchgun: true, effects: [['extra:electricity', 0.25, 's']] },
+  { id: 'silken', name: 'Silken Stride', from: 'Oraxia', group: 'Extra hits', for: 'guns', effects: [['extra:toxin', 0.4, 's']] },
   { id: 'surge', name: 'Breach Surge', from: 'Wisp', group: 'Extra hits', effects: [['sparks', 0.9, 's']] },
 
   { id: 'covenant', name: 'Covenant', from: 'Harrow', group: 'Critical', effects: [['critFlat', 0.5], ['critFlatHead', 1.5]] },
   { id: 'haze', name: 'Shadow Haze', from: 'Sevagoth', group: 'Critical', effects: [['critFlat', 0.5, 's']] },
   { id: 'avenger', name: 'Arcane Avenger', from: 'Arcane', group: 'Critical', effects: [['critFlat', 0.45]] },
   { id: 'crepuscular', name: 'Arcane Crepuscular', from: 'Arcane', group: 'Critical', effects: [['critDamageFlat', 3]] },
+  { id: 'hotshot', name: 'Arcane Hot Shot', from: 'Arcane', group: 'Critical', effects: [['critChance', 3]] },
   { id: 'frost', name: 'Biting Frost', from: 'Frost', group: 'Critical', effects: [['critChance', 2], ['critDamage', 2]] },
   { id: 'lethality', name: 'Tharros Lethality', from: 'Styanax', group: 'Critical', effects: [['critDamage', 1, 's']] },
   { id: 'spirit', name: 'Grave Spirit', from: 'Dagath', group: 'Critical', effects: [['critDamage', 0.5, 's']] },
   { id: 'quiver', name: 'Empowered Quiver', from: 'Ivara', group: 'Critical', effects: [['critDamage', 1, 's']] },
   { id: 'cyte', name: 'Cyte-09’s passive', from: 'Cyte-09', group: 'Critical', effects: [['weakpointCrit', 3]] },
+  { id: 'sonar', name: 'Sonar (a head spot)', from: 'Banshee', group: 'Critical', effects: [['sonar', 5, 's']] },
+  { id: 'seek', name: 'Seek', from: 'Ivara', group: 'Critical', effects: [['weakpointAdd', 0.75, 's']] },
+  { id: 'prowl', name: 'Prowl', from: 'Ivara', group: 'Critical', effects: [['headshotMultiplier', 0.4, 's', 1]] },
   { id: 'wrathful', name: 'Wrathful Advance', from: 'Kullervo', group: 'Critical', for: 'melee', effects: [['critFlat', 2, 's']] },
 
   { id: 'gem', name: 'Prismatic Gem', from: 'Citrine', group: 'Status', effects: [['statusChance', 1, 's'], ['statusDuration', 1, 'd']] },

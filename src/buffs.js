@@ -10,10 +10,10 @@ const elementOf = what => (what.startsWith('element:') ? what.slice('element:'.l
 /**
  * The chosen buffs as a piece. Strength and Duration are shares (1 is 100%), Strength raised first by
  * what raises it for the others. 'more' effects multiply each other, into the stat allDamage.
- * @param {string[]} ids @param {number} [strength] @param {number} [duration] @param {number} [stacks] what a primer keeps on the target
+ * @param {string[]} ids @param {number} [strength] @param {number} [duration] @param {number} [stacks] what a primer keeps on the target @param {number} [heads] the share of hits on heads in Void's bubble
  * @returns {import('./build.js').Piece | null} null without any
  */
-export function buffPiece(ids, strength = 1, duration = 1, stacks = 5) {
+export function buffPiece(ids, strength = 1, duration = 1, stacks = 5, heads = 0.9) {
   /** @type {Record<string, number>} */
   const stats = {};
   /** @type {{type: string, value: number, loose: true}[]} */
@@ -24,9 +24,9 @@ export function buffPiece(ids, strength = 1, duration = 1, stacks = 5) {
   const boost = raising.reduce((s, [, value]) => s + Number(value) * strength, 0);
   const power = strength + Math.min(boost, Math.max(0, ...raising.map(e => e[3] ?? 0)));
   for (const b of chosen) {
-    for (const [what, value, scaling] of b.effects) {
+    for (const [what, value, scaling, cap] of b.effects) {
       if (what === 'strength') continue;
-      const v = (value === 'stacks' ? stacks : value) * (scaling === 's' ? power : scaling === 'd' ? duration : 1);
+      const v = Math.min(cap ?? Infinity, (value === 'stacks' ? stacks : value === 'heads' ? heads : value) * (scaling === 's' ? power : scaling === 'd' ? duration : 1));
       const element = elementOf(what);
       if (element) elements.push({ type: element, value: v, loose: true });
       else if (what === 'more') more *= 1 + v;

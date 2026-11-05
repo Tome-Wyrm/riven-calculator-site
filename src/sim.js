@@ -191,7 +191,7 @@ export const VALENCE_TYPES = ['heat', 'cold', 'electricity', 'toxin', 'impact', 
 /**
  * A target at its level: what it takes to kill, and its weaknesses (damage type → extra share, e.g.
  * 0.5 or -0.5) on health and on shields.
- * @typedef {{health: number, shields: number, armor: number, weak: Record<string, number>, shieldWeak: Record<string, number>}} Target
+ * @typedef {{health: number, shields: number, armor: number, overguard?: number, weak: Record<string, number>, shieldWeak: Record<string, number>}} Target
  */
 
 /** Stats with no effect on damage in this model (they're quality of life). */
@@ -269,8 +269,9 @@ export function critScale(cc, cd, p) {
  * @param {Part} p @param {string} enemy @param {SimOptions} opts @param {(id: string) => number} m
  */
 export function weakPointMult(p, enemy, opts, m) {
-  const head = (p.hs ?? 0) <= -1 ? 1 : Math.max(0, (opts.headMult ?? HEADS[enemy].headMult) + 1.5 * m('weakpointDamage'));
-  return head * Math.max(0, 1 + m('headshotMultiplier') + Math.max(0, p.hs ?? 0));
+  // (Seek adds into the head's sum as it stands, Sonar's spot multiplies the lot.)
+  const head = (p.hs ?? 0) <= -1 ? 1 : Math.max(0, (opts.headMult ?? HEADS[enemy].headMult) + 1.5 * m('weakpointDamage') + m('weakpointAdd'));
+  return head * Math.max(0, 1 + m('headshotMultiplier') + Math.max(0, p.hs ?? 0)) * (m('sonar') || 1);
 }
 
 /**
@@ -299,7 +300,8 @@ export function dpsOf(w, t, opts = {}) {
   // Damage multipliers and vulnerabilities (Eclipse, Molecular Prime): on everything, once.
   const more = Math.max(0, 1 + m('allDamage'));
   // A weak point: its multiplier plus 1.5 x Weakpoint Damage (heads), then x headshot bonuses.
-  const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
+  // (A crit on a Sonar spot is never a headcrit.)
+  const headcrit = !m('sonar') && (opts.headcrit ?? HEADS[enemy].headcrit);
   // A fire-rate lock (the Semi- Cannonades) keeps the weapon's own rate.
   const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1) + m('fireRateFlat') + (w.bonus?.fireRate ?? 0)));
   const crit = critScale;
@@ -326,6 +328,8 @@ export function dpsOf(w, t, opts = {}) {
     // Explosions are never weak point hits.
     const onWp = p.aoe ? 0 : wp;
     const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, m) * crit(ccWp, headcrit ? 2 * cd : cd, p);
+    // (DoTs don't inherit Sonar's spots: the wiki's Damage over Time.)
+    const dotCrit = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, m) / (m('sonar') || 1) * crit(ccWp, headcrit ? 2 * cd : cd, p);
     // Galvanized's Direct Damage: added to Damage, or multiplying it, at this attack's share.
     const [coShare, coMult] = p.co ?? [1, 0];
     const Ddirect = Math.max(0, coMult ? D * (1 + coShare * m('directDamage')) : D + coShare * m('directDamage'));
@@ -337,7 +341,7 @@ export function dpsOf(w, t, opts = {}) {
     // Munitions adds a Slash proc chance on each critical hit.
     const procsOfType = procsOf(p, byType, hit, cc, m, pellets, mode.held != null ? beamCount(p, multishot) : null);
     // DoT ticks are a share of the base damage (not the elements or IPS mods), faction twice.
-    const dotScale = statusMult * base * faction * faction * D * scale * rate * more;
+    const dotScale = statusMult * base * faction * faction * D * dotCrit * rate * more;
     for (const [type, v] of Object.entries(byType)) dealt[type] = (dealt[type] ?? 0) + v * direct;
     // An Extra Hit: a share of the whole hit, faction and weak points again.
     const extra = hit * direct * m('extraVoid') * faction * extraWeak(p, onWp, enemy, opts, m);

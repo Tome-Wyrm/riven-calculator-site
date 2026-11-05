@@ -53,6 +53,12 @@
 // frame (the user). What a shot charges with is an average of what whole pellets do (`chargedPellets`,
 // checked against a pellet by pellet simulation). One target: the gauge starts full, the form first,
 // then the cycle for what's left. A burst stays in the form.
+// Overguard (opts.target.overguard): goes before shields, with no armor or weaknesses: Void does 50%
+// more, Magnetic multiplies it as on shields, and its break costs 3% of it per stack as Electricity.
+// Statuses still land under it here, though the wiki says it stops crowd control.
+// Xata's Whisper's Void procs make a bubble for 3 s that turns shots to the body part they hit: with a
+// share of hits on heads in it (`voidHeads`, 90% by the user's play), a fight runs at that share for
+// the time it's up, by what a kill lets it get going (the first procs come a few shots in).
 // Melee (src/melee.js): a shot is a swing, the next attack of the stance combo (its hits' multipliers
 // summed for damage, each hit rolling crit and status), at the attack speed. The combo counter is
 // held at the initial combo or the max, or built up by the hits (room clearing carries it from target
@@ -116,6 +122,10 @@ const TARGET_SECONDS = 20;
 
 /** Seconds from the form back to normal fire (in game on Boar: firing again in under a second). */
 const SWAP_OUT = 0.75;
+/** Seconds Void's bubble lasts. */
+const BUBBLE_SECONDS = 3;
+/** A target's whole: health, shields and Overguard. @param {Target} t */
+const ehpOf = t => t.health + t.shields + (t.overguard ?? 0);
 
 /**
  * The pellets a shot charges with, on average, while killing a stream of targets. Pellets land one by
@@ -145,7 +155,7 @@ export function fight(w, t, opts) {
   if (!c || opts.burst) return once;
   const form = engage(w, t, opts);
   const plain = engage(w, t, { ...opts, mode: c.normal });
-  const ehp = opts.target.health + opts.target.shields;
+  const ehp = ehpOf(opts.target);
   const landed = chargedPellets(plain.hits, plain.aimed, ehp, plain.spread);
   const charging = c.hits * plain.interval / Math.max(1e-9, landed * (c.any ? 1 : c.share ?? 0.75));
   const shotsInForm = c.ammo / Math.max(1e-9, (w.modes[opts.mode ?? w.main] ?? w.modes[0]).cost);
@@ -172,7 +182,7 @@ export function fight(w, t, opts) {
 function clear(w, t, room, opts) {
   const { room: _, ...rest } = opts;
   const each = room.map(({ n, target }) => {
-    const ehp = target.health + target.shields;
+    const ehp = ehpOf(target);
     const r = fight(w, t, { ...rest, target });
     return { n, ehp, r, time: ehp / Math.max(1e-9, r.dps) };
   });
@@ -195,6 +205,27 @@ const amplify = n => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
  * @returns {FightResult & {interval: number, reload: number, hits: number, spread: number, aimed: number}}
  */
 function engage(w, t, opts) {
+  const first = fought(w, t, opts);
+  const heads = t.stats.voidHeads ?? 0, wp = opts.weakpoint ?? 0;
+  if (heads <= wp) return first;
+  // Void procs a shot, at the weapon's status chance on each of its hits.
+  const mode = w.modes[opts.mode ?? w.main] ?? w.modes[0];
+  const sc = Math.max(0, (mode.parts.find(p => !p.aoe) ?? mode.parts[0]).sc * (1 + (t.stats.statusChance ?? 0)));
+  const chance = Math.min(1, sc * Math.max(1, first.hits));
+  if (!(chance > 0)) return first;
+  // Of a kill's shots, the share after the first proc; and once going, the share of time it's up.
+  const shots = Math.max(1, first.shotsPerKill);
+  const started = 1 - (1 - (1 - chance) ** shots) / (shots * chance);
+  const steady = 1 - Math.exp(-chance / first.interval * BUBBLE_SECONDS);
+  return fought(w, t, { ...opts, weakpoint: wp + (heads - wp) * Math.min(started, steady) });
+}
+
+/**
+ * One fight at the weak point share given.
+ * @param {WeaponStats} w @param {Totals} t @param {SimOptions & {target: Target, targets?: number}} opts
+ * @returns {FightResult & {interval: number, reload: number, hits: number, spread: number, aimed: number}}
+ */
+function fought(w, t, opts) {
   const target = opts.target;
   const targets = opts.targets ?? 1;
   const raw = (/** @type {string} */ id) => t.stats[id] ?? 0;
@@ -205,7 +236,8 @@ function engage(w, t, opts) {
   const faction = factionOf(raw, enemy);
   const D = Math.max(0, 1 + raw('damage'));
   const more = Math.max(0, 1 + raw('allDamage'));         // damage multipliers and vulnerabilities
-  const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
+  // (A crit on a Sonar spot is never a headcrit.)
+  const headcrit = !raw('sonar') && (opts.headcrit ?? HEADS[enemy].headcrit);
   const rate = mode.rate * (raw('fireRateLocked') ? 1 : Math.max(0.05, 1 + raw('fireRate') * (opts.bow ? 2 : 1) + raw('fireRateFlat') + (w.bonus?.fireRate ?? 0)));
   const crit = critScale;
   const duration = STATUS_SECONDS * Math.max(0, 1 + raw('statusDuration'));
@@ -216,6 +248,8 @@ function engage(w, t, opts) {
   for (const e of t.elements) matching[e.type] = (matching[e.type] ?? 0) + e.value;
   // Galvanized's Direct Damage per status type on the target (the only per status type bonus).
   const directPer = raw('directDamagePerStatus');
+  // Extra hits that proc, by element.
+  const extraHits = Object.entries(t.stats).filter(([k, v]) => k.startsWith('extra:') && v > 0).map(([k, v]) => /** @type {[string, number]} */ ([k.slice('extra:'.length), v]));
   // The status types primers hold on the target.
   const held = STATUS_TYPES.filter(type => raw(`prime:${type}`) > 0);
 
@@ -234,7 +268,10 @@ function engage(w, t, opts) {
     const punctureChance = Math.max(0, p.sc * (1 + raw('statusChance'))) * (byType.puncture ?? 0) / hit;
     const cd = p.cd * (1 + raw('critDamage')) + raw('critDamageFlat') + (raw('doughty') ? Math.floor(punctureChance * 10 + 1e-9) * raw('doughty') : 0);
     const onWp = p.aoe ? 0 : wp;
-    const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) * crit(critChanceOf(p, raw('critChance') + raw('weakpointCrit'), critFlatOf(p, raw) + raw('critFlatHead')), headcrit ? 2 * cd : cd, p);
+    const onHead = crit(critChanceOf(p, raw('critChance') + raw('weakpointCrit'), critFlatOf(p, raw) + raw('critFlatHead')), headcrit ? 2 * cd : cd, p);
+    const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) * onHead;
+    // (DoTs don't inherit Sonar's spots: the wiki's Damage over Time.)
+    const dotCrit = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) / (raw('sonar') || 1) * onHead;
     // Melee Duplicate: a base (yellow) critical hit strikes again, crit and status rolled anew. A hit
     // is yellow with the chance it crits below 100%, and with 2 - CC between 100% and 200%.
     const yellow = cc < 1 ? Math.max(0, cc) : cc < 2 ? 2 - cc : 0;
@@ -251,13 +288,21 @@ function engage(w, t, opts) {
       const share = type === 'blast' ? 1 : DOT[/** @type {keyof typeof DOT} */ (type)] ?? 0;
       const own = type === 'blast' ? 1 : (1 + (matching[type] ?? 0));
       // (A seed starts from 1: not Blast's.)
-      procs.push([type, n, (base * D * faction * scale * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own * more]);
+      procs.push([type, n, (base * D * faction * dotCrit * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own * more]);
     }
     const [coShare, coMult] = p.co ?? [1, 0];
     const hits = Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets * more]));
     // An Extra Hit: a share of the whole hit, faction and weak points again.
-    const extra = hits.reduce((s, [, v]) => s + v, 0) * raw('extraVoid') * faction * extraWeak(p, onWp, enemy, opts, raw);
+    const whole = hits.reduce((s, [, v]) => s + v, 0) * faction * extraWeak(p, onWp, enemy, opts, raw);
+    const extra = whole * raw('extraVoid');
     if (extra) hits.push(['void', extra]);
+    // The others (Toxic Lash, Resupply): a proc each, guaranteed, whose seed is the extra hit.
+    for (const [type, value] of extraHits) {
+      hits.push([type, whole * value]);
+      const n = mode.held != null ? 1 : pellets;
+      const share = DOT[/** @type {keyof typeof DOT} */ (type)];
+      if (share) procs.push([type, n, (whole * value * D / n + 1) * faction * share * statusDamage * (1 + (matching[type] ?? 0))]);
+    }
     // A Blast proc's Extra Hit: the pellet's, at what the proc pays, Status Damage and faction again.
     const blastVoid = extra * procsOfType('blast').strength / Math.max(1e-9, pellets) * statusDamage * faction;
     return [{ hits, coShare, coMult, procs, blastVoid,
@@ -340,7 +385,7 @@ function engage(w, t, opts) {
     spread = moment(aim, 2) / Math.max(1e-9, moment(aim, 1) ** 2);
     aiming = moment(aim, 1) / Math.max(1e-9, moment(wp, 1));
   }
-  const ehp = target.health + target.shields;
+  const ehp = ehpOf(target);
   let perShot = 0;
   let lastTier = 1;
   let lastCombo = 0;                                        // the combo count at the last swing
@@ -353,6 +398,7 @@ function engage(w, t, opts) {
     // A fresh target: full health and shields, no statuses (all of them if primed).
     let health = target.health;
     let shields = target.shields;
+    let overguard = target.overguard ?? 0;
     // Everything a build applies lasts the same time, so it all expires in the order it came: each
     // list is a queue (from its head index) with a running total.
     /** @type {Map<string, {list: {until: number, n: number}[], head: number, sum: number}>} expected stacks by type */
@@ -398,6 +444,13 @@ function engage(w, t, opts) {
       const bleed = type === 'slash-dot';
       const kind = bleed ? 'slash' : type;
       let left = amount;
+      if (overguard > 0) {
+        const toGuard = left * (kind === 'void' ? 1.5 : 1) * amplify(s.magnetic);
+        if (toGuard < overguard) { overguard -= toGuard; return; }
+        left *= 1 - overguard / toGuard;
+        overguard = 0;
+        health -= 0.03 * s.magnetic * (target.overguard ?? 0) * Math.max(0, 1 + (target.weak.electricity ?? 0)) * s.kept * s.viral;
+      }
       if (shields > 0 && kind !== 'toxin') {
         const toShields = left * (bleed ? 1 : Math.max(0, 1 + (target.shieldWeak[kind] ?? 0))) * amplify(s.magnetic);
         if (toShields < shields) { shields -= toShields; return; }
@@ -445,8 +498,8 @@ function engage(w, t, opts) {
     for (;;) {
       if (now > TARGET_SECONDS && health > 0) {
         // Still alive: finish it at the rate it has been losing health and shields.
-        const lost = ehp - Math.max(0, health) - shields;
-        const more = (Math.max(0, health) + shields) * now / Math.max(1e-9, lost);
+        const lost = ehp - Math.max(0, health) - shields - overguard;
+        const more = (Math.max(0, health) + shields + overguard) * now / Math.max(1e-9, lost);
         return { time: now + more, pace: now + more, shots: shots + more / interval, combo };
       }
       // The shot: Galvanized counts the status types on the target now.
@@ -542,16 +595,16 @@ function engage(w, t, opts) {
       if (sw && melee?.combo === 'build' && combo < initial) combo = Math.min(initial, combo + COMBO_REGEN * step);
       lastTier = tier;
       lastCombo = swungAt;
-      if (shots === 1) perShot = (ehp - health - shields) / ramp;
+      if (shots === 1) perShot = (ehp - health - shields - overguard) / ramp;
       if (health <= 0) {
         // Dead by this shot, or the DoTs before it: these count for the share of them that was needed
         // (crits make the real count a spread; this is its smooth average), but a kill always takes
         // at least one shot. (A heavy attack's wind up is all spent before it lands.)
-        const f = !heavy ? Math.min(1, last / Math.max(1e-9, last - health - shields)) : dotKilled ? 0 : 1;
+        const f = !heavy ? Math.min(1, last / Math.max(1e-9, last - health - shields - overguard)) : dotKilled ? 0 : 1;
         // (`pace`: the time without that floor, for the DPS.)
         return { time: Math.max(step, now + f * step), pace: now + f * step, shots: Math.max(1, shots - 1 + f), combo };
       }
-      last = health + shields;
+      last = health + shields + overguard;
       const next = now + step;
       runDots(now, next);
       now = next;
