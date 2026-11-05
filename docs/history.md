@@ -1298,6 +1298,12 @@ A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study doz
 External buffs and companions are Phase 14. The first step there is buffs as pieces added to a
 build's totals (Nourish's Viral makes a riven's Viral worth less without any change to the fight).
 
+**Corrosive against full armor** (`tools/score-optimiser.mjs armor`, 2026-11-05; the Grineer battlegroup with its
+weaknesses, full armor, a crowd of 6 at 50% clumping; 36 minutes): first choices in the top 6 56%, slot 1 in the top 3
+12%, in the best riven 47%, curses 49%. Corrosive is no longer missed: it leaves the most missed list, and now comes
+up the other way, in the model's top 3 on 72 guns where the community doesn't list it (Viral 76, Blast 52, Damage to
+Grineer 38). Most missed: Multishot 131, Critical Damage 91. So full armor swings the model past the sheet, not onto it.
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

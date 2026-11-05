@@ -6,9 +6,8 @@ names given in brackets here.
 
 ## 1. In progress
 
-- [ ] **Corrosive check.** `node tools/score-optimiser.mjs --fresh armor`: is Corrosive still missed against full armor?
-- [ ] **Brozime reference builds** ([tracker](docs/brozime-videos.md)). The builds per frame from the clips, each
-      with its mods, arcanes and shards. Leave out budget builds and mid-video edits.
+- [ ] **Brozime reference builds** ([table](docs/reference-builds.md), drafted from the clips). Check the tabs marked
+      `?`, settle each frame's main build, add shards, and look at the builds whose Strength doesn't add up.
   - [ ] Jade: find the builds in the video's showcase.
   - [ ] Excalibur: 185 on the panel, 95 from its mods. Possibly an old Arsenal or Simulacrum bug.
 - [ ] **New submissions.** Check x332–x346 against their images, then run `tools/ocr-check.html`. The weapon is
@@ -44,6 +43,7 @@ Doesn't need section 2, and can run alongside it.
 - [ ] **Checks**: a random (Monte Carlo) run against the averages; ~10 guns against Underframe by hand; Arsenal
       numbers for a few builds.
 - [ ] **Look at what the community doesn't list**: Ammo Efficiency and spliced Blast in the model's top 3.
+- [ ] **Multishot against full armor**: the most missed pick there (131), while Viral, Corrosive and Blast crowd the top 3.
 - [ ] **Show shots per kill** on the page.
 - [ ] **"Judged at: A spread"**: decide its default once tried.
 
