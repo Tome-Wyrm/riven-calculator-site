@@ -150,6 +150,7 @@ export const HEADS = {
  * @property {Target} [target]     the unit fought, at its level (overrides armor)
  * @property {RoomUnit[]} [room]   a mix of units to clear, in place of the target (src/fight.js)
  * @property {{target: Target, room?: RoomUnit[]}[]} [spread]  the same at other levels: builds are judged on all of them (src/build.js `worth`)
+ * @property {import('./crowd.js').Crowd} [crowd]  the enemies around the target in a room: what gun attacks reach (src/crowd.js)
  * @property {number} [maxEnergy]  the frame's Max Energy, for Primary Overcharge (src/build.js)
  * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
  * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)

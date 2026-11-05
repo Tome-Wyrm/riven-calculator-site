@@ -168,7 +168,7 @@ export function modPool(cls, w, sc, opts) {
   const enemy = opts.enemy ?? '';
   return GUN_MODS.filter(m => fits.includes(m.compat) && (!m.needs || m.needs.some(t => tags.has(t)))
     && !(m.notWith ?? []).some(t => tags.has(t))).map(m => ({ m, p: piece(m.name, m.effects, sc, opts, m.excl ?? []) }))
-    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k) || k === enemy || (opts.melee?.heavy && HEAVY_STATS.has(k))) || p.elements.length)
+    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k) || k === enemy || (opts.melee?.heavy && HEAVY_STATS.has(k)) || (opts.crowd && k === 'punchThrough')) || p.elements.length)
     .map(({ p }) => p);
 }
 

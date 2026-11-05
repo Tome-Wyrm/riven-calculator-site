@@ -16,7 +16,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 const SETTINGS = {
   room: { label: 'Room clearing, any faction, armor stripped', scenario: 'room', opts: { enemy: '' } },
   burst: { label: 'Room clearing, any faction, armor stripped, burst (no reloads)', scenario: 'room', opts: { enemy: '', burst: true } },
-  mix: { label: 'Room clearing, the Grineer battlegroup without weaknesses, armor stripped', scenario: 'room', opts: { enemy: '' }, mix: true },
+  mix: { label: 'Room clearing, the Grineer battlegroup without weaknesses, armor stripped, a crowd of 6 at 50% clumping', scenario: 'room', opts: { enemy: '', crowd: { close: 6, clump: 0.5 } }, mix: true },
   single: { label: 'Single target, any faction, armor stripped', scenario: 'single', opts: { enemy: '' } },
   weak: { label: 'Weak points, any faction, armor stripped', scenario: 'weak', opts: { enemy: '' } },
   primed: { label: 'Room clearing, primed target', scenario: 'room', opts: { enemy: '', primed: true } },

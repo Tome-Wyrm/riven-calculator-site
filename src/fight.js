@@ -38,8 +38,11 @@
 // either.
 // A mixed room (opts.room: the Simulacrum's battlegroups): each unit fought as above, the room's DPS
 // its health and shields over the time all of it takes, so its toughest units count for what they
-// cost. Shots and seconds are per kill, averaged over the units. Enemies aren't hit together: beam
-// chains, Punch Through and explosions reaching a second enemy aren't followed.
+// cost. Shots and seconds are per kill, averaged over the units.
+// A crowd (opts.crowd, gun rooms): explosions, chains and Punch Through reach other enemies
+// (src/crowd.js). What they add is taken as more of the same: a room's kills come that much sooner,
+// by each attack's share of a shot. The others' armor and statuses aren't followed, nor kill stacks
+// building faster (they're counted as up).
 // Incarnon (opts.incarnon): a cycle, not the form alone. Normal fire until the gauge is full, the swap
 // in (a reload's time: Reload Speed shortens it), the form until its ammo is gone (fire rate spends it
 // sooner; nothing stretches it), the swap back (under a second: in game, Boar). The DPS is the two
@@ -72,6 +75,7 @@
 // could check the averages).
 
 import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, beamCount, blastPay, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
+import { reachOf } from './crowd.js';
 import { comboTier, swingOf, heavyMult, ANIMOSITY_HITS, COMBO_REGEN, MAX_COMBO, MAX_EFFICIENCY, MAX_TIER, TIER_POINTS } from './melee.js';
 
 /** The elemental statuses Melee Influence spreads (not physical, Void or Tau). */
@@ -193,6 +197,7 @@ function engage(w, t, opts) {
   const targets = opts.targets ?? 1;
   const raw = (/** @type {string} */ id) => t.stats[id] ?? 0;
   const mode = w.modes[opts.mode ?? w.main] ?? w.modes[0];
+  const crowd = targets > 1 && !(w.melee && opts.melee) ? opts.crowd : undefined;
   const enemy = opts.enemy ?? '';
   const wp = opts.weakpoint ?? 0;
   const faction = enemy ? Math.max(0, 1 + raw(enemy)) : 1;
@@ -244,7 +249,8 @@ function engage(w, t, opts) {
       procs.push([type, n, (base * D * faction * scale * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own]);
     }
     const [coShare, coMult] = p.co ?? [1, 0];
-    return [{ hits: Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets])), coShare, coMult, procs }];
+    return [{ hits: Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets])), coShare, coMult, procs,
+      reach: crowd ? reachOf(p, mode, raw('punchThrough'), crowd) : 0 }];
   });
   const melee = w.melee && opts.melee ? opts.melee : null;
   /** @type {Map<number, ReturnType<typeof volleysAt>>} */
@@ -533,7 +539,11 @@ function engage(w, t, opts) {
 
   if (targets <= 1 || !melee) {
     const r = one();
-    return { dps: ehp / Math.max(1e-9, r.pace), timePerKill: r.time, shotsPerKill: r.shots, perShot, interval, reload, hits, spread, aimed: perShot * aiming, ...(melee ? { tier: lastTier } : {}) };
+    // How much further a shot goes in a crowd: each attack's reach, by its share of the shot.
+    let landed = 0, beyond = 0;
+    if (crowd) for (const v of volleysOf(1)) for (const [, amount] of v.hits) { landed += amount; beyond += amount * v.reach; }
+    const reached = 1 + Math.min(crowd?.close ?? 0, beyond / Math.max(1e-9, landed));
+    return { dps: reached * ehp / Math.max(1e-9, r.pace), timePerKill: r.time / reached, shotsPerKill: r.shots / reached, perShot, interval, reload, hits, spread, aimed: perShot * aiming, ...(melee ? { tier: lastTier } : {}) };
   }
   {
     // A room of melee kills: the combo carries from target to target when it builds up; the enemies

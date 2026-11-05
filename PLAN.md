@@ -1192,11 +1192,27 @@ A fight takes about 0.06 ms; a search takes about 3,000 of them, and a study doz
 - Against the community's picks (`tools/score-optimiser.mjs mix`, the Grineer battlegroup, against twenty
   Heavy Gunners): first choices in the top 6 59% to 60%, slot 1 in the top 3 46% to 43%, in the best riven
   46% both, curses 49% to 50%. Ammo Efficiency in the model's top 3 fell from 55 guns to 44. Flat again.
-- [ ] **Hitting several enemies at once**, still open: beam chains (Boar's form: up to 3 beams, each
-  chaining to 2 enemies within 10 m at 80%; Amprex), Punch Through, explosions and Blast's radial. A
-  weapon that hits several also builds kill stacks faster, and not every part of a hit gets every
-  bonus (explosions don't count gun Condition Overload). Needs how clumped a room is: the melee
-  settings have one (`nearby`, `close`, `clump`), and guns would want each attack's radius.
+- [x] **Hitting several enemies at once** (2026-11-05; `src/crowd.js`). Guns in room builds get the melee
+  settings "Within 20 m" (6) and "Clumping %" (50): that many enemies spread evenly over a disc around the
+  target, 20 m in radius unclumped, 5 m fully. What each attack reaches, weighted by its share of the
+  shot, is taken as more of the same: the room falls that much faster.
+  - Explosions: the enemies inside the falloff's end range, at the falloff's average over the disc.
+    11 area attacks have no falloff in the wiki's data, so no known radius: nothing.
+  - Chains: `mode.chain`, from each weapon's wiki page (Amprex, Atomos, Basmu, Kuva Nukor, Larkspur, Tenet
+    Cycron, Tenet Glaxion, Torid's and Boar's forms). A link needs an enemy in range.
+  - Boar's form: "up to 3 beams". The other two are taken to need a further target and to do what the
+    first does, which is what puts the form at 7x in a crowd of 6. Unverified, and the biggest number here.
+  - Punch Through: the enemies in a 1.5 m path behind the target, 0.6 m a body (the wiki's Butchers), no
+    damage lost, none for area attacks or beams. A stat now in room builds: Soma Prime +23% for +1.5 m.
+  - What it does: Tonkor, Kuva Zarr and Kuva Bramma about 1.9x, Acceltra Prime 1.35x, Amprex 1.85x. Mostly a
+    multiplier on the whole gun, so it moves builds less than it moves a gun's DPS, except Punch
+    Through and anything that favours direct hits over explosions.
+  - Against the community's picks (`mix`, with and without the crowd): first choices in the top 6 60% both,
+    slot 1 in the top 3 43% to 45%, in the best riven 46% to 47%, curses 50% to 52%. Punch Through leaves
+    the most missed; Ammo Efficiency in the model's top 3 falls from 44 guns to 35.
+  - Not followed: the others' armor and statuses, kill stacks building faster (they're counted as up),
+    Blast's radial, and beam zones (Ignis Wraith, Glaxion Vandal, Embolist, Catabolyst, Cortege: not in
+    the wiki's attack data, so those guns reach nothing).
 
 - [x] **Primary Overcharge** (2026-11-05): a Max Energy setting for guns with a primary arcane slot. 35% of
   Max Energy as Multishot, to +350% at 1000, added to the mods' (in game: 45.6 pellets on Boar Prime with

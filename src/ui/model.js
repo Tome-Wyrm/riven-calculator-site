@@ -15,6 +15,7 @@ import { arcaneNames, SCENARIOS } from '../build.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
 import { targetOf, roomOf } from '../enemies.js';
 import { BATTLEGROUPS } from '../data/battlegroups.js';
+import { crowdRadius } from '../crowd.js';
 import { picksFor, communityFit } from '../picks.js';
 import { el, statName, segmented, select, ipsOf } from './dom.js';
 import { oneOf } from './state.js';
@@ -257,6 +258,7 @@ export function modelBlock(weapon, cls, rerender) {
     ...(target ? { target, ...roomAt(s.level) } : { armor: s.armor }),
     ...(target && s.spread ? { spread: levels.map(l => ({ target: /** @type {import('../sim.js').Target} */ (targetAt(l)), ...roomAt(l) })) } : {}),
     ...(s.energy ? { maxEnergy: s.energy } : {}),
+    ...(!isMelee && SCENARIOS[s.scenario].kills ? { crowd: { close: s.close, clump: s.clump / 100 } } : {}),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
     ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
   };
@@ -312,6 +314,7 @@ export function modelBlock(weapon, cls, rerender) {
       s.arcane === null ? '*' : s.arcane || '-', v => set({ arcane: v === '*' ? null : v === '-' ? '' : v }))] : []),
     ...(arcanes.includes('Primary Overcharge') ? [num('Max Energy', s.energy, 9999, v => set({ energy: v }))] : []),
     ...meleeControls,
+    ...(!isMelee && SCENARIOS[s.scenario].kills ? [num('Within 20 m', s.close, 40, v => set({ close: v })), num('Clumping %', s.clump, 100, v => set({ clump: v }))] : []),
     select('Enemy', [['', 'Any (no faction bonus)'], ...enemies.GROUPS.map(g => /** @type {[string, string]} */ ([g.id, g.name]))], group?.id ?? '',
       v => set({ enemy: v, unit: '' })),
     ...(unit ? [
@@ -357,6 +360,7 @@ export function modelBlock(weapon, cls, rerender) {
     + (incarnon === 'on' && s.burst ? 'Incarnon, burst: the whole fight in the form. ' : '')
     + (opts.spread ? `Judged at levels ${levels[0]}, ${s.level} and ${levels[1]}: DPS and percentages are the geometric mean of the three (each level counts the same); shots and seconds are level ${s.level}’s. ` : '')
     + (arcanes.includes('Primary Overcharge') ? (s.energy ? `Primary Overcharge at ${s.energy} Max Energy: +${Math.round(Math.min(350, 0.35 * s.energy))}% Multishot, taken to be always on (it wants 90% Energy or more). ` : 'Primary Overcharge counts for nothing until you give your Max Energy. ') : '')
+    + (opts.crowd ? `A crowd of ${s.close} enem${s.close === 1 ? 'y' : 'ies'} around each target, within ${Math.round(crowdRadius(opts.crowd))} m at ${s.clump}% clumping: explosions, chains and Punch Through reach them, and the room falls that much faster. ` : '')
     + (isBeam ? `A beam: Multishot rolls to a whole number each tick and multiplies its damage and status chance, not its crits, so it counts twice in damage over time and Hunter Munitions rolls once a tick. It starts each target at ${Math.round(w.modes[mode].held * 100)}% damage, full after 0.6 s. ` : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);

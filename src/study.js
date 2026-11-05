@@ -171,9 +171,11 @@ function* studySteps(input) {
     let cursed = [];
     for (let round = 0; round < 3; round++) {
       const from = base;
-      const live = ids.filter(id => !NO_DPS.has(id));
+      // (Punch Through counts in a crowd.)
+      const inert = (/** @type {string} */ id) => NO_DPS.has(id) && !(opts.crowd && id === 'punchThrough');
+      const live = ids.filter(id => !inert(id));
       const builds = live.length ? yield searches(live.map(id => withRiven({ ...roll, [id]: raw(id, '-') }, from))) : [];
-      cursed = ids.map(id => ({ id, b: NO_DPS.has(id) ? from : builds[live.indexOf(id)] }));
+      cursed = ids.map(id => ({ id, b: inert(id) ? from : builds[live.indexOf(id)] }));
       [base] = yield* orBetter([{ roll, own: from, others: cursed.map(c => c.b) }]);
       if (base === from) break;
     }
