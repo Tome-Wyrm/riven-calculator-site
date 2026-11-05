@@ -9,7 +9,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { SHAPE_ORDER } from '../engine.js';
 import { pools } from '../cycle.js';
 import { VALENCE_TYPES } from '../sim.js';
-import { evolutionsOf } from '../incarnon.js';
+import { evolutionsOf, isForm, takesAdapter } from '../incarnon.js';
 import { combosFor, PLAIN } from '../melee.js';
 import { arcaneNames } from '../build.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
@@ -45,12 +45,16 @@ export const modelState = {
   burst: false,
   valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
   valencePct: 60,                             // and its size, 25–60%
+  // An Incarnon gun: no adapter, adapter installed and firing normally, or in its Incarnon Form.
+  incarnon: /** @type {'normal' | 'off' | 'on'} */ ('off'),
   perks: /** @type {number[] | null} */ (null), // an incarnon's perk per evolution; null = the best combination
   perksOf: '',                                // the weapon those perks are for
   arcane: /** @type {string | null} */ (null), // the arcane builds carry: null = the best found, '' = none
   // Melee:
   combo: /** @type {'initial' | 'max' | 'build'} */ ('build'), // the combo counter
   stanceCombo: '',                            // "Stance|Combo" ('' = the best per swing)
+  heavy: false,                               // heavy attacks, not only normal ones
+  heavyAt: 6,                                 // the combo tier a built-up counter spends at
   nearby: 3,                                  // enemies inside a swing (room clearing)
   close: 6,                                   // enemies within 20 m of the target (Melee Influence)
   clump: 50,                                  // clumping, %: how many of those stand within 20 m of each other
@@ -64,8 +68,9 @@ export function modelFields() {
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
     armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '',
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
-    perks: s.perks ? s.perks.join('.') : '',
+    inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
     arc: s.arcane === null ? '' : s.arcane || '-', combo: s.combo === 'build' ? '' : s.combo, sc2: s.stanceCombo,
+    hv: s.heavy ? 1 : '', hvat: s.heavyAt === 6 ? '' : s.heavyAt,
     near: s.nearby === 3 ? '' : s.nearby, close: s.close === 6 ? '' : s.close, clump: s.clump === 50 ? '' : s.clump,
   };
 }
@@ -87,14 +92,17 @@ export function restoreModel(raw) {
   if (VALENCE_TYPES.includes(raw.val ?? '')) modelState.valence = raw.val;
   const pct = Number(raw.valp);
   if (raw.valp && pct >= 25 && pct <= 60) modelState.valencePct = pct;
+  if (raw.inc === 'normal' || raw.inc === 'on') modelState.incarnon = raw.inc;
   // "0.2.2.0": checked against the weapon's evolutions when it's shown.
   if (/^-?\d(\.-?\d){0,3}$/.test(raw.perks ?? '')) { modelState.perks = raw.perks.split('.').map(Number); modelState.perksOf = '?'; }
   // The arcane is checked against the weapon's slot when it's shown ('-': none).
   if (raw.arc) modelState.arcane = raw.arc === '-' ? '' : raw.arc;
   if (raw.combo === 'initial' || raw.combo === 'max') modelState.combo = raw.combo;
   if (raw.sc2) modelState.stanceCombo = raw.sc2;
+  if (raw.hv === '1') modelState.heavy = true;
   const count = (/** @type {string | undefined} */ v, /** @type {number} */ max) => (v && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= max ? Number(v) : null);
   modelState.nearby = count(raw.near, 20) || modelState.nearby;
+  modelState.heavyAt = count(raw.hvat, 12) || modelState.heavyAt;
   modelState.close = count(raw.close, 40) ?? modelState.close;
   modelState.clump = count(raw.clump, 100) ?? modelState.clump;
 }
@@ -168,7 +176,7 @@ const killText = (b, melee = false) => {
   const word = melee ? 'swing' : 'shot';
   const detail = el('span', { class: 'kill-detail', hidden: '' }, [melee
     ? `${big(b.dps)} DPS · first swing ${big(f.perShot)} · ${f.seconds.toFixed(2)} s a kill · ${f.tier ?? 1}x combo at the kill`
-    : `${big(b.dps)} DPS · ${big(f.perShot)} a shot (the first, on a fresh target) · ${f.seconds.toFixed(2)} s a kill, reloads included`]);
+    : `${big(b.dps)} DPS · ${big(f.perShot)} a shot (the first, on a fresh target) · ${f.seconds.toFixed(2)} s a kill at the sustained rate`]);
   const button = el('button', { type: 'button', class: 'kill-shots', 'aria-expanded': 'false' }, [`${shots} ${word}${shots === '1' ? '' : 's'} to kill`]);
   button.addEventListener('click', () => {
     const open = detail.hidden;
@@ -208,6 +216,12 @@ export function modelBlock(weapon, cls, rerender) {
   const evolutions = evolutionsOf(weapon);
   if (s.perksOf === '?') s.perksOf = weapon;
   if (s.perksOf !== weapon || s.perks?.length !== evolutions.length) { s.perks = null; s.perksOf = weapon; }
+  // Normal, Incarnoff or Incarnon: the choice decides the perks and which fire modes there are. (A
+  // link from before the choice names the Incarnon Form as its fire mode.)
+  if (w.modes[s.mode] && isForm(w.modes[s.mode])) s.incarnon = 'on';
+  const incarnon = !evolutions.length ? 'normal' : s.incarnon === 'normal' && !takesAdapter(weapon) ? 'off' : s.incarnon;
+  const modes = w.modes.flatMap((m, i) => (isForm(m) === (incarnon === 'on') ? [i] : []));
+  const mode = modes.includes(s.mode) ? s.mode : modes.includes(w.main) ? w.main : modes[0];
   // The target: one of the faction's units at its level. Any faction: a Grineer unit's health and
   // armor without faction weaknesses (builds are judged by fights, src/fight.js, so there's always one).
   const group = enemies.GROUPS.find(g => g.id === s.enemy) ?? null;
@@ -223,9 +237,9 @@ export function modelBlock(weapon, cls, rerender) {
   const chosen = combos.find(c => `${c.stance}|${c.combo.name}` === s.stanceCombo) ?? combos[0] ?? null;
   const comboName = chosen ? `${chosen.stance}, ${chosen.combo.name}` : 'none in the wiki’s data: plain hits';
   const opts = {
-    mode: s.mode < 0 ? w.main : s.mode, enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
+    mode, enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
     ...(s.arcane !== null ? { arcane: s.arcane } : {}),
-    ...(isMelee ? { melee: { attacks: chosen?.combo.attacks ?? PLAIN, combo: s.combo, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
+    ...(isMelee ? { melee: { attacks: chosen?.combo.attacks ?? PLAIN, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
     ...(target ? { target } : { armor: s.armor }),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
     ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
@@ -259,13 +273,20 @@ export function modelBlock(weapon, cls, rerender) {
     el('div', { class: 'field' }, [el('span', {}, ['Combo counter']), segmented('Combo counter', ['initial', 'max', 'build'], s.combo,
       v => set({ combo: /** @type {'initial' | 'max' | 'build'} */ (v) }), v => ({ initial: 'Initial', max: 'Max (12x)', build: 'Built up' })[v] ?? v,
       () => 'Held at the initial combo, held at the max, or built up by the hits (room clearing carries it from kill to kill)')]),
+    ...(w.melee?.heavy ? [el('div', { class: 'field' }, [el('span', {}, ['Attacks']), segmented('Attacks', ['normal', 'heavy'], s.heavy ? 'heavy' : 'normal',
+      v => set({ heavy: v === 'heavy' }), v => ({ normal: 'Normal', heavy: 'Heavy' })[v] ?? v,
+      () => 'Normal attacks only, or heavy attacks: a built-up counter spends its combo at the tier below; a held one heavy attacks every time')])] : []),
+    ...(w.melee?.heavy && s.heavy && s.combo === 'build' ? [num('Heavy at tier', s.heavyAt, 12, v => set({ heavyAt: Math.max(1, v) }))] : []),
     num('In the swing', s.nearby, 20, v => set({ nearby: Math.max(1, v) })),
     num('Within 20 m', s.close, 40, v => set({ close: v })),
     num('Clumping %', s.clump, 100, v => set({ clump: v })),
   ] : [];
   const controls = el('div', { class: 'controls model-controls' }, [
     el('div', { class: 'field' }, [el('span', {}, ['Shape']), segmented('Shape', SHAPE_ORDER, s.shape, v => set({ shape: /** @type {Shape} */ (v) }))]),
-    ...(w.modes.length > 1 ? [select('Fire mode', w.modes.map((m, i) => /** @type {[string, string]} */ ([String(i), m.name])), String(opts.mode), v => set({ mode: Number(v) }))] : []),
+    ...(evolutions.length ? [el('div', { class: 'field' }, [el('span', {}, ['Incarnon']), segmented('Incarnon', takesAdapter(weapon) ? ['normal', 'off', 'on'] : ['off', 'on'], incarnon,
+      v => set({ incarnon: /** @type {'normal' | 'off' | 'on'} */ (v), mode: -1 }), v => ({ normal: 'Normal', off: 'Incarnoff', on: 'Incarnon' })[v] ?? v,
+      v => ({ normal: 'No adapter: the plain gun', off: 'Evolved, firing normally', on: 'Evolved, in its Incarnon Form' })[v] ?? v)])] : []),
+    ...(modes.length > 1 ? [select('Fire mode', modes.map(i => /** @type {[string, string]} */ ([String(i), w.modes[i].name])), String(mode), v => set({ mode: Number(v) }))] : []),
     ...(w.adversary ? [
       select('Valence bonus', [['best', 'Best (each tried)'], ...VALENCE_TYPES.map(v => /** @type {[string, string]} */ ([v, typeName(v)]))], s.valence, v => set({ valence: v })),
       el('label', { class: 'field' }, [el('span', {}, ['Bonus %']), valencePct]),
@@ -290,7 +311,7 @@ export function modelBlock(weapon, cls, rerender) {
   ]);
   const about = el('p', { class: 'note' }, [
     `For each riven, the best build the search finds around it (eight slots, the riven taking one, and an arcane), `
-    + `judged by fights against the target: the shots a kill takes, reloads included (twenty targets in a row for room clearing and weak points, one for single target). A gun that already kills in one shot gains nothing from more damage, only from shooting sooner. The percentages are kill speed, `
+    + `judged by fights against the target at the gun’s sustained rate: each shot carries its share of the reload, so a kill that only just fits a magazine counts for no more than one that doesn’t (twenty targets in a row for room clearing and weak points, one for single target). Damage past a one-shot kill still counts: a riven serves on tougher targets than this one too. The percentages are DPS, `
     + `against the best build without a riven, at median rolls on a ${s.shape} riven (spliced stats keep the better `
     + `of two rolls, so theirs is higher). ${{
       room: 'Room clearing: kills keep on-kill stacks (Galvanized mods, Merciless) at their maximum; body shots',
@@ -306,14 +327,15 @@ export function modelBlock(weapon, cls, rerender) {
     + (unit && target ? `Target: ${unit.name}${group ? (group.bane ? '' : ` (${group.name}: no riven faction stat applies)`) : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
       + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
-    + (isMelee ? `Melee: normal attacks only (no heavy attacks, slams or finishers yet), a swing being the next attack of the stance combo (${comboName}): its hits’ multipliers and counts, not its timing. `
+    + (isMelee ? `${s.heavy && w.melee?.heavy ? `Heavy attacks: ${w.melee.heavy} damage x the combo multiplier, one hit after the ${w.melee.windUp} s wind up (Wind Up Speed shortens it, attack speed doesn’t; no recovery counted), ${s.combo === 'build' ? `spending the combo at ${s.heavyAt}x, keeping Heavy Attack Efficiency’s share (at most 90%); spent Initial Combo returns at 40 a second` : 'every attack, the counter held'}; True Steel’s and rivens’ Critical Chance count twice. ` : ''}Melee: no slams or finishers yet, a swing being the next attack of the stance combo (${comboName}): its hits’ multipliers and counts, not its timing. `
       + `The combo counter is ${{ initial: 'held at the initial combo', max: 'held at 12x', build: 'built up by the hits (each hit adds its multiplier in points; room clearing carries it from kill to kill)' }[s.combo]}; Blood Rush and Weeping Wounds add theirs per tier past 1x. `
       + `Room clearing: ${s.nearby} enem${s.nearby === 1 ? 'y' : 'ies'} in each swing, each further one at ${Math.round((w.melee?.ft ?? 1) * 100)}% follow through of the one before; `
       + `Melee Influence spreads elemental procs to ${s.close} enem${s.close === 1 ? 'y' : 'ies'} within 20 m, each taking 1 + ${s.clump}% x the others as copies (clumped enemies pass it on to each other). ` : '')
+    + (incarnon === 'on' ? 'Incarnon Form: the whole fight in the form, its charge and ammo not counted. ' : '')
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
 
-  const result = studyOf({ weapon, cls: /** @type {import('../study.js').StudyInput['cls']} */ (cls), shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative, perks: s.perks ?? 'best' }, rerender);
+  const result = studyOf({ weapon, cls: /** @type {import('../study.js').StudyInput['cls']} */ (cls), shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative, perks: s.perks ?? 'best', adapter: incarnon !== 'normal' }, rerender);
   if (result === 'pending') return [head, controls, about, el('p', { class: 'note busy' }, ['Working out the builds…'])];
   if ('error' in result) return [head, controls, el('p', { class: 'note warn' }, [`The model failed: ${result.error}`])];
 
@@ -381,7 +403,7 @@ export function modelBlock(weapon, cls, rerender) {
   // An incarnon's evolutions: the perks the study used (the best combination unless you chose).
   /** @type {HTMLElement[]} */
   const perkBlock = [];
-  if (evolutions.length) {
+  if (evolutions.length && incarnon !== 'normal') {
     const used = result.perks;
     const roman = ['', '', 'II', 'III', 'IV', 'V'];
     const reset = el('button', { type: 'button', class: 'copy-link' }, ['Back to the best']);

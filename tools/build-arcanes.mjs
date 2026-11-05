@@ -45,11 +45,12 @@ const slotOf = name => (/^(Primary|Shotgun) /.test(name) ? 'primary' : /^Seconda
 
 /**
  * Melee arcanes whose text isn't a plain stat, as the model uses them at max rank (each assumption in
- * the note). Heavy attack, finisher, roll and kill arcanes (Animosity, Assimilation, Crescendo,
- * Careen, Vortex) don't change normal attacks and stay out.
+ * the note). Assimilation (needs a shield break), and the finisher, roll and kill arcanes (Crescendo,
+ * Careen, Vortex) stay out.
  * @type {Record<string, {effects: import('./lib/mod-text.mjs').Effect[], note: string}>}
  */
 const MELEE_EFFECTS = {
+  'Melee Animosity': { effects: [{ stat: 'animosity', value: 4.2 }], note: 'Heavy attacks only: +42% Critical Chance per normal hit since the last one, up to 420% (additive; all of it on a held combo counter).' },
   'Melee Exposure': { effects: [{ stat: 'corrosive', value: 2.4 }], note: 'At its 240% cap: abilities cast often enough to keep it stacked.' },
   'Melee Retaliation': { effects: [{ stat: 'damage', value: 4.2 }], note: 'At its 420% cap: 2,800 shields or more (not overshields).' },
   'Melee Duplicate': { effects: [{ stat: 'duplicate', value: 1 }], note: 'Each base (yellow) critical hit strikes again, rolling crit and status anew.' },

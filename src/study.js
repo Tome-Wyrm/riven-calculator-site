@@ -6,8 +6,8 @@
 import { WEAPON_STATS } from './data/weapon-stats.js';
 import { STAT_BY_ID, SHAPES } from './data/stats.js';
 import { rawValue, displayValue, format } from './engine.js';
-import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, fightOf, SCENARIOS } from './build.js';
-import { VALENCE_TYPES } from './sim.js';
+import { modPool, arcanePool, optimise, optimiseEach, rivenPiece, fightOf, worth, SCENARIOS } from './build.js';
+import { NO_DPS, VALENCE_TYPES } from './sim.js';
 import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
@@ -26,6 +26,7 @@ import { evolutionsOf, withPerks, bestPerks } from './incarnon.js';
  * @property {string[]} negatives  and as the curse
  * @property {number[] | 'best'} [perks]  an incarnon's perk per evolution (index; -1 none), or 'best'
  *   (default): the combination that does most with the reference build
+ * @property {boolean} [adapter]  false: a gun that takes an Incarnon Genesis adapter, without one (no perks)
  */
 
 /**
@@ -50,7 +51,7 @@ export function study(input) {
   const opts = { ...input.opts, weakpoint: sc.weakpoint, targets: sc.kills ? 20 : 1 };
   // An incarnon: the gun as evolved (Felarx's Devastating Attrition turns crit chance into a cost).
   const plain = WEAPON_STATS[input.weapon];
-  const perks = !evolutionsOf(input.weapon).length || cls === 'melee' ? []
+  const perks = !evolutionsOf(input.weapon).length || cls === 'melee' || input.adapter === false ? []
     : Array.isArray(input.perks) ? input.perks : bestPerks(plain, input.weapon, cls, { ...opts, valence: undefined });
   const w = withPerks(plain, input.weapon, perks);
   const pool = modPool(cls, w, sc, opts);
@@ -73,6 +74,14 @@ export function study(input) {
   const shown = (/** @type {string} */ id, /** @type {'+' | '-'} */ sign) => format(STAT_BY_ID[id], displayValue(STAT_BY_ID[id], cls, shape, sign, sign === '+' ? medianU(id) : 0.5));
   /** @param {Record<string, number>} roll @param {Build} from */
   const withRiven = (roll, from) => optimise(w, pool, arcanes, opts, { riven: rivenPiece(roll), start: from.slots });
+  // The search can stick on a poor build, and where it starts decides which: `own`, unless the riven
+  // does better on the mods of one of `others`; then a search from the best of those.
+  const orBetter = (/** @type {Record<string, number>} */ roll, /** @type {Build} */ own, /** @type {Build[]} */ others) => {
+    const piece = rivenPiece(roll);
+    const tried = others.map(b => ({ b, dps: worth(w, { ...b, slots: b.slots.map(p => (p.riven ? piece : p)) }, opts) }));
+    const best = tried.reduce((x, y) => (y.dps > x.dps ? y : x), { b: own, dps: own.dps * (1 + 1e-9) });
+    return best.b === own ? own : withRiven(roll, best.b);
+  };
 
   const none = found ?? optimise(w, pool, arcanes, opts);
   const shownBuild = (/** @type {Build} */ b) => summary(b, fightOf(w, b, opts));
@@ -105,29 +114,37 @@ export function study(input) {
 
   // Each curse on the best riven, against that riven without it.
   const best = sets[0];
-  /** @type {{id: string, shown: string, change: number, shot: number}[]} */
+  /** @type {{id: string, shown: string, change: number}[]} */
   let curses = [];
   if (best && SHAPES[shape].negatives) {
     const roll = Object.fromEntries(best.ids.map(id => [id, raw(id, '+')]));
-    const base = withRiven(roll, empty);
-    // Ties in kill speed (a gun that already kills in one shot) go to the curse that leaves the most
-    // damage per shot: Felarx's −Critical Chance (Devastating Attrition) beats a harmless faction curse,
-    // as it would on a tougher target.
-    const baseShot = fightOf(w, base, opts)?.perShot ?? 0;
-    curses = input.negatives.filter(id => !best.ids.includes(id)).map(id => {
-      const b = withRiven({ ...roll, [id]: raw(id, '-') }, base);
-      const shot = fightOf(w, b, opts)?.perShot ?? 0;
-      return { id, shown: shown(id, '-'), change: b.dps / base.dps - 1, shot: baseShot ? shot / baseShot - 1 : 0 };
-    }).sort((a, b) => (Math.abs(b.change - a.change) > 1e-9 ? b.change - a.change : b.shot - a.shot));
+    let base = withRiven(roll, empty);
+    // A curse can shake the search loose onto mods that do better without the curse too: then it was
+    // the mods, not the curse (a −Magazine showed +5% so), so the riven without it gets them as well.
+    const ids = input.negatives.filter(id => !best.ids.includes(id));
+    /** @type {{id: string, b: Build}[]} */
+    let cursed = [];
+    for (let round = 0; round < 3; round++) {
+      const from = base;
+      cursed = ids.map(id => ({ id, b: NO_DPS.has(id) ? from : withRiven({ ...roll, [id]: raw(id, '-') }, from) }));
+      base = orBetter(roll, from, cursed.map(c => c.b));
+      if (base === from) break;
+    }
+    curses = cursed.map(({ id, b }) => ({ id, shown: shown(id, '-'), change: b.dps / base.dps - 1 })).sort((a, b) => b.change - a.change);
     // A shape with a curse always has one: each best riven carries the best curse it can (the
     // kindest on the best riven, or the next for a riven that rolls that stat as a positive).
     for (const set of sets) {
       const c = curses.find(x => !set.ids.includes(x.id));
-      if (!c) continue;
-      const b = withRiven({ ...Object.fromEntries(set.ids.map(id => [id, raw(id, '+')])), [c.id]: raw(c.id, '-') }, empty);
-      Object.assign(set, { curse: { id: c.id, shown: c.shown }, change: b.dps / none.dps - 1, build: shownBuild(b) });
+      if (c) Object.assign(set, { curse: { id: c.id, shown: c.shown } });
     }
-    sets.sort((a, b) => b.change - a.change);
   }
+  // Each best riven gets the best mods any of them found: one that stuck mustn't rank below the others.
+  const rollOf = (/** @type {typeof sets[number] & {curse?: {id: string}}} */ set) => ({ ...Object.fromEntries(set.ids.map(id => [id, raw(id, '+')])), ...(set.curse ? { [set.curse.id]: raw(set.curse.id, '-') } : {}) });
+  const searched = sets.map(set => withRiven(rollOf(set), empty));
+  for (const [i, set] of sets.entries()) {
+    const b = orBetter(rollOf(set), searched[i], searched);
+    Object.assign(set, { change: b.dps / none.dps - 1, build: shownBuild(b) });
+  }
+  sets.sort((a, b) => b.change - a.change);
   return { none: shownBuild(none), empty: empty.dps, singles, cursesOn: best?.ids ?? [], sets: /** @type {(typeof sets[number] & {curse?: {id: string, shown: string}})[]} */ (sets), curses, valences, valence: opts.valence ?? null, perks };
 }

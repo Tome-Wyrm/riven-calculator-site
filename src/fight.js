@@ -1,11 +1,12 @@
 // @ts-check
 // The fight: a build against its target, shot by shot, until it dies. The questions are "is it dead
-// yet?" and "how many shots did it take?": a gun that kills in one shot gains nothing from more
-// damage, only from shooting again sooner.
+// yet?" and "how many shots did it take?". The DPS it gives counts overkill: a riven serves on more
+// than this target, so a gun that one-shots it still gains from more damage (what it takes on the
+// next, tougher one), though the shots and seconds it reports can't go below one shot.
 //
 // Stepped by shots (the fire rate), not by engine ticks: each shot lands its expected damage (crits,
 // weak points and procs as averages, so builds compare without random noise), and between shots the
-// damage over time runs as a rate, so a DoT that kills between shots is found where it does.
+// damage over time runs as a rate.
 // - A shot: the hit by type (src/sim.js's maths), x faction, x Damage (Galvanized's Direct Damage
 //   counting the status types on this target now), into shields first (Toxin skips them; Magnetic
 //   stacks multiply what they take; damage past them spills to health), then health (its faction
@@ -16,29 +17,42 @@
 //   rounding up). Between shots the ticks run as a rate, each spread over the second around it (from
 //   half a second after the proc). Heat stacks share one timer that each whole Heat proc resets, so
 //   they ramp while procs keep coming. Heat strips armor in steps (15%, 30%, 40%, 50%),
-//   one every 0.5 s x (1 + Status Duration). Shields breaking deal 3% of the max shields per
-//   Magnetic stack as Electricity.
+//   one every 0.5 s x (1 + Status Duration), averaged over where a shot falls against them (shots
+//   just either side of a step differ by 15%: luck, which made a faster reload worse). Shields
+//   breaking deal 3% of the max shields per Magnetic stack as Electricity.
 // - Reloads: a magazine of shots (Ammo Efficiency stretches it), then the reload; bursts ignore them.
-// - Room clearing: a run of identical targets (statuses don't carry over, the magazine does). One
-//   fight without reloads gives the shots a kill takes, and the reloads are spread over the kills
-//   (each magazine's reload in place of a shot's interval). Single target: one fight, reloads and all
-//   (its DoTs keep ticking through them). A target alive after 20 s is finished at the rate it has
-//   been losing health.
-// A kill's time: a shot that kills counts for the share of it the kill needed (the smooth average
-// of what crit rolls spread), never less than one shot; a DoT that kills between shots, when it
-// does. The result is an effective DPS, the targets' health and shields over the time taken, so it
-// reads like the closed form (src/sim.js dpsOf) and the optimiser can use either.
+//   Every shot carries its share of the reload (each magazine's reload in place of a shot's
+//   interval), so a fight runs at the gun's sustained rate, DoTs ticking and statuses fading through
+//   it. Not the real reload's place in the fight: where it falls depends on what the magazine held
+//   when the fight began, and a kill that only just fits a full magazine isn't worth 3x one that
+//   doesn't (the cliff: one round more or less swung a build from 1.4 s a kill to 5 s).
+// - Room clearing: a run of identical targets (statuses don't carry over, the magazine does), so one
+//   fight stands for them all. Single target: one fight. A target alive after 20 s is finished at the
+//   rate it has been losing health.
+// A kill's time: the last interval and the shot ending it count for the share of them the kill
+// needed (the smooth average of what crit rolls spread), DoT and hit alike, never less than one
+// shot. So a little more damage always kills a little sooner: a kill by a DoT between shots runs
+// into a kill by the shot before it without a jump. The result is an effective DPS, the targets'
+// health and shields over the time taken (without that floor: past a one-shot kill, the share of
+// the shot it needed), so it reads like the closed form (src/sim.js dpsOf) and the optimiser can use
+// either.
 // Melee (src/melee.js): a shot is a swing, the next attack of the stance combo (its hits' multipliers
 // summed for damage, each hit rolling crit and status), at the attack speed. The combo counter is
 // held at the initial combo or the max, or built up by the hits (room clearing carries it from target
 // to target); Blood Rush and Weeping Wounds add their bonus per tier past 1x. In room clearing, the
 // enemies inside a swing (opts.melee.nearby) each take the follow through's share of the one before
 // and add combo points: the room falls that much faster.
+// Heavy attacks (opts.melee.heavy): the wiki's heavy damage x the combo multiplier, one hit after the
+// wind up (Wind Up Speed shortens it; attack speed doesn't; no recovery is known, so none is counted).
+// A built-up counter swings normally until opts.melee.heavyAt's tier, then spends the combo, keeping
+// Heavy Attack Efficiency's share (at most 90%); it adds no combo, and spent Initial Combo comes back
+// at 40 points a second. A held counter heavy attacks every time. True Steel's and rivens' crit chance
+// count twice, Melee Animosity adds 42% per normal hit since the last heavy (all 420% on a held counter).
 // Not modelled yet: Blast stacks, extra hits, abilities (Phase 14), random rolls (a Monte Carlo run
 // could check the averages).
 
-import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
-import { comboTier, swingOf, MAX_COMBO, MAX_TIER, TIER_POINTS } from './melee.js';
+import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
+import { comboTier, swingOf, heavyMult, ANIMOSITY_HITS, COMBO_REGEN, MAX_COMBO, MAX_EFFICIENCY, MAX_TIER, TIER_POINTS } from './melee.js';
 
 /** The elemental statuses Melee Influence spreads (not physical, Void or Tau). */
 const ELEMENTAL = new Set(['cold', 'electricity', 'heat', 'toxin', 'blast', 'corrosive', 'gas', 'magnetic', 'radiation', 'viral']);
@@ -50,12 +64,21 @@ const ELEMENTAL = new Set(['cold', 'electricity', 'heat', 'toxin', 'blast', 'cor
 
 /** Heat's armor strip after each step of 0.5 s x (1 + Status Duration). */
 const HEAT_STRIP = [0, 0.15, 0.3, 0.4, 0.5];
+/**
+ * Heat's strip `steps` of its time in: each step reached halfway to the next on average, running
+ * between them (a shot's timing against the steps is luck). @param {number} steps
+ */
+const heatStrip = steps => {
+  const x = Math.min(HEAT_STRIP.length - 1, Math.max(0, steps - 0.5));
+  const i = Math.min(HEAT_STRIP.length - 2, Math.floor(x));
+  return HEAT_STRIP[i] + (HEAT_STRIP[i + 1] - HEAT_STRIP[i]) * (x - i);
+};
 /** Seconds simulated on one target before the rest is extrapolated. */
 const TARGET_SECONDS = 20;
 
 /**
  * @typedef {object} FightResult
- * @property {number} dps          the targets' health and shields over the time taken
+ * @property {number} dps          the targets' health and shields over the time taken, overkill counted
  * @property {number} timePerKill  seconds, from the first shot until the gun is ready for the next target
  * @property {number} shotsPerKill
  * @property {number} perShot      the first shot's damage to a fresh target (health and shields; overkill counts)
@@ -128,17 +151,25 @@ export function fight(w, t, opts) {
   const byTier = new Map();
   // The stats that change with the tier: without any, every tier is the same.
   const perTier = Object.keys(t.stats).filter(k => k.endsWith('PerTier') && t.stats[k]);
-  const volleysOf = (/** @type {number} */ tier) => {
-    const key = perTier.length ? tier : 1;
+  // `animosity`: a heavy attack's Animosity stacks; -1 for a normal attack.
+  const volleysOf = (/** @type {number} */ tier, animosity = -1) => {
+    const level = perTier.length ? tier : 1;
+    const key = level + (animosity + 1) * (MAX_TIER + 1);
     let v = byTier.get(key);
     if (!v) {
       const stats = { ...t.stats };
-      for (const k of perTier) { const id = k.slice(0, -'PerTier'.length); stats[id] = (stats[id] ?? 0) + t.stats[k] * (key - 1); }
+      for (const k of perTier) { const id = k.slice(0, -'PerTier'.length); stats[id] = (stats[id] ?? 0) + t.stats[k] * (level - 1); }
+      if (animosity >= 0) stats.critChance = (stats.critChance ?? 0) + (stats.critChanceHeavy ?? 0) + (stats.animosity ?? 0) * animosity / ANIMOSITY_HITS;
       byTier.set(key, v = volleysAt(id => stats[id] ?? 0));
     }
     return v;
   };
   const swings = melee ? melee.attacks.map(swingOf) : [];
+  // Heavy attacks: what one does at 1x, its wind up, and what it leaves of the combo.
+  const heavyBase = melee?.heavy ? heavyMult(w) * (D > 0 ? Math.max(0, D + raw('meleeDamageOnHeavy')) / D : 1) : 0;
+  const windUp = (w.melee?.windUp ?? 0) / Math.max(0.05, 1 + raw('heavyWindup'));
+  const kept = Math.min(MAX_EFFICIENCY, Math.max(0, raw('heavyEfficiency')));
+  const heavyAt = Math.min(MAX_TIER, Math.max(1, melee?.heavyAt ?? MAX_TIER));
   // The enemies inside a swing (room clearing): the target, then each further one at the follow
   // through's share of the one before. They fall together: the room goes that much faster.
   const nearby = melee && targets > 1 ? Math.max(1, Math.round(melee.nearby ?? 1)) : 1;
@@ -166,18 +197,19 @@ export function fight(w, t, opts) {
   // The magazine: shots before a reload (none for Incarnon modes, weapons without one, or bursts).
   const reloads = !opts.burst && w.mag > 0 && w.reload > 0 && mode.cost > 0 && !/incarnon/i.test(mode.name);
   const mag = w.mag <= 1 ? w.mag : Math.max(1, Math.round(w.mag * Math.max(0, 1 + raw('magazine'))));
-  const shotsPerMag = reloads ? mag / (mode.cost * Math.max(0.01, 1 + raw('ammoEfficiency'))) : Infinity;
+  const shotsPerMag = reloads ? mag / (mode.cost * ammoCost(raw('ammoEfficiency'))) : Infinity;
   const reload = w.reload / Math.max(0.05, 1 + raw('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
+  // A shot's interval at the sustained rate: its own, and its share of the reload.
+  const interval = 1 / rate + (Number.isFinite(shotsPerMag) ? Math.max(0, reload - 1 / rate) / shotsPerMag : 0);
   const ehp = target.health + target.shields;
   let perShot = 0;
   let lastTier = 1;
   let lastCombo = 0;                                        // the combo count at the last swing
 
-  // One target, from its first shot until the gun is ready for the next, reloading or not; melee
-  // starts at a combo count (carried from the last target when it builds up).
-  const one = (/** @type {boolean} */ reloading, combo = initial) => {
+  // One target, from its first shot until the gun is ready for the next; melee starts at a combo
+  // count (carried from the last target when it builds up).
+  const one = (combo = initial) => {
     let now = 0;                                // when the next shot is due
-    let inMag = reloading ? shotsPerMag : Infinity;
     let shots = 0;
     // A fresh target: full health and shields, no statuses (all of them if primed).
     let health = target.health;
@@ -198,7 +230,8 @@ export function fight(w, t, opts) {
     const dotRate = {};
     let heat = { rate: 0, until: -1, start: -1, owed: 0 };
     let elecSeen = 0, buffUp = 0;
-    let dead = -1;
+    let last = ehp;                             // what the last shot left of the target
+    let swing = 0, sinceHeavy = 0;              // normal swings so far, and since the last heavy attack
 
     // Stacks still up at `at` (expired ones leave their queue for good: time only moves forward).
     const count = (/** @type {string} */ type, /** @type {number} */ at) => {
@@ -213,13 +246,13 @@ export function fight(w, t, opts) {
       const c = count('corrosive', at);
       const stripped = c < 1 ? 0.26 * c : 0.2 + 0.06 * c;
       const burning = opts.primed || heat.until > at;
-      const step = opts.primed ? 4 : heat.start < 0 ? 0 : Math.min(4, Math.floor((at - heat.start) / stripStep));
-      const armor = target.armor * (1 - stripped) * (1 - (burning ? HEAT_STRIP[step] : 0));
+      const strip = !burning ? 0 : opts.primed ? HEAT_STRIP[HEAT_STRIP.length - 1] : heatStrip((at - heat.start) / stripStep);
+      const armor = target.armor * (1 - stripped) * (1 - strip);
       return { kept: 1 - 0.9 * Math.sqrt(Math.min(armor, 2700) / 2700), viral: amplify(count('viral', at)), magnetic: count('magnetic', at) };
     };
     // Damage of one type landing: shields first (not Toxin), spilling to health. Bleeds (True
     // damage) skip armor and weaknesses.
-    const land = (/** @type {string} */ type, /** @type {number} */ amount, /** @type {ReturnType<typeof snap>} */ s, /** @type {number} */ at) => {
+    const land = (/** @type {string} */ type, /** @type {number} */ amount, /** @type {ReturnType<typeof snap>} */ s) => {
       if (!(amount > 0)) return;
       const bleed = type === 'slash-dot';
       const kind = bleed ? 'slash' : type;
@@ -233,16 +266,13 @@ export function fight(w, t, opts) {
         health -= 0.03 * s.magnetic * target.shields * Math.max(0, 1 + (target.weak.electricity ?? 0)) * s.kept * s.viral;
       }
       health -= left * (bleed ? 1 : Math.max(0, 1 + (target.weak[kind] ?? 0)) * s.kept) * s.viral;
-      if (health <= 0 && dead < 0) dead = at;
     };
-    // One span of DoT damage at the rates now; a kill inside it is placed by how much it took.
+    // One span of DoT damage at the rates now.
     const span = (/** @type {number} */ a, /** @type {number} */ b) => {
-      if (b <= a || dead >= 0) return;
+      if (b <= a) return;
       const s = snap(a);
-      const before = Math.max(0, health) + shields;
-      for (const type in dotRate) land(type, dotRate[type] * (b - a), s, a);
-      if (heat.until > a) land('heat', heat.rate * (b - a), s, a);
-      if (dead >= 0) dead = a + (b - a) * Math.min(1, before / Math.max(1e-9, before - health - shields));
+      for (const type in dotRate) land(type, dotRate[type] * (b - a), s);
+      if (heat.until > a) land('heat', heat.rate * (b - a), s);
     };
     // The DoTs from `from` to `to`, in spans between ticks starting and ending.
     const runDots = (/** @type {number} */ from, /** @type {number} */ to) => {
@@ -255,7 +285,6 @@ export function fight(w, t, opts) {
         const b = Math.min(starts, ends0, ends1, heatEnds);
         if (b >= to) break;
         span(a, b);
-        if (dead >= 0) return;
         a = b;
         if (b === starts) {
           const d = pending[pendingHead++];
@@ -273,27 +302,30 @@ export function fight(w, t, opts) {
     };
 
     for (;;) {
-      if (now > TARGET_SECONDS) {
+      if (now > TARGET_SECONDS && health > 0) {
         // Still alive: finish it at the rate it has been losing health and shields.
         const lost = ehp - Math.max(0, health) - shields;
         const more = (Math.max(0, health) + shields) * now / Math.max(1e-9, lost);
-        return { time: now + more, shots: shots + more * rate, combo };
+        return { time: now + more, pace: now + more, shots: shots + more / interval, combo };
       }
       // The shot: Galvanized counts the status types on the target now.
       const s = snap(now);
-      const before = Math.max(0, health) + shields;
+      const dotKilled = health <= 0;
       let types = 0;
       if (opts.primed) types = STATUS_TYPES.length;
       else if (directPer) for (const type of stacks.keys()) types += 1 - Math.exp(-count(type, now));
       const direct = raw('directDamage') + types * directPer;
       // Melee: this swing's attack (its multiplier and hit count) at the combo's tier now.
-      const sw = melee ? swings[shots % swings.length] : null;
       const tier = !melee ? 1 : comboTier(melee.combo === 'max' ? MAX_COMBO : combo);
+      const heavy = heavyBase > 0 && (melee?.combo !== 'build' || tier >= heavyAt);
+      const sw = !melee ? null : heavy ? { mult: heavyBase * tier, hits: 1, knocks: 0 } : swings[swing % swings.length];
       const mult = sw ? sw.mult : 1;
       const hitsPer = sw ? sw.hits : 1;
-      for (const v of volleysOf(tier)) {
+      const step = heavy ? Math.max(windUp, 1e-3) : interval;
+      const volleys = heavy ? volleysOf(tier, melee?.combo === 'build' ? Math.min(ANIMOSITY_HITS, sinceHeavy) : ANIMOSITY_HITS) : volleysOf(tier);
+      for (const v of volleys) {
         const Dshot = Math.max(0, v.coMult ? D * (1 + v.coShare * direct) : D + v.coShare * direct);
-        for (const [type, amount] of v.hits) land(type, amount * Dshot * mult, s, now);
+        for (const [type, amount] of v.hits) land(type, amount * Dshot * mult, s);
         for (const [type, n0, perProc0] of v.procs) {
           // Each hit of a swing rolls status; a proc's ticks follow its hit's multiplier (on average).
           const n = n0 * hitsPer;
@@ -307,7 +339,7 @@ export function fight(w, t, opts) {
           const dotType = type === 'slash' ? 'slash-dot' : type;
           let ticks = ticksOf(type, duration);
           // Electricity and Gas: the first tick at once.
-          if (TICKS_AT_ONCE.has(type)) { land(dotType, perTick, s, now); ticks -= 1; }
+          if (TICKS_AT_ONCE.has(type)) { land(dotType, perTick, s); ticks -= 1; }
           if (type === 'heat') {
             // Heat stacks share one timer; each whole proc resets it, to its ticks from now.
             if (heat.start < 0) heat.start = now;
@@ -333,7 +365,7 @@ export function fight(w, t, opts) {
       if (influence && copies > 0) {
         let electric = 0;
         const s2 = snap(now);
-        for (const v of volleysOf(tier)) {
+        for (const v of volleys) {
           const Dshot = Math.max(0, v.coMult ? D * (1 + v.coShare * direct) : D + v.coShare * direct);
           for (const [type, n0, perProc0] of v.procs) {
             if (type === 'electricity') electric += n0 * hitsPer;
@@ -346,52 +378,59 @@ export function fight(w, t, opts) {
         }
         // The buff's uptime from the Electricity procs so far (each a 20% chance of 18 s).
         elecSeen += electric;
-        const lambda = 0.2 * elecSeen / Math.max(1 / rate, now + 1 / rate);
+        const lambda = 0.2 * elecSeen / Math.max(step, now + step);
         buffUp = influence * lambda / (1 + influence * lambda);
       }
       shots++;
       const swungAt = combo;
-      if (sw && melee?.combo === 'build') combo += (sw.mult + sw.hits * comboChance) * nearby;
+      if (heavy) { sinceHeavy = 0; if (melee?.combo === 'build') combo *= kept; }
+      else if (sw) {
+        swing++; sinceHeavy++;
+        if (melee?.combo === 'build') combo += (sw.mult + sw.hits * comboChance) * nearby;
+      }
+      if (sw && melee?.combo === 'build' && combo < initial) combo = Math.min(initial, combo + COMBO_REGEN * step);
       lastTier = tier;
       lastCombo = swungAt;
       if (shots === 1) perShot = ehp - health - shields;
-      if (dead >= 0) {
-        // Killed by this shot: it counts for the share of it that was needed (crits make the real
-        // count a spread; this is its smooth average), but a kill always takes at least one shot.
-        const f = Math.min(1, before / Math.max(1e-9, before - health - shields));
-        return { time: Math.max(1 / rate, now + f / rate), shots: Math.max(1, shots - 1 + f), combo };
+      if (health <= 0) {
+        // Dead by this shot, or the DoTs before it: these count for the share of them that was needed
+        // (crits make the real count a spread; this is its smooth average), but a kill always takes
+        // at least one shot. (A heavy attack's wind up is all spent before it lands.)
+        const f = !heavy ? Math.min(1, last / Math.max(1e-9, last - health - shields)) : dotKilled ? 0 : 1;
+        // (`pace`: the time without that floor, for the DPS.)
+        return { time: Math.max(step, now + f * step), pace: now + f * step, shots: Math.max(1, shots - 1 + f), combo };
       }
-      // The next shot (after a reload when the magazine is empty).
-      inMag -= 1;
-      let next = now + 1 / rate;
-      if (inMag <= 0) { next = now + reload; inMag = shotsPerMag; }
+      last = health + shields;
+      const next = now + step;
       runDots(now, next);
-      if (dead >= 0) return { time: Math.max(1 / rate, dead), shots: Math.max(1, shots), combo };
       now = next;
     }
   };
 
-  if (targets <= 1) {
-    const r = one(true);
-    return { dps: ehp / Math.max(1e-9, r.time), timePerKill: r.time, shotsPerKill: r.shots, perShot, ...(melee ? { tier: lastTier } : {}) };
+  if (targets <= 1 || !melee) {
+    const r = one();
+    return { dps: ehp / Math.max(1e-9, r.pace), timePerKill: r.time, shotsPerKill: r.shots, perShot, ...(melee ? { tier: lastTier } : {}) };
   }
-  if (melee) {
+  {
     // A room of melee kills: the combo carries from target to target when it builds up; the enemies
     // inside each swing fall together. Targets fought wholly within one tier are alike (only the tier
     // changes a fight), each adding the same combo: the next ones up to the tier's end aren't re-fought.
-    let time = 0, shots = 0, combo = initial, first = 0, spreadAll = 0;
+    let time = 0, pace = 0, shots = 0, combo = initial, first = 0, spreadAll = 0;
     for (let k = 0; k < targets; k++) {
       spread = 0;
-      const r = one(false, combo);
+      const r = one(combo);
       if (k === 0) first = perShot;
       const gain = r.combo - combo;
       const left = targets - k;
       const tier = comboTier(combo);
       const steady = !perTier.length || tier >= MAX_TIER || gain <= 0;
-      const alike = melee.combo !== 'build' || steady ? left
+      // (Heavy attacks spend the combo, so a built-up counter's targets all differ.)
+      const alike = melee.combo !== 'build' ? left
+        : heavyBase > 0 ? 1
+        : steady ? left
         : comboTier(lastCombo) !== tier ? 1
         : Math.min(left, Math.ceil((tier * TIER_POINTS - lastCombo) / gain));
-      time += r.time * alike; shots += r.shots * alike; spreadAll += spread * alike;
+      time += r.time * alike; pace += r.pace * alike; shots += r.shots * alike; spreadAll += spread * alike;
       if (melee.combo === 'build') lastTier = comboTier(lastCombo + (alike - 1) * gain);
       combo += gain * alike;
       k += alike - 1;
@@ -401,11 +440,7 @@ export function fight(w, t, opts) {
     const others = Math.min(close, spreadAll / targets / Math.max(1, ehp));
     const kills = Math.min(targets, together + others);
     time /= targets * kills;
-    return { dps: ehp / Math.max(1e-9, time), timePerKill: time, shotsPerKill: shots / targets / kills, perShot: first, tier: lastTier };
+    pace /= targets * kills;
+    return { dps: ehp / Math.max(1e-9, pace), timePerKill: time, shotsPerKill: shots / targets / kills, perShot: first, tier: lastTier };
   }
-  // A room: every target is the same, so one fight without reloads gives the shots a kill takes;
-  // the reloads come every magazine, each in place of a shot's interval.
-  const r = one(false);
-  const time = r.time + (Number.isFinite(shotsPerMag) ? (r.shots / shotsPerMag) * Math.max(0, reload - 1 / rate) : 0);
-  return { dps: ehp / Math.max(1e-9, time), timePerKill: time, shotsPerKill: r.shots, perShot };
 }

@@ -47,6 +47,8 @@ const DPS_STATS = new Set(['damage', 'multishot', 'critChance', 'critDamage', 's
   'weakpointDamage', 'weakpointCrit', 'headshotMultiplier', 'directDamage', 'slashOnCrit', 'multishotLocked', 'fireRateLocked',
   'directDamagePerStatus', 'critChancePerTier', 'statusChancePerTier', 'initialCombo', 'comboChance',
   'duplicate', 'doughty', 'influence', 'afflictions', ...ELEMENTS]);
+/** Stats only heavy attacks use: worth nothing to a build of normal attacks. */
+const HEAVY_STATS = new Set(['animosity', 'meleeDamageOnHeavy', 'heavyEfficiency', 'heavyWindup']);
 
 /**
  * How much of an effect is live in a scenario: 0 (off), 1, or its stack count (a per status type
@@ -103,7 +105,10 @@ function piece(name, effects, sc, opts, excl = []) {
     // Per status type on the target, or per melee combo tier past 1x (Blood Rush): counted in the fight.
     const stat = e.per === 'status type' ? `${e.stat}PerStatus` : e.per === 'combo tier' ? `${e.stat}PerTier` : e.stat;
     if (ELEMENTS.includes(e.stat)) elements.push({ type: e.stat, value: e.value * f });
-    else stats[stat] = (stats[stat] ?? 0) + e.value * f;
+    // (Ammo Efficiency: mods list what comes off the cost; the stat is the change to it, as on a riven.)
+    else stats[stat] = (stats[stat] ?? 0) + (stat === 'ammoEfficiency' ? -1 : 1) * e.value * f;
+    // True Steel's "x2 for Heavy Attacks": the value again on them.
+    if (e.heavyDouble) stats.critChanceHeavy = (stats.critChanceHeavy ?? 0) + e.value * f;
   }
   return { name, stats, elements, excl };
 }
@@ -120,6 +125,8 @@ export function rivenPiece(roll) {
   for (const [id, v] of Object.entries(roll)) {
     if (ELEMENTS.includes(id)) listed.push({ type: id, value: v }); else stats[id] = v;
   }
+  // A riven's Critical Chance counts double on heavy attacks (melee only reads this).
+  if (stats.critChance) stats.critChanceHeavy = stats.critChance;
   return { name: 'Riven', stats, elements: rivenOrder(listed), excl: [], riven: true };
 }
 
@@ -157,7 +164,7 @@ export function modPool(cls, w, sc, opts) {
   const enemy = opts.enemy ?? '';
   return GUN_MODS.filter(m => fits.includes(m.compat) && (!m.needs || m.needs.some(t => tags.has(t)))
     && !(m.notWith ?? []).some(t => tags.has(t))).map(m => ({ m, p: piece(m.name, m.effects, sc, opts, m.excl ?? []) }))
-    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k) || k === enemy) || p.elements.length)
+    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k) || k === enemy || (opts.melee?.heavy && HEAVY_STATS.has(k))) || p.elements.length)
     .map(({ p }) => p);
 }
 
@@ -204,6 +211,15 @@ export function fightOf(w, b, opts) {
 }
 
 /**
+ * What a build is worth: its fight against the target (src/fight.js) when there is one, else the
+ * closed form. @param {WeaponStats} w @param {Pick<Build, 'slots' | 'arcane'>} b @param {SimOptions} opts
+ */
+export function worth(w, b, opts) {
+  const t = totalsOf(b.arcane ? [...b.slots, b.arcane] : b.slots);
+  return opts.target ? fight(w, t, { ...opts, target: opts.target }).dps : dpsOf(w, t, opts);
+}
+
+/**
  * The best build the search finds.
  * @param {WeaponStats} w @param {Piece[]} pool @param {Piece[]} arcanes @param {SimOptions} opts
  * @param {{riven?: Piece, start?: Piece[], slots?: number}} [o]  a riven to build around; a build to start from
@@ -211,12 +227,7 @@ export function fightOf(w, b, opts) {
  */
 export function optimise(w, pool, arcanes, opts, o = {}) {
   const size = o.slots ?? 8;
-  // A build's worth: the fight against the target (src/fight.js) when there is one, else the closed form.
-  const target = opts.target;
-  const value = (/** @type {Piece[]} */ slots, /** @type {Piece | null} */ arc) => {
-    const t = totalsOf(arc ? [...slots, arc] : slots);
-    return target ? fight(w, t, { ...opts, target }).dps : dpsOf(w, t, opts);
-  };
+  const value = (/** @type {Piece[]} */ slots, /** @type {Piece | null} */ arcane) => worth(w, { slots, arcane }, opts);
   // For the pair move: the strongest mod of each base element (most of it, then most else besides).
   /** @type {Map<string, Piece>} */
   const strongest = new Map();
@@ -306,7 +317,7 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
   // knockdowns with statuses up) can be worth nothing to the mods found without them: each gets a
   // search of its own around it.
   for (const a of arcanes) {
-    if (a === arc || !Object.keys(a.stats).some(k => MECHANIC.has(k))) continue;
+    if (a === arc || !Object.keys(a.stats).some(k => MECHANIC.has(k) || (opts.melee?.heavy && k === 'animosity'))) continue;
     const b = search(slots, a);
     if (b.dps > dps * (1 + 1e-9)) ({ slots, dps } = b), arc = a;
   }

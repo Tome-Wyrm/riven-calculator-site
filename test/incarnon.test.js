@@ -68,3 +68,19 @@ test('perk fire rate adds to the mods (in game: Laetum, +100% mods and Rapid Wra
   const B = BUILDS.pistol.fireRate ?? 0;                     // the reference build's own fire rate mods
   near(at(fast, { fireRate: 1 }) / at(w, { fireRate: 1 }), (1 + B + 1 + 0.2) / (1 + B + 1), 1e-9);
 });
+
+test('Normal, Incarnoff, Incarnon: a gun without its adapter has no perks; a natural Incarnon always evolves', async () => {
+  const { study } = await import('../src/study.js');
+  const { pools } = await import('../src/cycle.js');
+  const { takesAdapter, isForm } = await import('../src/incarnon.js');
+  assert.ok(takesAdapter('Soma') && takesAdapter('Soma Prime'));
+  assert.ok(!takesAdapter('Felarx') && !takesAdapter('Onos') && !takesAdapter('Dual Cestra'));
+  const p = pools('rifle', '?yy');
+  const run = (/** @type {object} */ o) => study({ weapon: 'Soma Prime', cls: 'rifle', shape: '++-', scenario: 'room', opts: { weakpoint: 0 }, positives: p.positive, negatives: p.negative, ...o });
+  const form = WEAPON_STATS['Soma Prime'].modes.findIndex(isForm);
+  const normal = run({ adapter: false }), off = run({}), on = run({ opts: { weakpoint: 0, mode: form } });
+  assert.deepEqual(normal.perks, []);
+  assert.ok(off.perks.length > 0 && on.perks.length > 0);
+  assert.ok(off.none.dps > normal.none.dps, `${off.none.dps} vs ${normal.none.dps}`);
+  assert.notEqual(on.none.dps, off.none.dps);
+});

@@ -23,8 +23,13 @@ import { dps } from './sim.js';
 /** A gun's evolutions, or [] for a gun without an incarnon. @param {string} weapon */
 export const evolutionsOf = weapon => INCARNONS[weapon] ?? [];
 
+/** Guns that are Incarnon by birth (the wiki's "natural" Incarnons): there's no adapter to leave out. */
+const NATURAL = new Set(['Felarx', 'Laetum', 'Phenmor', 'Onos']);
+/** Whether a gun takes an Incarnon Genesis adapter. @param {string} weapon */
+export const takesAdapter = weapon => evolutionsOf(weapon).length > 0 && !NATURAL.has(weapon);
+
 /** An Incarnon Form mode: its numbers are the evolved form's own. @param {{name: string}} mode */
-const isForm = mode => /incarnon/i.test(mode.name);
+export const isForm = mode => /incarnon/i.test(mode.name);
 
 /**
  * The gun with these perks (one index per evolution, in order; -1 or missing for none).

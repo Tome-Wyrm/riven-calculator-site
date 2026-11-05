@@ -144,3 +144,27 @@ test('a fire-rate lock keeps the weapon\'s own rate', async () => {
   assert.equal(dpsOf(w, t({ damage: 1, fireRateLocked: 1, fireRate: 0.9 }), opts), a);
   assert.ok(dpsOf(w, t({ damage: 1, fireRate: 0.9 }), opts) > dpsOf(w, t({ damage: 1 }), opts));
 });
+
+test('a curse is never worth more than a search\'s luck: Felarx ++-, single target, level 9999 Steel Path', async () => {
+  const { study } = await import('../src/study.js');
+  const { pools } = await import('../src/cycle.js');
+  const { SPLICED } = await import('../src/data/stats.js');
+  const E = await import('../src/data/enemies.js');
+  const { targetOf } = await import('../src/enemies.js');
+  const target = targetOf(E.UNITS.grineer.find(u => u.name === 'Heavy Gunner'), 9999, true, false, E);
+  const p = pools('shotgun', '?yy');
+  const r = study({ weapon: 'Felarx', cls: 'shotgun', shape: '++-', scenario: 'single', opts: { enemy: 'grineer', target, burst: false, primed: false },
+    positives: [...p.positive, ...SPLICED.filter(s => s.b.shotgun !== undefined).map(s => s.id)], negatives: p.negative });
+  // −Magazine costs reloads (it once showed +5%, the search landing on better mods); −Critical Chance
+  // really helps (Devastating Attrition), the community's top curse.
+  assert.ok((r.curses.find(c => c.id === 'magazine')?.change ?? 1) < 0);
+  assert.equal(r.curses[0].id, 'critChance');
+  assert.ok(r.curses[0].change > 0);
+  assert.deepEqual(r.sets[0].ids.slice().sort(), ['multishot', 'viral']);
+  assert.equal(r.sets[0].curse?.id, 'critChance');
+});
+
+test('Ammo Efficiency from a mod takes off the cost, as a riven\'s does', () => {
+  const { stats } = arcanePool('rifle', SCENARIOS.weak, {}).find(a => a.name === 'Primary Crux') ?? { stats: {} };
+  assert.ok(Math.abs((stats.ammoEfficiency ?? 0) + 0.6) < 1e-9, String(stats.ammoEfficiency));
+});

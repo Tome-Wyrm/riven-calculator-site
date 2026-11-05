@@ -687,9 +687,9 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
       - **Shots to kill, smoothed**: the killing shot counts for the share of it the kill needed
         (2.5 shots, not 3: the average of what crit rolls spread), never less than one shot. Pure
         breakpoints made every stat that saved the same shot tie.
-      - **Room clearing** (and weak points): identical targets, so one fight without reloads gives
-        the shots a kill takes, and the reloads are spread over the kills. **Single target**: one
-        fight, reloads and all. A target alive after 20 s is finished at its rate so far.
+      - **Room clearing** (and weak points): identical targets, so one fight stands for them all.
+        **Single target**: one fight. Both at the gun's sustained rate (see below). A target alive
+        after 20 s is finished at its rate so far.
       - The optimiser scores builds by the fight whenever there's a target, which is always on the
         page now ("any faction": a unit without faction weaknesses, Heavy Gunner by default). The
         result reads as an effective DPS (health and shields over the time per kill); the closed
@@ -728,8 +728,34 @@ by themselves instead of being guessed. 12c's bucket maths stays as the evaluato
         off the table's pattern; **confirmed in game** 2026-11-03 at +30%: Electricity 8, Toxin 7). In the fight, Electricity's first tick
         lands with the shot, and the rest of the ticks run spread over the second around each
         tick's time, so a Toxin proc kills later than the same Electricity proc (a test).
+      - **No cliffs in the ranking** (the user, 2026-11-04: −Magazine showed +5% on Felarx at level
+        9999, and breakpoints are footguns). Felarx single target swung from 1.4 s a kill to 5 s on
+        whether the kill fit one magazine, so one-swap searches stuck, and each curse's search that
+        fell off and came back found better mods than the baseline. Now:
+        - Every shot carries its share of the reload (`interval` in `src/fight.js`), single target
+          as well as rooms: the fight runs at the sustained rate. Average DPS with the ramp-up
+          (stacks building, armor falling) kept: the closed form has no ramp-up.
+        - A kill's time: the last interval and the shot ending it count for the share needed, DoT
+          and hit alike. A kill by a DoT just after a shot used to be charged less than the shot
+          kill a little more damage made it: +1% Damage took Hek from 0.79 s to 1.46 s a kill.
+        - Heat's strip steps are averaged over where shots fall against them: a faster reload could
+          land a shot just before a step and cost 15%.
+        - `study`: a curse's better mods go to the riven without it too, and each best riven takes
+          the best mods any of them found (`orBetter`). Multishot + Viral, −Critical Chance now
+          leads, the community's Roll 1.
+        - Left on purpose: Magazine moves in whole rounds (up to 35% on a small magazine), and
+          Status Duration's tick counts.
+      - **Overkill counts** (the user, 2026-11-04; this ends the "Felarx effect" above). The
+        community picks make a weapon worth more in more places, and content runs from low levels
+        to the level cap, so a riven isn't judged on one target's health. Past a one-shot kill the
+        DPS goes on rising with damage (`pace` in `src/fight.js`); the shots and seconds shown still
+        stop at one shot. Multishot now leads Felarx at most levels, Viral where armor stays on.
+        Still one target at a time: on a target it one-shots, a build gets nothing for its statuses.
+      - **Ammo Efficiency stops at 75%** (the user, 2026-11-04), unless a source sets it to 100%
+        (none the model follows). Mods' and arcanes' values now take off the cost like a riven's:
+        Primary Crux had been shrinking the magazine.
       - [ ] Show the shots per kill on the page; Blast stacks; a random (Monte Carlo) run to check
-            the averages; the curse comparison should not count a search's luck as a cost.
+            the averages.
 - **Decided** (the user, 2026-11-03): room clearing keeps Galvanized stacks at their maximum. They
   are up most of the time, and they decay one at a time, so getting them back is usually trivial.
 
@@ -799,6 +825,11 @@ chance curse good, and the model had it as a cost)
       form), crit multiplier, multishot, magazine, flat crit after mods (Elemental Excess), headshot
       bonuses, fire rate and reload; and the non-crit bonus (`critScale` in `src/sim.js`: a 50% chance
       of +2000% on each hit that doesn't crit, so it fades as crit chance rises).
+- [x] **Normal, Incarnoff, Incarnon** (the user, 2026-11-04): a gun that takes a Genesis adapter can go
+      without one (Normal: no perks), have it and fire normally (Incarnoff), or be in its form
+      (Incarnon). Natural Incarnons (the wiki: Felarx, Laetum, Phenmor, Onos) have no Normal. Akimbo
+      and Dual weapons can't take an adapter (the wiki), so Dual Cestra has none. The form counts the
+      whole fight in the form: its charge and ammo aren't modelled.
 - [x] "Best" (the default): every combination of perks tried with the reference build (at most 81);
       one at a time picked Brutal Edge (+10% crit) before seeing Devastating Attrition. The page
       lists each evolution's perk and lets you change any ("Back to the best").
@@ -995,8 +1026,43 @@ Decisions (the user's, 2026-11-03):
 - [ ] Speed: a built-up room study went from 24-29 s to 8-11 s with identical results (targets within
       one combo tier aren't re-fought; tier volleys share their hit). Next: pre-screen the mechanic
       arcanes' searches and the riven candidates (both trade a little search quality), parallel workers.
-- [ ] Heavy attacks, slams, glaive throws, gunblade shots; Gladiator set bonus; melee incarnons;
+- [x] Heavy attacks (the wiki's Heavy Attack and Melee Combo pages; the page's Attacks toggle, Heavy at
+      tier): the weapon's heavy damage x the combo multiplier, one hit after the wind up (Wind Up Speed
+      only), adding no combo. A built-up counter swings to the chosen tier, then spends the combo,
+      keeping Heavy Attack Efficiency (cap 90%); spent Initial Combo returns at 40 a second. A held
+      counter heavy attacks every time. True Steel's, Sacrificial Steel's and rivens' crit chance count
+      twice; Melee Damage On Heavy Attack (Killing Blow, rivens) adds to Melee Damage; Melee Animosity
+      adds 42% per normal hit since the last heavy, additive, all 420% when held. Assimilation stays
+      out (needs a shield break).
+- [ ] In game, heavy attacks: the recovery after a heavy (none counted), its follow through, and its
+      forced procs by weapon type (none modelled; Afflictions doesn't trigger on it).
+- [ ] Slams, glaive throws, gunblade shots; Gladiator set bonus; melee incarnons;
       zaws (parts) and Dark Split-Sword.
+
+### Speed and pruning (the user's ideas, 2026-11-04; not started)
+
+A study takes 1–6 s on most guns and up to 38 s on fast ones against full armor (Soma Prime: ~300
+shots a fight, thousands of fights). In order:
+- **Prune mods before the search.** Drop mods another beats outright, then score the rest once per
+  weapon and setting and keep the best few. Elemental mods stay in (a combined element needs both
+  halves, so either alone looks poor). Check that a pruned search finds the same builds as a full one.
+- **Workers.** The candidates in a search round don't depend on each other: split them over the cores.
+- **Precomputed results.** Ship the default settings' studies as data, so common weapons open at once.
+- **GPU: not now.** The fight is a branching, per-shot loop with queues: it would need rewriting in
+  WGSL and keeping in step with the JavaScript, and WebGPU isn't everywhere. Reconsider if the above
+  isn't enough.
+- **Score across levels** (from "overkill counts"): judge a build on a spread of target levels, not
+  one, so statuses count for builds that one-shot this target. Costs a fight per level, so it wants
+  the speed-ups first.
+
+- **A faction's mix of units in room clearing** (the user, 2026-11-04). Twenty Heavy Gunners isn't a
+  real room: use a composition per faction (fodder, heavies, the odd tough unit), each unit's share
+  of the kills, health and armor. It also matters for weapons that hit several targets at once: they
+  build kill stacks faster, and not every part of a hit gets every bonus (explosions don't count gun
+  Condition Overload), so what a kill-stacking buff is worth depends on the room.
+
+External buffs and companions are Phase 14. The first step there is buffs as pieces added to a
+build's totals (Nourish's Viral makes a riven's Viral worth less without any change to the fight).
 
 ## Verified in game (2026-10-23)
 

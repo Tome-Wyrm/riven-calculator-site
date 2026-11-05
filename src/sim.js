@@ -134,7 +134,7 @@ export const HEADS = {
  * How a melee weapon fights: its stance combo's attacks (each a swing), the combo counter (held at
  * the initial combo, held at the max, or built up by the hits), and the enemies inside each swing
  * (room clearing: each further one takes the follow through's share and adds combo points).
- * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', nearby?: number, close?: number, clump?: number}} MeleeOptions
+ * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', heavy?: boolean, heavyAt?: number, nearby?: number, close?: number, clump?: number}} MeleeOptions
  */
 
 /**
@@ -398,6 +398,13 @@ function statusTypesUp(w, mode, t, opts, parts) {
 }
 
 /**
+ * What a shot costs in ammo, from Ammo Efficiency as a change to the cost (a riven's 70% is -0.7).
+ * It stops at 75% off; only a source that sets it to 100% (free shots) goes further, and none the
+ * model follows does (the user, 2026-11-04). @param {number} raw
+ */
+export const ammoCost = raw => Math.max(0.25, 1 + raw);
+
+/**
  * The share of time spent firing: a magazine's shots, then the reload. A one-shot magazine (bows)
  * can't be modded. 1 for weapons without reloads or ammo use, and for Incarnon modes (their charges
  * aren't the magazine, so Magazine, Reload Speed and Ammo Efficiency don't touch them).
@@ -407,7 +414,7 @@ function sustained(w, mode, rate, m) {
   if (w.mag <= 0 || w.reload <= 0 || mode.cost <= 0 || /incarnon/i.test(mode.name)) return 1;
 
   const mag = w.mag <= 1 ? w.mag : Math.max(1, Math.round(w.mag * Math.max(0, 1 + m('magazine'))));
-  const shots = mag / (mode.cost * Math.max(0.01, 1 + m('ammoEfficiency')));
+  const shots = mag / (mode.cost * ammoCost(m('ammoEfficiency')));
   const firing = shots / rate;
   const reload = w.reload / Math.max(0.05, 1 + m('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
   return firing / (firing + reload);
