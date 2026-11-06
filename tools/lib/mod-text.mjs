@@ -21,7 +21,7 @@ const STATS = {
   'Ammo Efficiency': 'ammoEfficiency', 'Melee Damage': 'meleeDamage', 'Attack Speed': 'attackSpeed',
   'Energy Regen/s': 'energyRegen', 'Armor': 'armor', 'Initial Combo': 'initialCombo',
   'Combo Count Chance': 'comboChance', 'Additional Combo Count Chance': 'comboChance',
-  'Heavy Attack Efficiency': 'heavyEfficiency', 'Heavy Attack Wind Up Speed': 'heavyWindup',
+  'Melee Damage on Heavy Attack': 'meleeDamageOnHeavy', 'Heavy Attack Efficiency': 'heavyEfficiency', 'Heavy Attack Wind Up Speed': 'heavyWindup',
   'Slam Attack Damage': 'slamDamage', 'Finisher Damage': 'finisherDamage', 'Slide Attack Damage': 'slideDamage',
 };
 
@@ -117,7 +117,7 @@ export function readLine(line) {
     // Chance per Combo Multiplier" (Weeping Wounds): the wiki's worked examples add it per tier past 1x.
     if (/ (?:stacks with|per) Combo Multiplier$/i.test(t)) { extra.per = 'combo tier'; t = t.replace(/ (?:stacks with|per) Combo Multiplier$/i, ''); }
     // True Steel's "+120% Critical Chance (x2 for Heavy Attacks)": normal attacks get the value as written.
-    t = t.replace(/\s*\(x2 for Heavy Attacks\)$/, '');
+    if (/\s*\(x2 for Heavy Attacks\)$/.test(t)) { extra.heavyDouble = 1; t = t.replace(/\s*\(x2 for Heavy Attacks\)$/, ''); }
     if (/^\+\d+(?:\.\d+)?% COMBO COUNT CHANCE$/.test(t)) t = t.replace('COMBO COUNT CHANCE', 'Combo Count Chance');
     const first = t.match(/^(.*) on first shot in Magazine$/);
     if (first) { extra.on = 'first shot'; t = first[1]; }

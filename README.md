@@ -4,7 +4,7 @@ A Warframe riven tool: stat ranges by weapon class and riven shape (`++`, `++-`,
 plus a goal calculator ("can a Felarx riven roll ≥ 70% Ammo Efficiency, and how likely is it?").
 
 Static site with no build step and no dependencies. GitHub Pages serves the repo as-is.
-See [PLAN.md](PLAN.md) for the roadmap.
+See [PLAN.md](PLAN.md) for the roadmap and [docs/history.md](docs/history.md) for the background.
 
 ## Run locally
 

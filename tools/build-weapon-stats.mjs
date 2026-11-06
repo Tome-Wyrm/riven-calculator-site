@@ -29,6 +29,9 @@ function compact(w) {
   const part = (/** @type {any} */ a) => ({
     ...partOf(a),
     ...coOf(w.Name ?? '', a),
+    // What reaches other enemies (src/crowd.js): Punch Through, m ("infinite" as 99), an explosion's falloff.
+    ...(a.PunchThrough ? { pt: round(Math.min(99, a.PunchThrough)) } : {}),
+    ...(a.ShotType === 'AoE' && a.Falloff ? { falloff: { from: round(a.Falloff.StartRange ?? 0), to: round(a.Falloff.EndRange ?? 0), cut: round(a.Falloff.Reduction ?? 0) } } : {}),
   });
   return compactModes(w, attacks, part);
 }
@@ -91,6 +94,43 @@ function partOf(a) {
   });
 }
 
+/**
+ * The share of its damage a beam starts a target on (the wiki's Continuous Weapon: 20% for most, ramping
+ * to full over 0.6 s), and the weapons that start higher, by attack.
+ */
+const BEAM_START = 0.2;
+/** @type {Record<string, Record<string, number>>} */
+const BEAM_STARTS = { Convectrix: { 'Normal Attack': 0.6, 'Alt-Fire': 0.8 }, Phage: { 'Normal Attack': 0.7 }, Embolist: { 'Normal Attack': 0.3 } };
+
+/**
+ * Beams that chain to more enemies, from their wiki pages (2026-11-05), by attack ('*': the mode a held
+ * trigger gives): how many links, within how many metres, each taking `share` of the one before, or of
+ * the main beam if `flat`. Boar's form fires up to 3 beams.
+ * @type {Record<string, Record<string, {links: number, range: number, share: number, flat?: number, beams?: number}>>}
+ */
+const CHAINS = {
+  Amprex: { '*': { links: 3, range: 10, share: 0.5 } },
+  Atomos: { '*': { links: 3, range: 7, share: 0.75 } },
+  Basmu: { '*': { links: 5, range: 7, share: 0.5 } },
+  'Kuva Nukor': { '*': { links: 2, range: 9, share: 0.5, flat: 1 } },
+  Larkspur: { '*': { links: 3, range: 6, share: 0.8 } },
+  'Larkspur Prime': { '*': { links: 3, range: 6, share: 0.8 } },
+  'Tenet Cycron': { '*': { links: 2, range: 7, share: 0.6, flat: 1 } },
+  'Tenet Glaxion': { '*': { links: 3, range: 8, share: 0.5 } },
+  Torid: { '*': { links: 5, range: 7, share: 0.75 } },
+  Boar: { '*': { links: 2, range: 10, share: 0.8, beams: 3 } },
+  'Boar Prime': { '*': { links: 2, range: 10, share: 0.8, beams: 3 } },
+};
+
+/**
+ * A beam: a held trigger (the attack's own, or the weapon's where the attack has none) firing hit-scan
+ * ticks. Not the BEAM tag, which is what fits the mods: Tenet Spirex has it and fires slugs, and Boar's
+ * form hasn't and is one.
+ * @param {any} w @param {any} a
+ */
+const heldOf = (w, a) => ((a.Trigger ?? w.Trigger) === 'Held' && /^Hit-?[Ss]can$/.test(a.ShotType ?? '')
+  ? { held: BEAM_STARTS[w.Name]?.[a.AttackName] ?? BEAM_START, ...(CHAINS[w.Name] ? { chain: CHAINS[w.Name]['*'] } : {}) } : {});
+
 /** The fire modes, each a top-level attack and its parts. @param {any} w @param {any[]} attacks @param {(a: any) => any} part */
 function compactModes(w, attacks, part) {
   // A charge weapon can list its fire rate as unlimited (math.huge): the charge time sets it.
@@ -103,6 +143,7 @@ function compactModes(w, attacks, part) {
     rate: rateOf(a),
     cost: round(a.AmmoCost ?? 1),
     ...(a.ChargeTime ? { charge: round(a.ChargeTime) } : {}),
+    ...heldOf(w, a),
     parts: [a, ...attacks.filter(b => b.AttackParentIndex === a.AttackIndex)].map(part),
   }));
   // The attack the wiki's tooltip shows first (or its parent) is the default mode.
@@ -112,7 +153,9 @@ function compactModes(w, attacks, part) {
   return {
     // The wiki's class ("Rifle", "Sniper Rifle", "Bow", "Shotgun", "Launcher"…): which mods fit.
     kind: w.Class ?? '',
-    mag: w.Magazine ?? 1, reload: round(w.Reload ?? 0), ammo: w.AmmoMax ?? null, trigger: w.Trigger ?? '',
+    // (Epitaph draws from the ammo pool and never reloads; Vectis starts its reload as it fires: the
+    // wiki's Damage/Calculation, Average Sustained DPS.)
+    mag: w.Magazine ?? 1, reload: w.Name === 'Epitaph' ? 0 : round(w.Reload ?? 0), ...(/^Vectis( Prime)?$/.test(w.Name ?? '') ? { quickReload: 1 } : {}), ammo: w.AmmoMax ?? null, trigger: w.Trigger ?? '',
     tags: w.CompatibilityTags ?? [],
     ...(/** @type {string[]} */ (w.Traits ?? []).some(t => ADVERSARY.includes(t)) ? { adversary: true } : {}),
     main, modes,
@@ -178,7 +221,7 @@ await writeFile(new URL('../src/data/weapon-stats.js', import.meta.url), `// @ts
 //
 // Per weapon: magazine, reload (s), max ammo, trigger, a few compatibility tags, whether it's an
 // adversary weapon (Kuva, Tenet, Coda: it has a Valence bonus), the default fire
-// mode, and each mode: fire rate, ammo per shot, charge time, and its parts (an attack and what
+// mode, and each mode: fire rate, ammo per shot, charge time, the share of its damage a beam starts a target on, and its parts (an attack and what
 // hangs off it, e.g. a projectile and its explosion), each with damage by type, crit chance, crit
 // multiplier, status chance, multishot, forced procs and whether it's an area attack. Melee: follow
 // through, range and sweep radius (m), combo duration (s), heavy attack damage and wind up, and
@@ -187,10 +230,10 @@ await writeFile(new URL('../src/data/weapon-stats.js', import.meta.url), `// @ts
 export const WEAPON_STATS_UPDATED = '${date}';
 
 /**
- * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number, hs?: number, ccFlat?: number, nonCrit?: {chance: number, mult: number}, co?: number[], falloff?: {from: number, to: number, cut: number}}} Part
- * @typedef {{name: string, rate: number, cost: number, charge?: number, parts: Part[]}} Mode
+ * @typedef {{name: string, dmg: Record<string, number>, cc: number, cd: number, sc: number, ms: number, forced?: string[], aoe?: number, pt?: number, hs?: number, ccFlat?: number, nonCrit?: {chance: number, mult: number}, co?: number[], falloff?: {from: number, to: number, cut: number}}} Part
+ * @typedef {{name: string, rate: number, cost: number, charge?: number, held?: number, chain?: {links: number, range: number, share: number, flat?: number, beams?: number}, parts: Part[]}} Mode
  * @typedef {{ft: number, range: number, sweep: number, combo: number, heavy: number, windUp: number}} Melee
- * @typedef {{kind: string, mag: number, reload: number, ammo: number | null, trigger: string, tags: string[], adversary?: boolean, main: number, modes: Mode[], bonus?: {fireRate?: number, reloadSpeed?: number}, melee?: Melee}} WeaponStats
+ * @typedef {{kind: string, mag: number, reload: number, quickReload?: number, ammo: number | null, trigger: string, tags: string[], adversary?: boolean, main: number, modes: Mode[], bonus?: {fireRate?: number, reloadSpeed?: number}, melee?: Melee}} WeaponStats
  */
 
 /** @type {Record<string, WeaponStats>} */

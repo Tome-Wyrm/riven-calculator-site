@@ -31,8 +31,10 @@ test('crit: the average multiplier 1 + CC × (CD − 1)', () => {
 });
 
 test('an element adds a share of the base; physical stats only their own part', () => {
-  near(gain(gun(), { toxin: 1 }), 1 / (1 + R.element));
-  near(gain(gun(), { puncture: 1 }), 50 / (100 * (1 + R.element)));
+  // (The build's elements round to 1/32 of the base: 180% is 181.25%.)
+  const element = Math.round(R.element * 32) / 32;
+  near(gain(gun(), { toxin: 1 }), 1 / (1 + element));
+  near(gain(gun(), { puncture: 1 }), 50 / (100 * (1 + element)));
   // A curse on a type the weapon doesn't have costs nothing.
   near(gain(gun(), { impact: -0.7 }), 0);
 });
@@ -170,41 +172,89 @@ test('DoT ticks scale with their own element’s mods (the wiki’s Supra Vandal
   const { dpsOf } = await import('../src/sim.js');
   const heatGun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
     modes: [{ name: 'Normal Attack', rate: 1, cost: 1, parts: [{ name: 'Normal Attack', dmg: { heat: 40 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
-  // A hit of 40 x 1.6 = 64 a second; a Heat proc a second, 6 ticks of 0.5 x 40, x1.6: 192.
+  // A hit of 40 x 1.6, rounded to 1/32 of 40: 63.75 a second; a Heat proc a second, 6 ticks of (40 + 1) x 0.5 x 1.6.
   const heat = { stats: {}, elements: [{ type: 'heat', value: 0.6 }] };
-  assert.ok(Math.abs(dpsOf(heatGun, heat) - (64 + 192)) < 1e-6, String(dpsOf(heatGun, heat)));
+  assert.ok(Math.abs(dpsOf(heatGun, heat) - (63.75 + 6 * 32.8)) < 1e-6, String(dpsOf(heatGun, heat)));
 });
 
 test('a Slash proc per tick: the wiki’s Damage over Time example (faction twice)', async () => {
   const { dpsOf } = await import('../src/sim.js');
   // 100 Slash, Serration (+165%), Bane of Grineer (+30%), +90% Status Damage, against Grineer:
-  // a bleed tick is 100 x 2.65 x 0.35 x 1.3² x 1.9 = 297.8202; the hit 100 x 2.65 x 1.3 = 344.5.
+  // a bleed tick is (100 x 2.65 x 1.3 + 1) x 0.35 x 1.3 x 1.9 = 298.6847; the hit 100 x 2.65 x 1.3 = 344.5.
   const slashGun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
     modes: [{ name: 'Normal Attack', rate: 1, cost: 1, parts: [{ name: 'Normal Attack', dmg: { slash: 100 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
   const build = { stats: { damage: 1.65, grineer: 0.3, statusDamage: 0.9 }, elements: [] };
   // One proc a second, 6 ticks each.
-  assert.ok(Math.abs(dpsOf(slashGun, build, { enemy: 'grineer' }) - (344.5 + 6 * 297.8202)) < 1e-3);
+  assert.ok(Math.abs(dpsOf(slashGun, build, { enemy: 'grineer' }) - (344.5 + 6 * 298.6847)) < 1e-3);
 });
 
 test('the Valence bonus: the weapon’s own element, after the mods (HCET), in the base the mods scale from', async () => {
   const { hitByType } = await import('../src/sim.js');
   const p = { name: 'x', dmg: { puncture: 100 }, cc: 0, cd: 1, sc: 0, ms: 1 };
   const m = (/** @type {Record<string, number>} */ st) => (/** @type {string} */ id) => st[id] ?? 0;
-  // A Cold mod (90% of 100 + 60) and a 60% Toxin bonus: Viral, 144 + 60.
-  assert.deepEqual(hitByType(p, { stats: {}, elements: [{ type: 'cold', value: 0.9 }] }, m({}), { type: 'toxin', value: 0.6 })?.byType, { puncture: 100, viral: 204 });
+  // A Cold mod (90% of 100 + 60) and a 60% Toxin bonus: Viral, 144 + 60, rounded to 1/32 of 160: 205.
+  assert.deepEqual(hitByType(p, { stats: {}, elements: [{ type: 'cold', value: 0.9 }] }, m({}), { type: 'toxin', value: 0.6 })?.byType, { puncture: 100, viral: 205 });
   // Electricity and Toxin mods take Corrosive; a Heat bonus stays Heat.
-  assert.deepEqual(hitByType(p, { stats: {}, elements: [{ type: 'electricity', value: 0.9 }, { type: 'toxin', value: 0.9 }] }, m({}), { type: 'heat', value: 0.6 })?.byType, { puncture: 100, corrosive: 288, heat: 60 });
-  // Radiation stays Radiation; Impact x (1 + 120% Impact mods).
+  assert.deepEqual(hitByType(p, { stats: {}, elements: [{ type: 'electricity', value: 0.9 }, { type: 'toxin', value: 0.9 }] }, m({}), { type: 'heat', value: 0.6 })?.byType, { puncture: 100, corrosive: 290, heat: 60 });
+  // Radiation stays Radiation; Impact x (1 + 120% Impact mods), 132 rounded to 1/32 of 160: 130.
   assert.deepEqual(hitByType(p, { stats: {}, elements: [] }, m({}), { type: 'radiation', value: 0.6 })?.byType, { puncture: 100, radiation: 60 });
-  assert.equal(hitByType(p, { stats: {}, elements: [] }, m({ impact: 1.2 }), { type: 'impact', value: 0.6 })?.byType.impact, 60 * 2.2);
+  assert.equal(hitByType(p, { stats: {}, elements: [] }, m({ impact: 1.2 }), { type: 'impact', value: 0.6 })?.byType.impact, 130);
   // In game: Coda Bassocyst (789 Blast, 19 Radiation) with 60% Heat shows 484.8 Heat, 1292.8 in all;
   // with Incendiary Coat (+90% Heat), 1648.3 Heat and 2456.3 in all. Its alt-fire: 618.1 of 921.1.
+  // (The Arsenal shows them before rounding: within half a step, 1/32 of the base, for each type.)
   const { WEAPON_STATS } = await import('../src/data/weapon-stats.js');
   const [normal, alt] = WEAPON_STATS['Coda Bassocyst'].modes.map(md => md.parts[0]);
   const heat = { type: 'heat', value: 0.6 };
-  const r1 = (/** @type {number | undefined} */ x) => Math.round((x ?? 0) * 10) / 10;
-  assert.equal(r1(hitByType(normal, { stats: {}, elements: [] }, m({}), heat)?.hit), 1292.8);
+  const shows = (/** @type {any} */ h, /** @type {number} */ want, /** @type {number} */ steps) => assert.ok(Math.abs((h.value ?? 0) - want) <= steps * h.base / 64 + 1e-9, `${h.value} vs ${want}`);
   const coat = { stats: {}, elements: [{ type: 'heat', value: 0.9 }] };
-  assert.deepEqual([r1(hitByType(normal, coat, m({}), heat)?.byType.heat), r1(hitByType(normal, coat, m({}), heat)?.hit)], [1648.3, 2456.3]);
-  assert.deepEqual([r1(hitByType(alt, coat, m({}), heat)?.byType.heat), r1(hitByType(alt, coat, m({}), heat)?.hit)], [618.1, 921.1]);
+  const [plain, coated, altCoated] = [hitByType(normal, { stats: {}, elements: [] }, m({}), heat), hitByType(normal, coat, m({}), heat), hitByType(alt, coat, m({}), heat)];
+  shows({ value: plain?.hit, base: plain?.base }, 1292.8, 3);
+  shows({ value: coated?.byType.heat, base: coated?.base }, 1648.3, 1);
+  shows({ value: coated?.hit, base: coated?.base }, 2456.3, 3);
+  shows({ value: altCoated?.byType.heat, base: altCoated?.base }, 618.1, 1);
+  shows({ value: altCoated?.hit, base: altCoated?.base }, 921.1, 3);
+});
+
+test('a DoT seed starts from 1: the wiki\'s Supra Vandal, (40 + 1) x 0.5 x 1.6 a tick', async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  const gun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+    modes: [{ name: 'x', rate: 1, cost: 1, parts: [{ name: 'x', dmg: { heat: 40 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
+  // One proc a second: the hit, and 6 ticks of it. Heat mods raise the hit too.
+  near(dpsOf(gun, { stats: {}, elements: [{ type: 'heat', value: 0.6 }] }), 63.75 + 6 * 32.8);
+});
+
+test('sustained DPS: the wiki\'s shots / (rate x reload + shots), less one shot on Vectis', async () => {
+  const { dpsOf } = await import('../src/sim.js');
+  const gun = (/** @type {object} */ extra) => ({ kind: 'Rifle', mag: 2, reload: 1, ammo: null, trigger: 'Auto', tags: [], main: 0, ...extra,
+    modes: [{ name: 'x', rate: 2, cost: 1, parts: [{ name: 'x', dmg: { impact: 32 }, cc: 0, cd: 1, sc: 0, ms: 1 }] }] });
+  const none = { stats: {}, elements: [] };
+  near(dpsOf(gun({}), none), 64 * 2 / (2 * 1 + 2));
+  near(dpsOf(gun({ quickReload: 1 }), none), 64 * 2 / (2 * 1 + 2 - 1));
+});
+
+test('Blast: 30% of the hit alone, 300% once stacks reach 10 inside 1.5 s, a slope between', async () => {
+  const { blastPay, dpsOf } = await import('../src/sim.js');
+  near(blastPay(0), 0.3);
+  near(blastPay(100), 3);
+  for (let r = 0; r < 30; r += 0.5) assert.ok(blastPay(r + 0.5) >= blastPay(r) && blastPay(r + 0.5) - blastPay(r) < 0.4);
+  const gun = { kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+    modes: [{ name: 'x', rate: 1, cost: 1, parts: [{ name: 'x', dmg: { blast: 100 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] };
+  near(dpsOf(gun, { stats: {}, elements: [] }), 100 + 100 * blastPay(1));
+});
+
+test('quantization: each type rounds to 1/32 of the total (the wiki\'s examples)', async () => {
+  const { hitByType } = await import('../src/sim.js');
+  const none = { stats: {}, elements: [] };
+  const part = dmg => ({ name: 'x', dmg, cc: 0, cd: 1, sc: 0, ms: 1 });
+  const by = (p, t = none, m = () => 0) => hitByType(p, t, m).byType;
+  // 30 Impact, 30 Puncture, 40 Slash: 31.25, 31.25, 40.625, 103.125 in all.
+  const a = by(part({ impact: 30, puncture: 30, slash: 40 }));
+  near(a.impact, 31.25); near(a.puncture, 31.25); near(a.slash, 40.625);
+  // Maim's +120% Slash on it: 87.5.
+  near(by(part({ impact: 30, puncture: 30, slash: 40 }), none, id => (id === 'slash' ? 1.2 : 0)).slash, 87.5);
+  // Nagantaka Prime with the wiki's mods: Impact rounds away, Slash 156.78125, Puncture 32.4375.
+  const n = by(part({ impact: 1.73, puncture: 15.57, slash: 155.7 }), none, id => (id === 'puncture' ? 1.2 : 0));
+  near(n.impact, 0); near(n.puncture, 32.4375); near(n.slash, 156.78125);
+  // Elements from the full base, rounded alone: 90% Heat on 173 is 156.78125.
+  near(by(part({ impact: 1.73, puncture: 15.57, slash: 155.7 }), { stats: {}, elements: [{ type: 'heat', value: 0.9 }] }).heat, 156.78125);
 });

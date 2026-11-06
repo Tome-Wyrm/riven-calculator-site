@@ -102,3 +102,50 @@ test('melee builds: melee mods (Melee Damage as Damage, Blood Rush per tier) and
   assert.deepEqual(pool.map(p => [p.name, p.chosen]), [['Melee Afflictions', true]]);
   assert.deepEqual(arcanePool('melee', SCENARIOS.room, { arcane: '' }), []);
 });
+
+const heavySword = () => sword({ melee: { ft: 0.5, range: 2.5, sweep: 0.25, combo: 5, heavy: 500, windUp: 1 } });
+const heavyOpts = (combo, extra = {}) => ({ enemy: '', headcrit: false, target: target(1e6), melee: { attacks: [[[1, 1]]], combo, heavy: true, heavyAt: 2, ...extra } });
+
+test('a heavy attack: its damage x the combo multiplier, wind up shortened by Wind Up Speed only', () => {
+  near(fight(heavySword(), totals({}), heavyOpts('max')).perShot, 500 * 12);
+  near(fight(heavySword(), totals({}), heavyOpts('initial')).perShot, 500);
+  const quick = { ...heavyOpts('max'), target: target(6000) };
+  near(fight(heavySword(), totals({}), quick).timePerKill, 1);
+  near(fight(heavySword(), totals({ heavyWindup: 1 }), quick).timePerKill, 0.5);
+  near(fight(heavySword(), totals({ fireRate: 1 }), quick).timePerKill, 1);
+});
+
+test('Melee Damage On Heavy Attack adds to Melee Damage, on heavy attacks only', () => {
+  near(fight(heavySword(), totals({ damage: 1, meleeDamageOnHeavy: 1 }), heavyOpts('initial')).perShot, 500 * 3);
+});
+
+test('a built-up counter swings to the tier, spends it, and keeps Heavy Attack Efficiency (at most 90%)', () => {
+  const time = stats => fight(heavySword(), totals(stats), { ...heavyOpts('build'), target: target(20 * 100 + 1000 + 1) }).timePerKill;
+  // 20 swings (20 s of hits) reach 2x; the heavy then does 1000, the fight's last point falling after it.
+  assert.ok(time({}) > 20);
+  // (Quick swings: the whole fight inside the 20 s simulated.)
+  const quick = () => { const w = heavySword(); w.modes[0].rate = 10; return w; };
+  const spent = fight(quick(), totals({}), { ...heavyOpts('build'), target: target(6000) }).shotsPerKill;
+  const thrifty = fight(quick(), totals({ heavyEfficiency: 0.99 }), { ...heavyOpts('build'), target: target(6000) }).shotsPerKill;
+  assert.ok(thrifty < spent, `${thrifty} vs ${spent}`);
+});
+
+test('heavy attacks double True Steel and rivens, and count Animosity', () => {
+  const crit = p => { p.modes[0].parts[0].cc = 0.1; return p; };
+  const none = fight(crit(heavySword()), totals({ critChance: 1 }), heavyOpts('initial')).perShot;
+  const twice = fight(crit(heavySword()), totals({ critChance: 1, critChanceHeavy: 1 }), heavyOpts('initial')).perShot;
+  const held = fight(crit(heavySword()), totals({ critChance: 1, animosity: 4.2 }), heavyOpts('initial')).perShot;
+  assert.ok(none < twice && twice < held);
+});
+
+test('without the heavy option, or a heavy attack, swings stay normal', () => {
+  const o = { ...heavyOpts('max'), melee: { attacks: [[[1, 1]]], combo: 'max' } };
+  near(fight(heavySword(), totals({}), o).perShot, 100);
+  near(fight(sword(), totals({}), heavyOpts('max')).perShot, 100);
+});
+
+test('heavy-only mods join the pool only for heavy attacks', () => {
+  const names = opts => modPool('melee', WEAPON_STATS.Skana, SCENARIOS.single, opts).map(p => p.name);
+  assert.ok(!names({ enemy: '' }).includes('Killing Blow'));
+  assert.ok(names({ enemy: '', melee: { heavy: true } }).includes('Killing Blow'));
+});

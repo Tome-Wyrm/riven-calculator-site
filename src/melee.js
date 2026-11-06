@@ -21,6 +21,11 @@ export const MAX_TIER = 12;
 /** The points that reach the highest tier. */
 export const MAX_COMBO = TIER_POINTS * (MAX_TIER - 1);
 
+/** Heavy Attack Efficiency's cap, Initial Combo's regeneration (points a second), and Animosity's stacks to its cap. */
+export const MAX_EFFICIENCY = 0.9;
+export const COMBO_REGEN = 40;
+export const ANIMOSITY_HITS = 10;
+
 /** The combo multiplier at a count of combo points. @param {number} points */
 export const comboTier = points => Math.min(MAX_TIER, 1 + Math.floor(Math.max(0, points) / TIER_POINTS));
 
@@ -33,6 +38,16 @@ export function swingOf(attack) {
   let mult = 0, hits = 0, knocks = 0;
   for (const [m, n, proc] of attack) { mult += m * n; hits += n; if (proc) knocks += n; }
   return { mult, hits, knocks };
+}
+
+/**
+ * A heavy attack's damage as a multiple of a plain hit at 1x (the wiki gives its total; its damage
+ * types share out as the normal attack's). 0: the weapon has none.
+ * @param {import('./data/weapon-stats.js').WeaponStats} w
+ */
+export function heavyMult(w) {
+  const normal = Object.values(w.modes[w.main]?.parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0);
+  return normal > 0 ? (w.melee?.heavy ?? 0) / normal : 0;
 }
 
 /** A combo's damage per swing on average. @param {Combo} c */

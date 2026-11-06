@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { compatFor, liveFactor, modPool, arcanePool, optimise, optimiseEach, rivenPiece, rivenWorth, SCENARIOS } from '../src/build.js';
+import { compatFor, liveFactor, modPool, arcanePool, optimise, optimiseEach, rivenPiece, rivenWorth, shortlist, withoutOutclassed, SCENARIOS } from '../src/build.js';
 import { combineElements, COMBINED } from '../src/elements.js';
 import { WEAPON_STATS } from '../src/data/weapon-stats.js';
 import { GUN_MODS } from '../src/data/mods.js';
@@ -32,13 +32,16 @@ test('build types: kill stacks in room clearing and weak point builds, weak poin
   assert.equal(liveFactor({ stat: 'critChance', value: 0.45, on: 'damaged', chance: 0.21 }, SCENARIOS.room), 0);
 });
 
-test('a weak point build values Weakpoint Damage; a room clearing build gives it nothing', async () => {
+test('a weak point build values Weakpoint Damage; a room clearing build, one hit in fifty, far less', async () => {
   const { study } = await import('../src/study.js');
   const input = scenario => ({ weapon: 'Rubico Prime', cls: 'rifle', shape: '+++-', scenario, opts: {},
     positives: ['multishot', 'critDamage', 'weakpointDamage'], negatives: [] });
   const wpd = r => r.singles.find(x => x.id === 'weakpointDamage')?.change ?? NaN;
-  assert.ok(Math.abs(wpd(study(input('room')))) < 1e-9);
   assert.ok(wpd(study(input('weak'))) > 0.2, String(wpd(study(input('weak')))));
+  assert.ok(wpd(study(input('room'))) < wpd(study(input('weak'))) / 3, String(wpd(study(input('room')))));
+  // Accidents don't keep stacks from weak point hits up: those need aiming for them.
+  assert.equal(liveFactor({ stat: 'statusChance', value: 0.3, on: 'weak point hit', stacks: 10 }, SCENARIOS.room), 0);
+  assert.equal(liveFactor({ stat: 'statusChance', value: 0.3, on: 'weak point hit', stacks: 10 }, SCENARIOS.weak), 10);
 });
 
 test('a build: 8 slots, no mod twice, no two mods that exclude each other, an arcane', () => {
@@ -143,4 +146,60 @@ test('a fire-rate lock keeps the weapon\'s own rate', async () => {
   const a = dpsOf(w, t({ damage: 1, fireRateLocked: 1 }), opts);
   assert.equal(dpsOf(w, t({ damage: 1, fireRateLocked: 1, fireRate: 0.9 }), opts), a);
   assert.ok(dpsOf(w, t({ damage: 1, fireRate: 0.9 }), opts) > dpsOf(w, t({ damage: 1 }), opts));
+});
+
+test('a curse is never worth more than a search\'s luck: Felarx ++-, single target, level 9999 Steel Path', async () => {
+  const { study } = await import('../src/study.js');
+  const { pools } = await import('../src/cycle.js');
+  const { SPLICED } = await import('../src/data/stats.js');
+  const E = await import('../src/data/enemies.js');
+  const { targetOf } = await import('../src/enemies.js');
+  const target = targetOf(E.UNITS.grineer.find(u => u.name === 'Heavy Gunner'), 9999, true, false, E);
+  const p = pools('shotgun', '?yy');
+  const r = study({ weapon: 'Felarx', cls: 'shotgun', shape: '++-', scenario: 'single', opts: { enemy: 'grineer', target, burst: false, primed: false },
+    positives: [...p.positive, ...SPLICED.filter(s => s.b.shotgun !== undefined).map(s => s.id)], negatives: p.negative });
+  // −Magazine costs reloads (it once showed +5%, the search landing on better mods); −Critical Chance
+  // really helps (Devastating Attrition), the community's top curse.
+  assert.ok((r.curses.find(c => c.id === 'magazine')?.change ?? 1) < 0);
+  assert.equal(r.curses[0].id, 'critChance');
+  assert.ok(r.curses[0].change > 0);
+  assert.deepEqual(r.sets[0].ids.slice().sort(), ['multishot', 'viral']);
+  assert.equal(r.sets[0].curse?.id, 'critChance');
+});
+
+test('Ammo Efficiency from a mod takes off the cost, as a riven\'s does', () => {
+  const { stats } = arcanePool('rifle', SCENARIOS.weak, {}).find(a => a.name === 'Primary Crux') ?? { stats: {} };
+  assert.ok(Math.abs((stats.ammoEfficiency ?? 0) + 0.6) < 1e-9, String(stats.ammoEfficiency));
+});
+
+test('pruning: a mod goes only if something at least as good excludes it', () => {
+  const mod = (/** @type {string} */ name, /** @type {Record<string, number>} */ stats, /** @type {string[]} */ excl = [], /** @type {{type: string, value: number}[]} */ elements = []) => ({ name, stats, elements, excl });
+  const names = (/** @type {ReturnType<typeof mod>[]} */ pool) => withoutOutclassed(pool).map(p => p.name);
+  // Primed replaces the base mod; the Amalgam's extra stat keeps it.
+  assert.deepEqual(names([mod('Base', { damage: 0.9 }, ['Primed']), mod('Primed', { damage: 1.65 }, ['Base'])]), ['Primed']);
+  assert.deepEqual(names([mod('Base', { damage: 0.9, fireRate: 0.1 }, ['Primed']), mod('Primed', { damage: 1.65 }, ['Base'])]), ['Base', 'Primed']);
+  // Mods that can share a build both stay: the weaker can be the second.
+  assert.deepEqual(names([mod('Disruptor', { impact: 0.9 }), mod('Full Contact', { impact: 1.2 })]), ['Disruptor', 'Full Contact']);
+  // More isn't always better here: Devastating Attrition, Heat's strip.
+  assert.equal(names([mod('Low', { critChance: 0.5 }, ['High']), mod('High', { critChance: 1 }, ['Low'])]).length, 2);
+  assert.equal(names([mod('Short', { statusDuration: 0.5 }, ['Long']), mod('Long', { statusDuration: 1 }, ['Short'])]).length, 2);
+  // Elements: the same type only. Two equals that exclude each other: one stays.
+  assert.deepEqual(names([mod('Weak', {}, ['Strong'], [{ type: 'cold', value: 0.9 }]), mod('Strong', {}, ['Weak'], [{ type: 'cold', value: 1.65 }])]), ['Strong']);
+  assert.equal(names([mod('Cold', {}, ['Heat'], [{ type: 'cold', value: 0.9 }]), mod('Heat', {}, ['Cold'], [{ type: 'heat', value: 1 }])]).length, 2);
+  assert.deepEqual(names([mod('One', { damage: 1 }, ['Two']), mod('Two', { damage: 1 }, ['One'])]), ['One']);
+  // A better mod that excludes something else as well may not fit where the weaker one does.
+  assert.equal(names([mod('Weak', { damage: 1 }, ['Strong']), mod('Strong', { damage: 2 }, ['Weak', 'Other'])]).length, 2);
+});
+
+test('the shortlist keeps the build, every element and the best of each stat', () => {
+  const w = WEAPON_STATS.Felarx;
+  const o = { ...opts, enemy: 'grineer', weakpoint: 0.02, targets: 20, target: { health: 300000, shields: 0, armor: 0, weak: {}, shieldWeak: {} } };
+  const pool = withoutOutclassed(modPool('shotgun', w, SCENARIOS.room, o));
+  const build = optimise(w, pool, [], o);
+  const short = shortlist(w, pool, o, build);
+  assert.ok(short.length < pool.length, `${short.length} of ${pool.length}`);
+  assert.ok(build.slots.every(p => short.includes(p)));
+  assert.ok(pool.filter(p => p.elements.length).every(p => short.includes(p)));
+  const stat = (/** @type {string} */ k) => short.some(p => k in p.stats);
+  for (const k of ['magazine', 'reloadSpeed', 'fireRate', 'multishot', 'statusChance']) assert.ok(stat(k), k);
 });

@@ -74,7 +74,10 @@ function byFirstWord(text) {
   const from = norm(text.slice(text.toLowerCase().indexOf(first.slice(0, 3))));
   const fits = NAMES.filter(n => n.key.startsWith(first));
   if (!fits.length) return null;
-  fits.sort((a, b) => Math.abs(a.key.length - from.length) - Math.abs(b.key.length - from.length));
+  // A wrapped name's second line can land among junk from the card art ("Magazine Yule 83 Capacity"), so
+  // a name whose remainder was read wins, however long the junk made the text.
+  const missed = (/** @type {{key: string}} */ n) => { const rest = n.key.slice(first.length); return rest && from.includes(rest) ? 0 : 1; };
+  fits.sort((a, b) => missed(a) - missed(b) || Math.abs(a.key.length - from.length) - Math.abs(b.key.length - from.length));
   return fits[0].id;
 }
 

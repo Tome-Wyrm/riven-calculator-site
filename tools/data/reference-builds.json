@@ -1,0 +1,4479 @@
+[
+ {
+  "edit": false,
+  "frame": "Ash",
+  "video": "ZJu_nC0rxWw",
+  "at": 16,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "199/196/160/109",
+  "strength": 199,
+  "reads": 95,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Archon Stretch",
+   "Primed Flow",
+   "Primed Continuity",
+   "Primed Sure Footed",
+   "Narrow Minded",
+   "Steel Charge",
+   "Umbral Intensify",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Crepuscular",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Atlas",
+  "video": "N1z3fqZfNJk",
+  "at": 40,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "161/100/100/280",
+  "strength": 161,
+  "reads": 98,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Steel Charge",
+   "Adaptation",
+   "Umbral Intensify",
+   "Umbral Vitality",
+   "Overextended",
+   "Archon Stretch",
+   "Umbral Fiber",
+   "Cunning Drift",
+   "Stealth Drift"
+  ],
+  "arcanes": [
+   "Arcane Blessing",
+   "Arcane Bellicose"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 44,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Atlas",
+  "video": "N1z3fqZfNJk",
+  "at": 183,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "117/100/100/280",
+  "strength": 117,
+  "reads": 28,
+  "arrow": 28,
+  "budget": false,
+  "mods": [
+   "Steel Charge",
+   "Cunning Drift",
+   "Umbral Vitality",
+   "Primed Flow",
+   "Umbral Fiber",
+   "Archon Stretch",
+   "Hunter Adrenaline",
+   "Umbral Intensify",
+   "Overextended"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Blessing"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Banshee",
+  "video": "UU3l3Rq4Xyc",
+  "at": 16,
+  "tab": "Evade",
+  "checked": true,
+  "stats": "184/128/100/235",
+  "strength": 184,
+  "reads": 57,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Resonance",
+   "Overextended",
+   "Primed Continuity",
+   "Brief Respite",
+   "Umbral Intensify",
+   "Archon Stretch"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Arcane Pistoleer"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Transient Fortitude"
+  ],
+  "crimson": 3
+ },
+ {
+  "edit": true,
+  "frame": "Banshee",
+  "video": "UU3l3Rq4Xyc",
+  "at": 375,
+  "tab": "Quake",
+  "checked": true,
+  "stats": "184/155/45/235",
+  "strength": 184,
+  "reads": 24,
+  "arrow": 22,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Primed Continuity",
+   "Gaseous Quake",
+   "Overextended",
+   "Blind Rage",
+   "Stretch",
+   "Brief Respite",
+   "Precision Intensify",
+   "Rolling Guard"
+  ],
+  "arcanes": [
+   "Arcane Sculptor",
+   "Arcane Circumvent"
+  ],
+  "molt": false,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Banshee",
+  "video": "UU3l3Rq4Xyc",
+  "at": 415,
+  "tab": "Quake",
+  "checked": true,
+  "stats": "274/155/45/235",
+  "strength": 274,
+  "reads": 9,
+  "arrow": 9,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Gaseous Quake",
+   "Overextended",
+   "Primed Flow",
+   "Stretch",
+   "Primed Continuity",
+   "Precision Intensify",
+   "Rolling Guard",
+   "Brief Respite",
+   "Blind Rage"
+  ],
+  "arcanes": [
+   "Arcane Circumvent",
+   "Arcane Sculptor"
+  ],
+  "molt": false,
+  "precision": true,
+  "left": 135,
+  "addsUp": false,
+  "note": null,
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Baruuk",
+  "video": "QbTsAtpdtpE",
+  "at": 16,
+  "tab": "Astral",
+  "checked": true,
+  "stats": "139/128/130/220",
+  "strength": 139,
+  "reads": 74,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Streamline",
+   "Steel Charge",
+   "Primed Sure Footed",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Overextended"
+  ],
+  "arcanes": [
+   "Arcane Fury",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Transient Fortitude"
+  ],
+  "crimson": 0
+ },
+ {
+  "edit": true,
+  "frame": "Baruuk",
+  "video": "QbTsAtpdtpE",
+  "at": 307,
+  "tab": "Astral",
+  "checked": true,
+  "stats": "108/95/160/220",
+  "strength": 108,
+  "reads": 9,
+  "arrow": 9,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Overextended",
+   "Steel Charge",
+   "Augur Secrets",
+   "Primed Continuity"
+  ],
+  "arcanes": [
+   "Arcane Fury",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Caliban",
+  "video": "mwvDP02OtYk",
+  "at": 20,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "318/155/45/190",
+  "strength": 318,
+  "reads": 83,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Cunning Drift",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Primed Flow",
+   "Summoner's Wrath",
+   "Razor Mortar",
+   "Archon Vitality",
+   "Archon Stretch",
+   "Blind Rage",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Camisado"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 5,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
+ },
+ {
+  "edit": false,
+  "frame": "Chroma",
+  "video": "zv0AQs_Vqow",
+  "at": 12,
+  "tab": "Guardian",
+  "checked": true,
+  "stats": "306/199/45/34",
+  "strength": 306,
+  "reads": 47,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Steel Charge",
+   "Hunter Adrenaline",
+   "Narrow Minded",
+   "Umbral Vitality",
+   "Guardian Armor",
+   "Blind Rage",
+   "Umbral Fiber"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Blessing"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Chroma",
+  "video": "zv0AQs_Vqow",
+  "at": 287,
+  "tab": "Fast Cosplayer",
+  "checked": true,
+  "stats": "287/172/100/34",
+  "strength": 287,
+  "reads": 21,
+  "arrow": 21,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Umbral Intensify",
+   "Umbral Fiber",
+   "Lightning Dash",
+   "Narrow Minded",
+   "Rush",
+   "Umbral Vitality",
+   "Energy Nexus",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Expertise",
+   "Arcane Bellicose"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 25,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": true,
+  "frame": "Chroma",
+  "video": "zv0AQs_Vqow",
+  "at": 146,
+  "tab": "Guardian",
+  "checked": true,
+  "stats": "330/199/45/34",
+  "strength": 330,
+  "reads": 13,
+  "arrow": 13,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Guardian Armor",
+   "Hunter Adrenaline",
+   "Narrow Minded",
+   "Blind Rage",
+   "Augur Secrets",
+   "Umbral Fiber",
+   "Umbral Intensify"
+  ],
+  "arcanes": [
+   "Arcane Persistence"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Chroma",
+  "video": "zv0AQs_Vqow",
+  "at": 372,
+  "tab": "Null Star",
+  "checked": true,
+  "stats": "174/155/100/175",
+  "strength": 174,
+  "reads": 8,
+  "arrow": 8,
+  "budget": false,
+  "mods": [
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Primed Sure Footed",
+   "Stretch",
+   "Archon Vitality",
+   "Equilibrium",
+   "Corrosive Projection",
+   "Augur Reach",
+   "Neutron Star",
+   "Guardian Armor"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Citrine",
+  "video": "YbfG2vTew34",
+  "at": 34,
+  "tab": "Crystal Stars",
+  "checked": true,
+  "stats": "299/128/45/175",
+  "strength": 299,
+  "reads": 99,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Blind Rage",
+   "Archon Vitality",
+   "Archon Stretch",
+   "Transient Fortitude",
+   "Archon Continuity",
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Equilibrium"
+  ],
+  "arcanes": [
+   "Arcane Impetus",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Cyte-09",
+  "video": "tqUHRmhupMA",
+  "at": 24,
+  "tab": "BoomZoom",
+  "checked": true,
+  "stats": "267/155/45/100",
+  "strength": 267,
+  "reads": 34,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Blind Rage",
+   "Primed Sure Footed",
+   "Equilibrium",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Arcane Acceleration",
+   "Arcane Sculptor"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Dagath",
+  "video": "rE1lZMKmQ-s",
+  "at": 16,
+  "tab": "Hot Glue Factory",
+  "checked": true,
+  "stats": "244/128/100/175",
+  "strength": 244,
+  "reads": 72,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Stretch",
+   "Archon Vitality",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Primed Sure Footed",
+   "Equilibrium",
+   "Transient Fortitude",
+   "Augur Reach",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Dante",
+  "video": "mVZGFh2mvtI",
+  "at": 20,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "214/128/130/145",
+  "strength": 214,
+  "reads": 92,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Archon Vitality",
+   "Primed Continuity",
+   "Streamline",
+   "Stretch",
+   "Transient Fortitude",
+   "Power Drift",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Arcane Hot Shot",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Ember",
+  "video": "WgZZ-Ev_dR0",
+  "at": 316,
+  "tab": "Stars > Ember",
+  "checked": true,
+  "stats": "229/128/100/145",
+  "strength": 229,
+  "reads": 37,
+  "arrow": 29,
+  "budget": false,
+  "mods": [
+   "Brief Respite",
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Primed Continuity",
+   "Transient Fortitude",
+   "Adaptation",
+   "Umbral Intensify",
+   "Fireball Frenzy",
+   "Stretch",
+   "Archon Vitality"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Aegis"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Ember",
+  "video": "WgZZ-Ev_dR0",
+  "at": 167,
+  "tab": "NIKKE Ember",
+  "checked": true,
+  "stats": "328/172/45/34",
+  "strength": 328,
+  "reads": 24,
+  "arrow": 21,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Blind Rage",
+   "Primed Sure Footed",
+   "Fireball Frenzy",
+   "Vigilante Vigor",
+   "Fast Deflection",
+   "Transient Fortitude",
+   "Brief Respite",
+   "Narrow Minded",
+   "Reflection"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Ember",
+  "video": "WgZZ-Ev_dR0",
+  "at": 84,
+  "tab": "Using Ember fr",
+  "checked": true,
+  "stats": "229/128/130/145",
+  "strength": 229,
+  "reads": 21,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Streamline",
+   "Equilibrium",
+   "Stretch",
+   "Brief Respite",
+   "Primed Continuity",
+   "Primed Sure Footed",
+   "Transient Fortitude",
+   "Umbral Intensify"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Equinox",
+  "video": "z2IHndnQBLw",
+  "at": 20,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "40/155/130/265",
+  "strength": 40,
+  "reads": 125,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Energy Transfer",
+   "Primed Continuity",
+   "Stretch",
+   "Overextended",
+   "Primed Sure Footed",
+   "Rolling Guard",
+   "Streamline"
+  ],
+  "arcanes": [
+   "Arcane Circumvent",
+   "Arcane Aegis"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Excalibur",
+  "video": "mdkYd53_r_U",
+  "at": 32,
+  "tab": "Persist (Umbra)",
+  "checked": true,
+  "stats": "276/155/45/100",
+  "strength": 276,
+  "reads": 69,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Steel Charge",
+   "Umbral Intensify",
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Primed Continuity",
+   "Umbral Fiber",
+   "Blind Rage",
+   "Umbral Vitality",
+   "Hunter Adrenaline",
+   "Chromatic Blade"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Blessing"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Excalibur",
+  "video": "mdkYd53_r_U",
+  "at": 365,
+  "tab": "Config A (Prime)",
+  "checked": true,
+  "stats": "185/128/100/265",
+  "strength": 185,
+  "reads": 24,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Primed Continuity",
+   "Steel Charge",
+   "Overextended",
+   "Stretch",
+   "Precision Intensify",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Fury",
+   "Arcane Aegis"
+  ],
+  "molt": false,
+  "precision": true,
+  "left": 90,
+  "addsUp": false,
+  "note": "Suspect: 90 more than its mods and shards give. Possibly an Arsenal or Simulacrum bug; 95 if so.",
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": true,
+  "frame": "Excalibur",
+  "video": "mdkYd53_r_U",
+  "at": 437,
+  "tab": "Config A (Prime)",
+  "checked": true,
+  "stats": "185/128/100/220",
+  "strength": 185,
+  "reads": 9,
+  "arrow": 9,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Steel Charge",
+   "Overextended",
+   "Precision Intensify",
+   "Primed Flow",
+   "Primed Redirection",
+   "Primed Continuity",
+   "Chromatic Blade"
+  ],
+  "arcanes": [
+   "Arcane Fury",
+   "Arcane Aegis"
+  ],
+  "molt": false,
+  "precision": true,
+  "left": 145,
+  "addsUp": false,
+  "note": null,
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Follie",
+  "video": "f83tZHVA-3Y",
+  "at": 921,
+  "tab": "Roar",
+  "checked": true,
+  "stats": "223/185/45/175",
+  "strength": 223,
+  "reads": 43,
+  "arrow": 37,
+  "budget": false,
+  "mods": [
+   "Archon Flow",
+   "Primed Continuity",
+   "Primed Sure Footed",
+   "Blind Rage",
+   "Archon Stretch",
+   "Precision Intensify",
+   "Corrosive Projection",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Arcane Sculptor",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Follie",
+  "video": "f83tZHVA-3Y",
+  "at": 12,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "139/253/45/154",
+  "strength": 139,
+  "reads": 50,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Dreamer's Bond",
+   "Overextended",
+   "Blind Rage",
+   "Narrow Minded",
+   "Augur Message",
+   "Precision Intensify"
+  ],
+  "arcanes": [
+   "Arcane Sculptor",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Frost",
+  "video": "X2ENUGaXrfA",
+  "at": 391,
+  "tab": "Xata",
+  "checked": true,
+  "stats": "267/100/45/235",
+  "strength": 267,
+  "reads": 50,
+  "arrow": 47,
+  "budget": false,
+  "mods": [
+   "Icy Avalanche",
+   "Umbral Intensify",
+   "Stretch",
+   "Blind Rage",
+   "Archon Flow",
+   "Overextended",
+   "Cold Front",
+   "Freeze Force",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Arcane Steadfast",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
+ },
+ {
+  "edit": false,
+  "frame": "Frost",
+  "video": "X2ENUGaXrfA",
+  "at": 24,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "204/40/175/175",
+  "strength": 204,
+  "reads": 57,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Boreal's Hatred",
+   "Freeze Force",
+   "Umbral Intensify",
+   "Stretch",
+   "Icy Avalanche",
+   "Fleeting Expertise",
+   "Dreamer's Bond",
+   "Primed Flow",
+   "Cold Front",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
+ },
+ {
+  "edit": false,
+  "frame": "Gara",
+  "video": "12IOBmqd3H0",
+  "at": 610,
+  "tab": "Shield Bombs",
+  "checked": true,
+  "stats": "262/117/45/265",
+  "strength": 262,
+  "reads": 27,
+  "arrow": 19,
+  "budget": false,
+  "mods": [
+   "Shattered Storm",
+   "Overextended",
+   "Augur Secrets",
+   "Primed Sure Footed",
+   "Umbral Intensify",
+   "Archon Stretch",
+   "Transient Fortitude",
+   "Blind Rage"
+  ],
+  "arcanes": [
+   "Arcane Sculptor",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Gara",
+  "video": "12IOBmqd3H0",
+  "at": 434,
+  "tab": "Influencer Gara",
+  "checked": true,
+  "stats": "139/173/100/235",
+  "strength": 139,
+  "reads": 26,
+  "arrow": 22,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Primed Continuity",
+   "Equilibrium",
+   "Overextended",
+   "Archon Stretch",
+   "Umbral Intensify",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Fury",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Gara",
+  "video": "12IOBmqd3H0",
+  "at": 16,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "139/197/100/265",
+  "strength": 139,
+  "reads": 33,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Augur Message",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Overextended",
+   "Dreamer's Bond",
+   "Stretch",
+   "Transient Fortitude",
+   "Energy Nexus"
+  ],
+  "arcanes": [
+   "Arcane Fury",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Garuda",
+  "video": "iPL08_jDp1E",
+  "at": 455,
+  "tab": "Ballin'",
+  "checked": true,
+  "stats": "238/103/45/265",
+  "strength": 238,
+  "reads": 18,
+  "arrow": 6,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Corrosive Projection",
+   "Overextended",
+   "Stretch",
+   "Blind Rage",
+   "Umbral Intensify",
+   "Rolling Guard",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Molt Reconstruct",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Garuda",
+  "video": "iPL08_jDp1E",
+  "at": 751,
+  "tab": "Melee",
+  "checked": true,
+  "stats": "183/185/45/235",
+  "strength": 183,
+  "reads": 7,
+  "arrow": 3,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Overextended",
+   "Stretch",
+   "Blending Talons",
+   "Brief Respite"
+  ],
+  "arcanes": [
+   "Molt Reconstruct",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Blind Rage"
+  ],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Garuda",
+  "video": "iPL08_jDp1E",
+  "at": 16,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "163/103/100/265",
+  "strength": 163,
+  "reads": 38,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Steel Charge",
+   "Overextended",
+   "Umbral Intensify",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Molt Reconstruct",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Augur Secrets"
+  ],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Gauss",
+  "video": "6dphFaMjpA4",
+  "at": 492,
+  "tab": "Classic",
+  "checked": true,
+  "stats": "168/336/100/34",
+  "strength": 168,
+  "reads": 29,
+  "arrow": 29,
+  "budget": false,
+  "mods": [
+   "Rush",
+   "Sprint Boost",
+   "Primed Continuity",
+   "Constitution",
+   "Umbral Intensify",
+   "Narrow Minded",
+   "Augur Secrets",
+   "Augur Message",
+   "Fast Deflection"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Aegis"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Gauss",
+  "video": "6dphFaMjpA4",
+  "at": 605,
+  "tab": "Bonnet",
+  "checked": true,
+  "stats": "139/185/45/265",
+  "strength": 139,
+  "reads": 26,
+  "arrow": 20,
+  "budget": false,
+  "mods": [
+   "Corrosive Projection",
+   "Stretch",
+   "Primed Continuity",
+   "Overextended",
+   "Blind Rage",
+   "Fast Deflection",
+   "Rush",
+   "Primed Flow"
+  ],
+  "arcanes": [
+   "Arcane Sculptor",
+   "Arcane Aegis"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Gauss",
+  "video": "6dphFaMjpA4",
+  "at": 34,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "168/311/100/34",
+  "strength": 168,
+  "reads": 43,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Energy Siphon",
+   "Thermal Transfer",
+   "Augur Message",
+   "Constitution",
+   "Umbral Intensify",
+   "Fast Deflection",
+   "Narrow Minded",
+   "Continuity",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Aegis"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Grendel",
+  "video": "_OQpA9r2j9k",
+  "at": 785,
+  "tab": "Likely Nerf",
+  "checked": true,
+  "stats": "408/155/45/100",
+  "strength": 408,
+  "reads": 32,
+  "arrow": 28,
+  "budget": false,
+  "mods": [
+   "Power Drift",
+   "Blind Rage",
+   "Umbral Vitality",
+   "Primed Continuity",
+   "Corrosive Projection",
+   "Hunter Adrenaline",
+   "Gastroparesis",
+   "Umbral Intensify",
+   "Primed Flow",
+   "Umbral Fiber"
+  ],
+  "arcanes": [
+   "Arcane Bellicose",
+   "Arcane Persistence"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Grendel",
+  "video": "_OQpA9r2j9k",
+  "at": 664,
+  "tab": "Rollin' Rollin'",
+  "checked": true,
+  "stats": "234/100/100/235",
+  "strength": 234,
+  "reads": 31,
+  "arrow": 16,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Vitality",
+   "Umbral Intensify",
+   "Catapult",
+   "Stretch",
+   "Ready Steel",
+   "Gastro",
+   "Overextended",
+   "Hunter Adrenaline",
+   "Umbral Fiber"
+  ],
+  "arcanes": [
+   "Arcane Bellicose",
+   "Arcane Persistence"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Grendel",
+  "video": "_OQpA9r2j9k",
+  "at": 32,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "234/100/100/190",
+  "strength": 234,
+  "reads": 90,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Corrosive Projection",
+   "Primed Flow",
+   "Overextended",
+   "Hunter Adrenaline",
+   "Gastro",
+   "Umbral Intensify",
+   "Umbral Vitality"
+  ],
+  "arcanes": [
+   "Arcane Bellicose",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Gyre",
+  "video": "Xl4gVJdhFug",
+  "at": 16,
+  "tab": "Sculpt",
+  "checked": true,
+  "stats": "238/128/45/265",
+  "strength": 238,
+  "reads": 36,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Archon Stretch",
+   "Umbral Intensify",
+   "Brief Respite",
+   "Primed Continuity",
+   "Overextended",
+   "Cathode Current",
+   "Blind Rage",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Sculptor",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Harrow",
+  "video": "Hi16HLCG5jQ",
+  "at": 168,
+  "tab": "Covenant",
+  "checked": true,
+  "stats": "144/155/130/175",
+  "strength": 144,
+  "reads": 34,
+  "arrow": 34,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Corrosive Projection",
+   "Streamline",
+   "Adaptation",
+   "Stretch",
+   "Primed Sure Footed",
+   "Augur Reach",
+   "Primed Continuity",
+   "Lasting Covenant"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Arcane Pistoleer"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Hildryn",
+  "video": "04WxMRoYNAE",
+  "at": 20,
+  "tab": "Greed",
+  "checked": true,
+  "stats": "100/155/145/235",
+  "strength": 100,
+  "reads": 119,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Aviator",
+   "Aegis Gale",
+   "Primed Continuity",
+   "Aerodynamic",
+   "Overextended",
+   "Precision Intensify",
+   "Boreal's Hatred",
+   "Streamline",
+   "Stretch",
+   "Primed Redirection"
+  ],
+  "arcanes": [
+   "Arcane Velocity",
+   "Arcane Precision"
+  ],
+  "molt": false,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
+ },
+ {
+  "edit": false,
+  "frame": "Hydroid",
+  "video": "Kl-rN1rBjJs",
+  "at": 20,
+  "tab": "Persist",
+  "checked": true,
+  "stats": "222/155/100/145",
+  "strength": 222,
+  "reads": 58,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Hunter Adrenaline",
+   "Stretch",
+   "Primed Flow",
+   "Umbral Vitality",
+   "Growing Power",
+   "Primed Continuity",
+   "Umbral Fiber",
+   "Viral Tempest",
+   "Primed Sure Footed"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Blessing"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": true,
+  "frame": "Hydroid",
+  "video": "Kl-rN1rBjJs",
+  "at": 209,
+  "tab": "Persist",
+  "checked": true,
+  "stats": "200/155/100/145",
+  "strength": 200,
+  "reads": 16,
+  "arrow": 16,
+  "budget": false,
+  "mods": [
+   "Primed Continuity",
+   "Growing Power",
+   "Umbral Intensify",
+   "Stretch",
+   "Primed Flow",
+   "Umbral Vitality",
+   "Primed Sure Footed",
+   "Hunter Adrenaline",
+   "Viral Tempest"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Blessing"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Inaros",
+  "video": "mDuPuBN5Fdk",
+  "at": 116,
+  "tab": "What are you",
+  "checked": true,
+  "stats": "271/73/45/250",
+  "strength": 271,
+  "reads": 102,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Overextended",
+   "Stretch",
+   "Cunning Drift",
+   "Steel Charge",
+   "Umbral Vitality",
+   "Umbral Fiber",
+   "Elemental Sandstorm",
+   "Transient Fortitude",
+   "Blind Rage"
+  ],
+  "arcanes": [
+   "Arcane Grace",
+   "Arcane Persistence"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Ivara",
+  "video": "t2eJFhSKgB0",
+  "at": 44,
+  "tab": "Eclipse",
+  "checked": true,
+  "stats": "244/167/160/34",
+  "strength": 244,
+  "reads": 49,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Primed Continuity",
+   "Power Drift",
+   "Empowered Quiver",
+   "Transient Fortitude",
+   "Umbral Intensify",
+   "Piercing Navigator",
+   "Corrosive Projection",
+   "Narrow Minded"
+  ],
+  "arcanes": [
+   "Arcane Energize",
+   "Arcane Crepuscular"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Jade",
+  "video": "GETM5iHn3Do",
+  "at": 56,
+  "tab": "Burn the Sky",
+  "checked": true,
+  "stats": "228/155/45/280",
+  "strength": 228,
+  "reads": 42,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Stretch",
+   "Blind Rage",
+   "Primed Continuity",
+   "Overextended",
+   "Cunning Drift",
+   "Archon Vitality",
+   "Growing Power"
+  ],
+  "arcanes": [
+   "Arcane Sculptor",
+   "Arcane Crepuscular"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Khora",
+  "video": "j7RtQJ2gmdE",
+  "at": 16,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "144/155/100/190",
+  "strength": 144,
+  "reads": 51,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Continuity",
+   "Primed Flow",
+   "Rolling Guard",
+   "Umbral Intensify",
+   "Cunning Drift",
+   "Archon Stretch",
+   "Summoner's Wrath",
+   "Energy Nexus",
+   "Accumulating Whipclaw",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Arcane Fury",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Koumei",
+  "video": "QCWxUQXiCRc",
+  "at": 79,
+  "tab": "Copemei",
+  "checked": true,
+  "stats": "100/95/160/145",
+  "strength": 100,
+  "reads": 34,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Growing Power",
+   "Primed Flow",
+   "Archon Stretch",
+   "Precision Intensify",
+   "Archon Vitality",
+   "Adaptation",
+   "Archon Continuity",
+   "Fleeting Expertise",
+   "Equilibrium"
+  ],
+  "arcanes": [
+   "Arcane Blessing",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": "A floor: her Decrees raise it during a mission.",
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Kullervo",
+  "video": "h6T-kj1hktA",
+  "at": 72,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "219/155/100/205",
+  "strength": 219,
+  "reads": 56,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Volatile Recompense",
+   "Primed Flow",
+   "Steel Charge",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Overextended",
+   "Umbral Fiber",
+   "Umbral Vitality",
+   "Cunning Drift",
+   "Energy Nexus"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Bellicose"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 72,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Lavos",
+  "video": "FCmk9jPY6Fw",
+  "at": 24,
+  "tab": "Lavo",
+  "checked": true,
+  "stats": "206/155/100/175",
+  "strength": 206,
+  "reads": 105,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Corrosive Projection",
+   "Archon Continuity",
+   "Augur Secrets",
+   "Primed Sure Footed",
+   "Archon Vitality",
+   "Adaptation",
+   "Augur Reach",
+   "Stretch",
+   "Energy Siphon"
+  ],
+  "arcanes": [
+   "Arcane Bellicose",
+   "Arcane Blessing"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 38,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Lavos",
+  "video": "UdVHWNFU0qY",
+  "at": 28,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "170/128/100/175",
+  "strength": 170,
+  "reads": 95,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Transient Fortitude",
+   "Stretch",
+   "Valence Formation",
+   "Archon Vitality",
+   "Primed Continuity",
+   "Adaptation",
+   "Power Drift",
+   "Precision Intensify",
+   "Growing Power",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Blessing"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": "From the older 2024 Build Refresh.",
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Limbo",
+  "video": "G7jCAwLVKvA",
+  "at": 120,
+  "tab": "Succ",
+  "checked": true,
+  "stats": "183/155/100/190",
+  "strength": 183,
+  "reads": 41,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Power Drift",
+   "Rolling Guard",
+   "Umbral Intensify",
+   "Corrosive Projection",
+   "Primed Continuity",
+   "Augur Secrets",
+   "Cunning Drift",
+   "Rift Torrent",
+   "Stretch"
+  ],
+  "arcanes": [
+   "Arcane Energize",
+   "Arcane Aegis"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Limbo",
+  "video": "G7jCAwLVKvA",
+  "at": 292,
+  "tab": "Sunder",
+  "checked": true,
+  "stats": "178/128/100/280",
+  "strength": 178,
+  "reads": 13,
+  "arrow": 13,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Corrosive Projection",
+   "Overextended",
+   "Stretch",
+   "Augur Secrets",
+   "Cunning Drift",
+   "Transient Fortitude",
+   "Power Drift",
+   "Primed Continuity",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Arcane Energize",
+   "Arcane Aegis"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Limbo",
+  "video": "G7jCAwLVKvA",
+  "at": 364,
+  "tab": "Boxer",
+  "checked": true,
+  "stats": "40/50/175/280",
+  "strength": 40,
+  "reads": 5,
+  "arrow": 5,
+  "budget": false,
+  "mods": [
+   "Loot Detector",
+   "Streamline",
+   "Overextended",
+   "Stretch",
+   "Cunning Drift",
+   "Thief's Wit",
+   "Natural Talent",
+   "Firewalker",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Arcane Consequence",
+   "Arcane Energize"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Loki",
+  "video": "0gQ8dlc6K0w",
+  "at": 54,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "100/321/145/34",
+  "strength": 100,
+  "reads": 23,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Corrosive Projection",
+   "Primed Flow",
+   "Primed Continuity",
+   "Streamline",
+   "Mobilize",
+   "Narrow Minded",
+   "Augur Message",
+   "Primed Sure Footed",
+   "Constitution",
+   "Nira's Hatred"
+  ],
+  "arcanes": [
+   "Arcane Energize"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Mag",
+  "video": "xE6KjdLcljU",
+  "at": 98,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "84/100/100/265",
+  "strength": 84,
+  "reads": 49,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Overextended",
+   "Stretch",
+   "Fracturing Crush",
+   "Primed Sure Footed",
+   "Primed Redirection",
+   "Augur Reach",
+   "Energy Siphon"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Mesa",
+  "video": "iyoXzP5zI-o",
+  "at": 44,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "199/251/100/34",
+  "strength": 199,
+  "reads": 63,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Primed Flow",
+   "Augur Message",
+   "Transient Fortitude",
+   "Primed Continuity",
+   "Mesa's Waltz",
+   "Narrow Minded",
+   "Corrosive Projection",
+   "Primed Redirection",
+   "Archon Vitality"
+  ],
+  "arcanes": [
+   "Arcane Velocity",
+   "Arcane Avenger"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Mirage",
+  "video": "ex37vQt6qa4",
+  "at": 16,
+  "tab": "First tab (an icon)",
+  "checked": true,
+  "stats": "328/167/45/175",
+  "strength": 328,
+  "reads": 48,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Stretch",
+   "Blind Rage",
+   "Umbral Intensify",
+   "Primed Flow",
+   "Primed Sure Footed",
+   "Primed Continuity",
+   "Augur Reach",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Transient Fortitude"
+  ],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Narin",
+  "video": "AsEwOt42vag",
+  "at": 527,
+  "tab": "Full",
+  "checked": true,
+  "stats": "238/173/45/280",
+  "strength": 238,
+  "reads": 27,
+  "arrow": 22,
+  "budget": false,
+  "mods": [
+   "Archon Flow",
+   "Blind Rage",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Overextended",
+   "Cunning Drift",
+   "Transient Fortitude",
+   "Augur Reach",
+   "Stretch",
+   "Energy Siphon"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Sculptor"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Narin",
+  "video": "AsEwOt42vag",
+  "at": 32,
+  "tab": "New Players",
+  "checked": true,
+  "stats": "70/199/100/265",
+  "strength": 70,
+  "reads": 33,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Intensify",
+   "Dreamer's Bond",
+   "Overextended",
+   "Continuity",
+   "Equilibrium",
+   "Stretch",
+   "Augur Message"
+  ],
+  "arcanes": [],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Narin",
+  "video": "AsEwOt42vag",
+  "at": 364,
+  "tab": "2 Forma",
+  "checked": true,
+  "stats": "139/197/100/265",
+  "strength": 139,
+  "reads": 27,
+  "arrow": 12,
+  "budget": true,
+  "mods": [
+   "Primed Continuity",
+   "Overextended",
+   "Energy Siphon",
+   "Augur Message",
+   "Archon Flow",
+   "Stretch",
+   "Umbral Intensify",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Ice Storm",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Narin",
+  "video": "AsEwOt42vag",
+  "at": 316,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "108/224/100/265",
+  "strength": 108,
+  "reads": 22,
+  "arrow": 22,
+  "budget": true,
+  "mods": [
+   "Umbral Intensify",
+   "Energy Siphon",
+   "Primed Flow",
+   "Primed Continuity",
+   "Stretch",
+   "Overextended",
+   "Augur Message",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Arcane Ice Storm",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Nekros",
+  "video": "5_h7_IsvUjk",
+  "at": 72,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "144/95/160/160",
+  "strength": 144,
+  "reads": 59,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Stretch",
+   "Cunning Drift",
+   "Despoil",
+   "Shield Of Shadows",
+   "Adaptation",
+   "Umbral Intensify",
+   "Brief Respite",
+   "Primed Continuity",
+   "Fleeting Expertise"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Vigor"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Nezha",
+  "video": "Cjq-fgzGhvw",
+  "at": 16,
+  "tab": "Flare",
+  "checked": true,
+  "stats": "129/17/160/280",
+  "strength": 129,
+  "reads": 49,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Archon Vitality",
+   "Umbral Intensify",
+   "Cunning Drift",
+   "Transient Fortitude",
+   "Growing Power",
+   "Overextended",
+   "Fleeting Expertise",
+   "Stretch"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": -10,
+  "addsUp": false,
+  "note": null,
+  "shards": null,
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Nidus",
+  "video": "dDavAsWgzlk",
+  "at": 58,
+  "tab": "Abundant",
+  "checked": true,
+  "stats": "321/100/45/145",
+  "strength": 321,
+  "reads": 57,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Hunter Adrenaline",
+   "Primed Flow",
+   "Umbral Intensify",
+   "Blind Rage",
+   "Stretch",
+   "Corrosive Projection",
+   "Umbral Fiber",
+   "Abundant Mutation",
+   "Parasitic Vitality"
+  ],
+  "arcanes": [
+   "Arcane Bellicose",
+   "Arcane Persistence"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 37,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Nokko",
+  "video": "MAjj2_JYaZg",
+  "at": 66,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "207/155/45/265",
+  "strength": 207,
+  "reads": 46,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Overextended",
+   "Archon Continuity",
+   "Stretch",
+   "Blind Rage",
+   "Mecha Empowered",
+   "Primed Sure Footed",
+   "Augur Reach",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Arcane Crepuscular",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": true,
+  "frame": "Nokko",
+  "video": "MAjj2_JYaZg",
+  "at": 399,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "237/155/45/265",
+  "strength": 237,
+  "reads": 22,
+  "arrow": 22,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Mecha Empowered",
+   "Stretch",
+   "Umbral Intensify",
+   "Overextended",
+   "Archon Continuity",
+   "Blind Rage"
+  ],
+  "arcanes": [
+   "Arcane Crepuscular",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Intensify",
+   "Augur Secrets"
+  ],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Nova",
+  "video": "aMwnWdgbzII",
+  "at": 24,
+  "tab": "To Be Sure",
+  "checked": true,
+  "stats": "144/200/130/175",
+  "strength": 144,
+  "reads": 95,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Continuity",
+   "Streamline",
+   "Stretch",
+   "Primed Flow",
+   "Primed Redirection",
+   "Molecular Fission",
+   "Umbral Intensify",
+   "Primed Sure Footed",
+   "Augur Reach",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Aegis"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Nyx",
+  "video": "On5sbhxijv8",
+  "at": 400,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "199/158/130/160",
+  "strength": 199,
+  "reads": 42,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Transient Fortitude",
+   "Umbral Intensify",
+   "Stretch",
+   "Cunning Drift",
+   "Streamline",
+   "Primed Continuity",
+   "Mind Freak",
+   "Summoner's Wrath",
+   "Assimilate"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Molt Efficiency"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Oberon",
+  "video": "oenw8Fk9kCs",
+  "at": 24,
+  "tab": "LAlt F4",
+  "checked": true,
+  "stats": "253/128/45/265",
+  "strength": 253,
+  "reads": 56,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Stretch",
+   "Umbral Intensify",
+   "Overextended",
+   "Blind Rage",
+   "Equilibrium",
+   "Growing Power",
+   "Fortitude",
+   "Power Drift",
+   "Primed Continuity",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Battery"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Octavia",
+  "video": "sfrBs_QWVt4",
+  "at": 83,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "222/230/45/265",
+  "strength": 222,
+  "reads": 50,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Overextended",
+   "Blind Rage",
+   "Stretch",
+   "Augur Secrets",
+   "Primed Continuity",
+   "Power Drift",
+   "Corrosive Projection",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Arcane Crepuscular",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
+ },
+ {
+  "edit": true,
+  "frame": "Octavia",
+  "video": "sfrBs_QWVt4",
+  "at": 286,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "252/230/45/265",
+  "strength": 252,
+  "reads": 11,
+  "arrow": 11,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Overextended",
+   "Blind Rage",
+   "Stretch",
+   "Augur Secrets",
+   "Primed Continuity",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Arcane Crepuscular",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
+ },
+ {
+  "edit": false,
+  "frame": "Oraxia",
+  "video": "krPBoOx0XMM",
+  "at": 700,
+  "tab": "Blightbrood",
+  "checked": true,
+  "stats": "194/155/45/250",
+  "strength": 194,
+  "reads": 36,
+  "arrow": 18,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Cunning Drift",
+   "Summoner's Wrath",
+   "Stretch",
+   "Blind Rage",
+   "Umbral Vitality",
+   "Brood's Oversurge",
+   "Overextended",
+   "Archon Continuity"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Oraxia",
+  "video": "krPBoOx0XMM",
+  "at": 598,
+  "tab": "Weapon Platform",
+  "checked": true,
+  "stats": "291/155/45/145",
+  "strength": 291,
+  "reads": 22,
+  "arrow": 22,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Power Drift",
+   "Blind Rage",
+   "Primed Flow",
+   "Growing Power",
+   "Archon Continuity",
+   "Umbral Fiber",
+   "Stretch",
+   "Umbral Vitality",
+   "Hunter Adrenaline"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Grace"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Oraxia",
+  "video": "krPBoOx0XMM",
+  "at": 20,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "179/155/100/145",
+  "strength": 179,
+  "reads": 60,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Primed Continuity",
+   "Stretch",
+   "Primed Flow",
+   "Equilibrium",
+   "Steel Charge",
+   "Umbral Intensify",
+   "Augur Secrets",
+   "Umbral Vitality"
+  ],
+  "arcanes": [
+   "Arcane Guardian",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Protea",
+  "video": "li7COBOaBhw",
+  "at": 16,
+  "tab": "Infinite Casting",
+  "checked": true,
+  "stats": "253/227/45/169",
+  "strength": 253,
+  "reads": 97,
+  "arrow": 3,
+  "budget": false,
+  "mods": [
+   "Narrow Minded",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Stretch",
+   "Archon Vitality",
+   "Overextended",
+   "Blind Rage",
+   "Primed Sure Footed",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Arcane Sculptor"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 1,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 1
+ },
+ {
+  "edit": false,
+  "frame": "Protea",
+  "video": "li7COBOaBhw",
+  "at": 464,
+  "tab": "Temp Artillery",
+  "checked": true,
+  "stats": "198/155/45/235",
+  "strength": 198,
+  "reads": 9,
+  "arrow": 3,
+  "budget": false,
+  "mods": [
+   "Temporal Artillery",
+   "Umbral Intensify",
+   "Overextended",
+   "Archon Vitality",
+   "Equilibrium",
+   "Primed Sure Footed",
+   "Blind Rage",
+   "Stretch",
+   "Corrosive Projection",
+   "Primed Continuity"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 1,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 1
+ },
+ {
+  "edit": false,
+  "frame": "Protea",
+  "video": "li7COBOaBhw",
+  "at": 432,
+  "tab": "Silence",
+  "checked": true,
+  "stats": "99/155/130/235",
+  "strength": 99,
+  "reads": 8,
+  "arrow": 8,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Primed Sure Footed",
+   "Streamline",
+   "Overextended",
+   "Stretch",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Energy Siphon",
+   "Archon Vitality",
+   "Equilibrium"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 1,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 1
+ },
+ {
+  "edit": false,
+  "frame": "Qorvex",
+  "video": "YWrWiUkXcXc",
+  "at": 24,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "147/95/160/205",
+  "strength": 147,
+  "reads": 105,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Vitality",
+   "Primed Continuity",
+   "Corrosive Projection",
+   "Overextended",
+   "Cunning Drift",
+   "Fused Crucible",
+   "Umbral Fiber",
+   "Umbral Intensify"
+  ],
+  "arcanes": [
+   "Arcane Universal Fallout",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Revenant",
+  "video": "WgHls_aafQ8",
+  "at": 253,
+  "tab": "Fifth tab (two hearts)",
+  "checked": true,
+  "stats": "367/128/75/145",
+  "strength": 367,
+  "reads": 35,
+  "arrow": 32,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Primed Flow",
+   "Power Drift",
+   "Stretch",
+   "Primed Continuity",
+   "Blind Rage",
+   "Streamline",
+   "Augur Secrets",
+   "Corrosive Projection",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Molt Efficiency",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Revenant",
+  "video": "WgHls_aafQ8",
+  "at": 86,
+  "tab": "Nourish",
+  "checked": true,
+  "stats": "284/227/45/34",
+  "strength": 284,
+  "reads": 18,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Mobilize",
+   "Primed Flow",
+   "Precision Intensify",
+   "Primed Continuity",
+   "Dreamer's Bond",
+   "Blind Rage",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Precision",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Revenant",
+  "video": "WgHls_aafQ8",
+  "at": 198,
+  "tab": "Roar",
+  "checked": true,
+  "stats": "284/167/105/34",
+  "strength": 284,
+  "reads": 9,
+  "arrow": 9,
+  "budget": false,
+  "mods": [
+   "Precision Intensify",
+   "Mobilize",
+   "Primed Continuity",
+   "Energy Siphon",
+   "Fleeting Expertise",
+   "Mesmer Shield",
+   "Narrow Minded",
+   "Blind Rage",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Consequence",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Rhino",
+  "video": "x944XngvuEw",
+  "at": 185,
+  "tab": "Buff Bot",
+  "checked": true,
+  "stats": "376/226/45/34",
+  "strength": 376,
+  "reads": 29,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Steel Charge",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Primed Sure Footed",
+   "Umbral Vitality",
+   "Umbral Fiber",
+   "Blind Rage",
+   "Transient Fortitude",
+   "Narrow Minded",
+   "Energy Nexus"
+  ],
+  "arcanes": [
+   "Arcane Battery",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Saryn",
+  "video": "t7wvqD7xLiA",
+  "at": 32,
+  "tab": "GenevaSuggestion",
+  "checked": true,
+  "stats": "187/128/100/235",
+  "strength": 187,
+  "reads": 54,
+  "arrow": 1,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Stretch",
+   "Power Drift",
+   "Overextended",
+   "Hunter Adrenaline",
+   "Growing Power",
+   "Primed Continuity",
+   "Fortitude",
+   "Umbral Vitality",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Persistence"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Saryn",
+  "video": "t7wvqD7xLiA",
+  "at": 250,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "291/100/45/100",
+  "strength": 291,
+  "reads": 13,
+  "arrow": 12,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Hunter Adrenaline",
+   "Blind Rage",
+   "Venom Dose",
+   "Umbral Intensify",
+   "Umbral Vitality",
+   "Growing Power",
+   "Power Drift",
+   "Umbral Fiber",
+   "Regenerative Molt"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Sevagoth",
+  "video": "NTA5x_b25vc",
+  "at": 28,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "145/100/100/175",
+  "strength": 145,
+  "reads": 78,
+  "arrow": 37,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Dark Propagation",
+   "Adaptation",
+   "Growing Power",
+   "Shadow Haze",
+   "Primed Flow",
+   "Stretch",
+   "Precision Intensify",
+   "Augur Reach",
+   "Equilibrium"
+  ],
+  "arcanes": [
+   "Arcane Blessing",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Sevagoth",
+  "video": "NTA5x_b25vc",
+  "at": 283,
+  "tab": "Shadow's stats",
+  "checked": true,
+  "stats": "222/95/160/145",
+  "strength": 222,
+  "reads": 15,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Steel Charge",
+   "Adaptation",
+   "Stretch",
+   "Hunter Adrenaline",
+   "Umbral Vitality",
+   "Umbral Intensify",
+   "Primed Continuity",
+   "Umbral Fiber",
+   "Fleeting Expertise"
+  ],
+  "arcanes": [
+   "Arcane Strike",
+   "Arcane Fury"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Sevagoth",
+  "video": "NTA5x_b25vc",
+  "at": 388,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "145/155/130/175",
+  "strength": 145,
+  "reads": 8,
+  "arrow": 8,
+  "budget": false,
+  "mods": [
+   "Stretch",
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Steel Charge",
+   "Primed Continuity",
+   "Streamline",
+   "Adaptation",
+   "Equilibrium",
+   "Augur Reach",
+   "Precision Intensify"
+  ],
+  "arcanes": [
+   "Arcane Blessing",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 3,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Sirius & Orion",
+  "video": "TAid72Kw4lA",
+  "at": 195,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "184/100/100/175",
+  "strength": 184,
+  "reads": 49,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Precision Intensify",
+   "Primed Flow",
+   "Adaptation",
+   "Primed Redirection",
+   "Augur Reach",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Arcane Energize",
+   "Arcane Aegis"
+  ],
+  "molt": false,
+  "precision": true,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
+ },
+ {
+  "edit": false,
+  "frame": "Sirius & Orion",
+  "video": "TAid72Kw4lA",
+  "at": 32,
+  "tab": "Config B",
+  "checked": true,
+  "stats": "318/124/75/175",
+  "strength": 318,
+  "reads": 39,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Stretch",
+   "Umbral Intensify",
+   "Streamline",
+   "Blind Rage",
+   "Augur Message",
+   "Power Drift"
+  ],
+  "arcanes": [
+   "Arcane Energize",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 4,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
+ },
+ {
+  "edit": false,
+  "frame": "Styanax",
+  "video": "zv3C4JcIKa4",
+  "at": 16,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "267/200/45/190",
+  "strength": 267,
+  "reads": 36,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Stretch",
+   "Blind Rage",
+   "Primed Continuity",
+   "Augur Secrets",
+   "Cunning Drift",
+   "Corrosive Projection",
+   "Intrepid Stand"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Truculence"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ },
+ {
+  "edit": false,
+  "frame": "Temple",
+  "video": "vuhK84Btu1Q",
+  "at": 28,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "278/73/75/100",
+  "strength": 278,
+  "reads": 38,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Transient Fortitude",
+   "Blind Rage",
+   "Archon Vitality",
+   "Primed Flow",
+   "Streamline",
+   "Primed Redirection",
+   "Corrosive Projection",
+   "Augur Secrets",
+   "Adaptation"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Titania",
+  "video": "Re6sKheAT44",
+  "at": 16,
+  "tab": "Firefly",
+  "checked": true,
+  "stats": "169/103/130/220",
+  "strength": 169,
+  "reads": 72,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Corrosive Projection",
+   "Archon Vitality",
+   "Umbral Intensify",
+   "Overextended",
+   "Streamline",
+   "Razorwing Blitz",
+   "Augur Reach",
+   "Primed Flow",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Steadfast",
+   "Arcane Impetus"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
+ },
+ {
+  "edit": false,
+  "frame": "Titania",
+  "video": "Re6sKheAT44",
+  "at": 295,
+  "tab": "Actually Titania",
+  "checked": true,
+  "stats": "244/197/160/220",
+  "strength": 244,
+  "reads": 8,
+  "arrow": 8,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Umbral Intensify",
+   "Stretch",
+   "Narrow Minded",
+   "Beguiling Lantern",
+   "Power Drift",
+   "Growing Power",
+   "Transient Fortitude",
+   "Fleeting Expertise",
+   "Primed Continuity"
+  ],
+  "arcanes": [
+   "Arcane Pistoleer",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 2,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 4
+ },
+ {
+  "edit": false,
+  "frame": "Trinity",
+  "video": "8-O8jE4sxfY",
+  "at": 231,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "243/155/45/145",
+  "strength": 243,
+  "reads": 57,
+  "arrow": 3,
+  "budget": false,
+  "mods": [
+   "Primed Redirection",
+   "Adaptation",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Augur Reach",
+   "Blind Rage",
+   "Primed Flow",
+   "Abating Link",
+   "Cunning Drift",
+   "Energy Siphon"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": null
+ },
+ {
+  "edit": false,
+  "frame": "Uriel",
+  "video": "nmQDPMR5G6o",
+  "at": 789,
+  "tab": "Roar Aug",
+  "checked": true,
+  "stats": "183/155/45/235",
+  "strength": 183,
+  "reads": 33,
+  "arrow": 7,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Overextended",
+   "Stretch",
+   "Blind Rage",
+   "Infernum",
+   "Archon Vitality",
+   "Primed Flow",
+   "Primed Continuity",
+   "Primed Sure Footed",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Arcane Circumvent",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Uriel",
+  "video": "nmQDPMR5G6o",
+  "at": 676,
+  "tab": "Classic",
+  "checked": true,
+  "stats": "139/68/160/235",
+  "strength": 139,
+  "reads": 24,
+  "arrow": 24,
+  "budget": false,
+  "mods": [
+   "Overextended",
+   "Primed Sure Footed",
+   "Primed Flow",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Stretch",
+   "Archon Vitality",
+   "Brief Respite",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Uriel",
+  "video": "nmQDPMR5G6o",
+  "at": 28,
+  "tab": "0 Forma",
+  "checked": true,
+  "stats": "108/70/160/235",
+  "strength": 108,
+  "reads": 75,
+  "arrow": 0,
+  "budget": true,
+  "mods": [
+   "Steel Charge",
+   "Umbral Intensify",
+   "Archon Vitality",
+   "Continuity",
+   "Stretch",
+   "Overextended"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Concentration"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [
+   "Augur Secrets"
+  ],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Valkyr",
+  "video": "hlE3SkuLRv4",
+  "at": 80,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "194/155/45/190",
+  "strength": 194,
+  "reads": 96,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Steel Charge",
+   "Primed Continuity",
+   "Primed Flow",
+   "Eternal War",
+   "Swing Line",
+   "Blind Rage",
+   "Umbral Intensify",
+   "Hunter Adrenaline",
+   "Overextended",
+   "Umbral Vitality"
+  ],
+  "arcanes": [
+   "Arcane Blessing",
+   "Arcane Persistence"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Vauban",
+  "video": "OdK-FW7L_4M",
+  "at": 42,
+  "tab": "BCVWWDITOFW",
+  "checked": true,
+  "stats": "207/155/45/220",
+  "strength": 207,
+  "reads": 30,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Growing Power",
+   "Umbral Intensify",
+   "Primed Redirection",
+   "Overextended",
+   "Blind Rage",
+   "Primed Flow",
+   "Primed Continuity",
+   "Primed Sure Footed",
+   "Augur Reach",
+   "Augur Secrets"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Arcane Arachne"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Vauban",
+  "video": "OdK-FW7L_4M",
+  "at": 385,
+  "tab": "Photons",
+  "checked": true,
+  "stats": "238/73/75/265",
+  "strength": 238,
+  "reads": 27,
+  "arrow": 19,
+  "budget": false,
+  "mods": [
+   "Stretch",
+   "Umbral Intensify",
+   "Blind Rage",
+   "Primed Sure Footed",
+   "Overextended",
+   "Photon Repeater",
+   "Transient Fortitude",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Arcane Concentration",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Vauban",
+  "video": "OdK-FW7L_4M",
+  "at": 708,
+  "tab": "Realistic",
+  "checked": true,
+  "stats": "177/155/100/175",
+  "strength": 177,
+  "reads": 8,
+  "arrow": 1,
+  "budget": false,
+  "mods": [
+   "Primed Flow",
+   "Steel Charge",
+   "Umbral Intensify",
+   "Stretch",
+   "Primed Sure Footed",
+   "Umbral Vitality",
+   "Primed Continuity",
+   "Augur Reach",
+   "Hunter Adrenaline",
+   "Umbral Fiber"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Volt",
+  "video": "O7bX1gZ_RKQ",
+  "at": 78,
+  "tab": "Boom Zoom",
+  "checked": true,
+  "stats": "384/172/45/34",
+  "strength": 384,
+  "reads": 84,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Umbral Intensify",
+   "Sprint Boost",
+   "Energy Nexus",
+   "Primed Redirection",
+   "Umbral Vitality",
+   "Narrow Minded",
+   "Shock Trooper",
+   "Blind Rage",
+   "Transient Fortitude"
+  ],
+  "arcanes": [
+   "Arcane Aegis",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 5,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 5
+ },
+ {
+  "edit": false,
+  "frame": "Voruna",
+  "video": "wy657hL2VfU",
+  "at": 30,
+  "tab": "Quadruped",
+  "checked": true,
+  "stats": "198/155/45/235",
+  "strength": 198,
+  "reads": 46,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Ulfrun's Endurance",
+   "Primed Flow",
+   "Umbral Intensify",
+   "Blind Rage",
+   "Archon Stretch",
+   "Prey Of Dynar",
+   "Corrosive Projection",
+   "Power Drift",
+   "Overextended",
+   "Archon Continuity"
+  ],
+  "arcanes": [
+   "Molt Augmented",
+   "Arcane Impetus"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Voruna",
+  "video": "wy657hL2VfU",
+  "at": 122,
+  "tab": "The Better Build",
+  "checked": true,
+  "stats": "183/155/45/280",
+  "strength": 183,
+  "reads": 29,
+  "arrow": 29,
+  "budget": false,
+  "mods": [
+   "Steel Charge",
+   "Umbral Intensify",
+   "Overextended",
+   "Prey Of Dynar",
+   "Primed Flow",
+   "Blind Rage",
+   "Archon Stretch",
+   "Augur Reach",
+   "Cunning Drift",
+   "Archon Continuity"
+  ],
+  "arcanes": [
+   "Arcane Impetus",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Wisp",
+  "video": "3F3XGRW0G5o",
+  "at": 52,
+  "tab": "Nokko",
+  "checked": true,
+  "stats": "301/155/45/145",
+  "strength": 301,
+  "reads": 90,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Umbral Intensify",
+   "Blind Rage",
+   "Archon Stretch",
+   "Primed Continuity",
+   "Umbral Fiber",
+   "Umbral Vitality",
+   "Corrosive Projection",
+   "Primed Sure Footed"
+  ],
+  "arcanes": [
+   "Arcane Persistence",
+   "Arcane Bellicose"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 25,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Wukong",
+  "video": "0TjEGwAJyNI",
+  "at": 95,
+  "tab": "Eclipse",
+  "checked": true,
+  "stats": "177/194/160/34",
+  "strength": 177,
+  "reads": 42,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primal Rage",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Narrow Minded",
+   "Primed Sure Footed",
+   "Steel Charge",
+   "Umbral Fiber",
+   "Umbral Vitality",
+   "Adaptation",
+   "Fleeting Expertise"
+  ],
+  "arcanes": [
+   "Arcane Strike",
+   "Arcane Fury"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Xaku",
+  "video": "GcBF9Skleo8",
+  "at": 30,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "207/185/45/280",
+  "strength": 207,
+  "reads": 61,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Growing Power",
+   "Cunning Drift",
+   "Primed Continuity",
+   "Augur Reach",
+   "Overextended",
+   "Blind Rage",
+   "Umbral Intensify",
+   "Augur Secrets",
+   "Archon Stretch"
+  ],
+  "arcanes": [
+   "Arcane Steadfast",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 2
+ },
+ {
+  "edit": false,
+  "frame": "Yareli",
+  "video": "qarpyj1sSr0",
+  "at": 181,
+  "tab": "Config A",
+  "checked": true,
+  "stats": "144/119/160/175",
+  "strength": 144,
+  "reads": 53,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Loyal Merulina",
+   "Growing Power",
+   "Augur Message",
+   "Primed Redirection",
+   "Primed Continuity",
+   "Umbral Intensify",
+   "Stretch",
+   "Augur Reach"
+  ],
+  "arcanes": [
+   "Arcane Precision",
+   "Molt Augmented"
+  ],
+  "molt": true,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 0
+ },
+ {
+  "edit": false,
+  "frame": "Zephyr",
+  "video": "2X6j1L_fXq0",
+  "at": 40,
+  "tab": "Tornado",
+  "checked": true,
+  "stats": "40/224/100/280",
+  "strength": 40,
+  "reads": 77,
+  "arrow": 0,
+  "budget": false,
+  "mods": [
+   "Primed Sure Footed",
+   "Overextended",
+   "Primed Flow",
+   "Primed Continuity",
+   "Stretch",
+   "Cunning Drift",
+   "Augur Message",
+   "Corrosive Projection"
+  ],
+  "arcanes": [
+   "Arcane Energize",
+   "Arcane Concentration"
+  ],
+  "molt": false,
+  "precision": false,
+  "left": 0,
+  "addsUp": true,
+  "note": null,
+  "shards": {
+   "tau": 0,
+   "plain": 0
+  },
+  "bellicose": 0,
+  "guessed": [],
+  "crimson": 3
+ }
+]

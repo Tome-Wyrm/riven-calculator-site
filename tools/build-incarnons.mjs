@@ -69,9 +69,12 @@ function effects(stats, cond, text) {
 
 /** @type {Record<string, {evolution: number, perks: {name: string, text: string, effects: any[], partly?: boolean}[]}[]>} */
 const INCARNONS = {};
+/** @type {Record<string, {hits: number, any: boolean, ammo: number}>} */
+const CHARGE = {};
 let modelled = 0;
 for (const w of uf.incarnons) {
-  if (!WEAPON_STATS[w.name]) continue;               // guns only (melee isn't modelled)
+  if (!WEAPON_STATS[w.name] || WEAPON_STATS[w.name].melee) continue;   // guns only (melee perks aren't modelled)
+  if (w.charge_count && w.incarnon_max_ammo) CHARGE[w.name] = { hits: w.charge_count, any: w.charge_type === 'Hit', ammo: w.incarnon_max_ammo };
   const evolutions = [];
   for (let n = 2; n <= 5; n++) {
     const evo = w.evolutions[`evolution_${n}`];
@@ -103,6 +106,15 @@ await writeFile(new URL('../src/data/incarnons.js', import.meta.url), `// @ts-ch
 /** @type {Record<string, {evolution: number, perks: Perk[]}[]>} */
 export const INCARNONS = {
 ${Object.entries(INCARNONS).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)},`).join('\n')}
+};
+
+/**
+ * What fills each gun's gauge and what it holds: hits to fill it (weak point hits, or any hit),
+ * ammo in the Incarnon Form.
+ * @type {Record<string, {hits: number, any: boolean, ammo: number}>}
+ */
+export const INCARNON_CHARGE = {
+${Object.entries(CHARGE).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)},`).join('\n')}
 };
 `);
 console.log(`Wrote ${Object.keys(INCARNONS).length} incarnon guns, ${modelled} perks with modelled effects`);

@@ -6,6 +6,7 @@
 // Per part of a fire mode (an attack and what hangs off it, e.g. a projectile and its explosion):
 //
 //   hit     = (1 + Damage) × (physical × (1 + Impact/Puncture/Slash) + other innate + base × Elements)
+//             each damage type rounded to 1/32 of the attack's total (the wiki's quantization)
 //   crit    = 1 + CC × (CD − 1)                         (average; holds past 100% crit chance)
 //   direct  = hit × faction × crit × multishot × fire rate
 //   DoT     = procs/s × share of DoT types × tick × ticks × (1 + Status Duration) × (1 + Status Damage)
@@ -13,7 +14,14 @@
 //
 // The DoT is the base damage × (1 + Damage) × faction² × crit, per tick: Slash 35%, Heat, Toxin,
 // Electricity and Gas 50%, each x (1 + its own element's mods: the wiki's Damage/Calculation; a
-// Heat, Toxin or Electricity mod counts even once combined, Gas only counts Gas bonuses). Proc types
+// Heat, Toxin or Electricity mod counts even once combined, Gas only counts Gas bonuses). A proc's
+// seed starts from 1 (the same page: (40 + 1) x 0.5 x 1.6 = 32.8; the game's Heat, Electricity and
+// Gas add it once per tick for all their stacks, here once a proc: a point in a tick of thousands).
+// Blast isn't a DoT: stacks last 1.5 s and pay 30% of their hit each, or 300% when 10 of them
+// detonate together (`blastPay`). "Their hit" is a DoT's seed: base damage, Damage mods, crits and
+// faction, no elements, and Status Damage and faction again on what it pays. Each one also makes
+// an Extra Hit (Xata's Whisper), which is a share of the whole hit, elements and all, so faction counts
+// three times on it (a video's worked numbers, 2026-11-05: `test/buffs.test.js`). Proc types
 // are weighted by each type's share of the modded hit. Ticks (the wiki's Damage over Time): Slash,
 // Heat and Toxin wait a second, then tick each second up to the proc's end (6 s: 6 ticks, the last at
 // 6 s); Electricity and Gas tick at once and each second before the end (6 ticks, none at 6 s). So
@@ -28,6 +36,9 @@
 // hits only. Galvanized's Direct Damage (gun Condition Overload) adds to Damage on direct hits, or
 // multiplies on the attacks Underframe marks so (Coda Bassocyst), at the share it lists.
 // Sustained DPS adds the reload: a magazine of shots (Ammo Efficiency stretches it) then the reload time.
+// Beams (a Held mode): Multishot adds no hits. It rolls to a whole number each tick and multiplies the
+// tick's damage and status chance, crit staying a single beam's, so a damaging proc comes more often
+// and each is stronger: Multishot counts twice in DoTs (`beamCount`, `procsOf`).
 //
 // A target (src/enemies.js: a unit at its level) has health, shields and armor, and its faction's
 // weaknesses (Update 36: +50% or -50% by damage type). Shields go first: armor doesn't cover them,
@@ -86,6 +97,25 @@ export const TICKS_AT_ONCE = new Set(['electricity', 'gas']);
 export function ticksOf(type, seconds) {
   return TICKS_AT_ONCE.has(type) ? Math.ceil(seconds - 1e-9) : Math.floor(seconds + 1e-9);
 }
+/** What a Blast proc pays, as a share of the hit: when its stack runs out, and in a detonation. */
+export const BLAST_ALONE = 0.3, BLAST_DETONATED = 3;
+/**
+ * What a Blast proc pays on average, as a share of the hit, at `perSecond` procs. A stack detonates if
+ * 10 are up at once inside its 1.5 s, which at a fixed rate would be a cliff; at the rates procs really
+ * come it's a slope, the Poisson chance of 7 or more in that time (within 0.04 of a simulation of the
+ * stacks, for procs at random and on a beam's ticks alike).
+ * @param {number} perSecond
+ */
+export const blastPay = perSecond => BLAST_ALONE + (BLAST_DETONATED - BLAST_ALONE) * blastDetonates(perSecond);
+
+/** The share of Blast stacks that detonate at `perSecond` procs. @param {number} perSecond */
+export function blastDetonates(perSecond) {
+  const mu = 1.5 * Math.max(0, perSecond);
+  let term = Math.exp(-mu), below = term;
+  for (let k = 1; k < 7; k++) { term *= mu / k; below += term; }
+  return 1 - below;
+}
+
 /** The build's two elementals combine into this. */
 const BUILD_ELEMENT = 'viral';
 export const STATUS_SECONDS = 6;
@@ -123,18 +153,32 @@ export const HEADS = {
  * @property {boolean} [bow]       a bow: Fire Rate rolls count double
  * @property {number} [armor]      the enemy's armor without a target (default 0: stripped)
  * @property {Target} [target]     the unit fought, at its level (overrides armor)
+ * @property {RoomUnit[]} [room]   a mix of units to clear, in place of the target (src/fight.js)
+ * @property {{target: Target, room?: RoomUnit[]}[]} [spread]  the same at other levels: builds are judged on all of them (src/build.js `worth`)
+ * @property {import('./crowd.js').Crowd} [crowd]  the enemies around the target in a room: what gun attacks reach (src/crowd.js)
+ * @property {import('./build.js').Piece | null} [buffs]  buffs from outside the build (src/buffs.js)
+ * @property {number} [maxEnergy]  the frame's Max Energy, for Primary Overcharge (src/build.js)
  * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
  * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)
  * @property {Valence} [valence]   an adversary weapon's Valence bonus
  * @property {MeleeOptions} [melee] a melee weapon’s swings (src/fight.js; src/melee.js)
+ * @property {IncarnonCycle} [incarnon] fight in the charge and form cycle (src/fight.js)
  * @property {string} [arcane]     the arcane the build carries (src/build.js arcanePool: '' for none; unset: the best found)
  */
+
+/** Some of a mix of units: how many, and what one is. @typedef {{n: number, target: Target}} RoomUnit */
 
 /**
  * How a melee weapon fights: its stance combo's attacks (each a swing), the combo counter (held at
  * the initial combo, held at the max, or built up by the hits), and the enemies inside each swing
  * (room clearing: each further one takes the follow through's share and adds combo points).
- * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', nearby?: number, close?: number, clump?: number}} MeleeOptions
+ * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', heavy?: boolean, heavyAt?: number, nearby?: number, close?: number, clump?: number}} MeleeOptions
+ */
+
+/**
+ * A gun's Incarnon cycle: `hits` to fill the gauge (weak point hits, or `any` hit), `ammo` in the form,
+ * the fire mode it charges in, and the `share` of hits on weak points while charging.
+ * @typedef {{hits: number, any: boolean, ammo: number, normal: number, share?: number}} IncarnonCycle
  */
 
 /**
@@ -147,7 +191,7 @@ export const VALENCE_TYPES = ['heat', 'cold', 'electricity', 'toxin', 'impact', 
 /**
  * A target at its level: what it takes to kill, and its weaknesses (damage type → extra share, e.g.
  * 0.5 or -0.5) on health and on shields.
- * @typedef {{health: number, shields: number, armor: number, weak: Record<string, number>, shieldWeak: Record<string, number>}} Target
+ * @typedef {{health: number, shields: number, armor: number, overguard?: number, weak: Record<string, number>, shieldWeak: Record<string, number>}} Target
  */
 
 /** Stats with no effect on damage in this model (they're quality of life). */
@@ -157,7 +201,7 @@ export const NO_DPS = new Set(['ammoMax', 'punchThrough', 'projectileSpeed', 'zo
  * A build's totals: each stat summed over its mods, arcane and riven (raw: +165% → 1.65), faction
  * stats by faction id, and the elements in slot order (each a share of the base damage) for
  * combineElements.
- * @typedef {{stats: Record<string, number>, elements: {type: string, value: number}[]}} Totals
+ * @typedef {{stats: Record<string, number>, elements: {type: string, value: number, loose?: boolean}[]}} Totals
  */
 
 /**
@@ -187,9 +231,23 @@ export function dps(w, cls, mods, opts = {}) {
 
 /**
  * An attack's crit chance: its own x (1 + Critical Chance mods), plus an incarnon perk's flat bonus
- * added after the mods (Elemental Excess, -10%). @param {Part} p @param {number} mods
+ * added after the mods (Elemental Excess, -10%), and a buff's (Covenant, Arcane Avenger).
+ * @param {Part} p @param {number} mods @param {number} [flat]
  */
-export const critChanceOf = (p, mods) => p.cc * (1 + mods) + (p.ccFlat ?? 0);
+export const critChanceOf = (p, mods, flat = 0) => p.cc * (1 + mods) + (p.ccFlat ?? 0) + flat;
+
+/**
+ * Flat crit chance on a hit: a buff's, and 5% a stack of Puncture a primer keeps up, to 25%, on all
+ * but area attacks (the wiki's Status Effect). The weapon's own Puncture procs aren't followed.
+ * @param {Part} p @param {(id: string) => number} m
+ */
+export const critFlatOf = (p, m) => m('critFlat') + (p.aoe ? 0 : 0.05 * Math.min(5, m('prime:puncture')));
+
+/**
+ * The faction multiplier: Bane mods against this faction, and buffs against any (Roar), added together.
+ * @param {(id: string) => number} m @param {string} enemy
+ */
+export const factionOf = (m, enemy) => Math.max(0, 1 + (enemy ? m(enemy) : 0) + m('anyFaction'));
 
 /**
  * The average damage multiplier from crits: 1 + CC x (CD - 1) (past 100%, the tiers keep it linear),
@@ -211,9 +269,16 @@ export function critScale(cc, cd, p) {
  * @param {Part} p @param {string} enemy @param {SimOptions} opts @param {(id: string) => number} m
  */
 export function weakPointMult(p, enemy, opts, m) {
-  const head = (p.hs ?? 0) <= -1 ? 1 : Math.max(0, (opts.headMult ?? HEADS[enemy].headMult) + 1.5 * m('weakpointDamage'));
-  return head * Math.max(0, 1 + m('headshotMultiplier') + Math.max(0, p.hs ?? 0));
+  // (Seek adds into the head's sum as it stands, Sonar's spot multiplies the lot.)
+  const head = (p.hs ?? 0) <= -1 ? 1 : Math.max(0, (opts.headMult ?? HEADS[enemy].headMult) + 1.5 * m('weakpointDamage') + m('weakpointAdd'));
+  return head * Math.max(0, 1 + m('headshotMultiplier') + Math.max(0, p.hs ?? 0)) * (m('sonar') || 1);
 }
+
+/**
+ * What weak points add to an Extra Hit a second time, on average.
+ * @param {Part} p @param {number} onWp the share on weak points @param {string} enemy @param {SimOptions} opts @param {(id: string) => number} m
+ */
+export const extraWeak = (p, onWp, enemy, opts, m) => (1 - onWp) + onWp * weakPointMult(p, /** @type {Enemy} */ (enemy), opts, m);
 
 /**
  * Damage per second of a build, from its totals.
@@ -230,12 +295,15 @@ export function dpsOf(w, t, opts = {}) {
   const m = (/** @type {string} */ id) => stats[id] ?? 0;
   const wp = opts.weakpoint ?? 0;
   const enemy = opts.enemy ?? '';
-  const faction = enemy ? Math.max(0, 1 + m(enemy)) : 1;
+  const faction = factionOf(m, enemy);
   const D = Math.max(0, 1 + m('damage'));
+  // Damage multipliers and vulnerabilities (Eclipse, Molecular Prime): on everything, once.
+  const more = Math.max(0, 1 + m('allDamage'));
   // A weak point: its multiplier plus 1.5 x Weakpoint Damage (heads), then x headshot bonuses.
-  const headcrit = opts.headcrit ?? HEADS[enemy].headcrit;
+  // (A crit on a Sonar spot is never a headcrit.)
+  const headcrit = !m('sonar') && (opts.headcrit ?? HEADS[enemy].headcrit);
   // A fire-rate lock (the Semi- Cannonades) keeps the weapon's own rate.
-  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1) + (w.bonus?.fireRate ?? 0)));
+  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1) + m('fireRateFlat') + (w.bonus?.fireRate ?? 0)));
   const crit = critScale;
   const statusSeconds = STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
   const statusMult = Math.max(0, 1 + m('statusDamage'));
@@ -247,40 +315,53 @@ export function dpsOf(w, t, opts = {}) {
   const dealt = {};
   let bleed = 0;                                            // Slash DoT: True damage, past armor and shields
   /** @type {Record<string, number>} procs per second of the types whose stacks matter */
-  const procs = { viral: 0, corrosive: 0, heat: 0, magnetic: 0 };
+  const procs = { viral: 0, corrosive: 0, heat: 0, magnetic: 0, blast: 0 };
+  let blastHits = 0, blastVoid = 0;                         // the hits behind Blast procs, per second, and their Extra Hits
   for (const { p, typed } of parts) {
     if (!typed) continue;
     const { base, byType, hit } = typed;
 
-    const cc = critChanceOf(p, m('critChance'));
-    const ccWp = critChanceOf(p, m('critChance') + m('weakpointCrit'));
-    const cd = p.cd * (1 + m('critDamage'));
+    const cc = critChanceOf(p, m('critChance'), critFlatOf(p, m));
+    const ccWp = critChanceOf(p, m('critChance') + m('weakpointCrit'), critFlatOf(p, m) + m('critFlatHead'));
+    const cd = p.cd * (1 + m('critDamage')) + m('critDamageFlat');
     // Body and weak point hits: their scale (weak point × crit) mixed by share; Damage mods apart.
     // Explosions are never weak point hits.
     const onWp = p.aoe ? 0 : wp;
     const scale = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, m) * crit(ccWp, headcrit ? 2 * cd : cd, p);
+    // (DoTs don't inherit Sonar's spots: the wiki's Damage over Time.)
+    const dotCrit = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, m) / (m('sonar') || 1) * crit(ccWp, headcrit ? 2 * cd : cd, p);
     // Galvanized's Direct Damage: added to Damage, or multiplying it, at this attack's share.
     const [coShare, coMult] = p.co ?? [1, 0];
     const Ddirect = Math.max(0, coMult ? D * (1 + coShare * m('directDamage')) : D + coShare * m('directDamage'));
-    const pellets = p.ms * (m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot')));
-    const direct = faction * Ddirect * scale * pellets * rate;
+    const multishot = m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot'));
+    const pellets = p.ms * multishot;
+    const direct = faction * Ddirect * scale * pellets * rate * more;
 
     // Status: chance per pellet (plus forced procs), type weighted by share of the hit; Hunter
     // Munitions adds a Slash proc chance on each critical hit.
-    const procsPerPellet = procsOf(p, byType, hit, cc, m);
+    const procsOfType = procsOf(p, byType, hit, cc, m, pellets, mode.held != null ? beamCount(p, multishot) : null);
     // DoT ticks are a share of the base damage (not the elements or IPS mods), faction twice.
-    const dotScale = statusMult * base * faction * faction * D * scale * pellets * rate;
+    const dotScale = statusMult * base * faction * faction * D * dotCrit * rate * more;
     for (const [type, v] of Object.entries(byType)) dealt[type] = (dealt[type] ?? 0) + v * direct;
+    // An Extra Hit: a share of the whole hit, faction and weak points again.
+    const extra = hit * direct * m('extraVoid') * faction * extraWeak(p, onWp, enemy, opts, m);
+    if (extra) dealt.void = (dealt.void ?? 0) + extra;
     for (const [type, tick] of Object.entries(DOT)) {
-      const dot = procsPerPellet(type) * tick * ticksOf(type, statusSeconds) * dotScale * (1 + (matching[type] ?? 0));
+      const { n, strength } = procsOfType(type);
+      const dot = (strength * dotScale + n * statusMult * faction * rate * more) * tick * ticksOf(type, statusSeconds) * (1 + (matching[type] ?? 0));
       if (type === 'slash') bleed += dot; else dealt[type] = (dealt[type] ?? 0) + dot;
     }
-    for (const type of Object.keys(procs)) procs[type] += procsPerPellet(type) * pellets * rate;
+    for (const type of Object.keys(procs)) procs[type] += procsOfType(type).n * rate;
+    blastHits += procsOfType('blast').strength * dotScale;
+    // Each Blast proc's Extra Hit: the pellet's, at what the proc pays, Status Damage and faction again.
+    blastVoid += extra * procsOfType('blast').strength / Math.max(1e-9, pellets) * statusMult * faction;
   }
   const uptime = opts.burst ? 1 : sustained(w, mode, rate, m);
+  if (blastHits > 0) dealt.blast = (dealt.blast ?? 0) + blastHits * blastPay(procs.blast * uptime);
+  if (blastVoid > 0) dealt.void = (dealt.void ?? 0) + blastVoid * blastPay(procs.blast * uptime);
   // Average stacks up: procs per second over the time each lasts, capped (all of them on a primed target).
   const stacks = (/** @type {string} */ type, cap = 10) => (opts.primed ? cap
-    : Math.min(cap, procs[type] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'))));
+    : Math.min(cap, m(`prime:${type}`) + procs[type] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'))));
   // Below one stack on average, an effect ramps up with the share of time it's there.
   // Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more.
   const amplify = (/** @type {number} */ n) => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
@@ -330,8 +411,10 @@ export function withPerStatus(stats, n) {
 
 /**
  * A part's hit before Damage mods, by type: physical types scaled by their own stats; the build's
- * elements (shares of the base, in slot order) combined with the weapon's own (combineElements).
- * Null for a part that does no damage.
+ * elements (shares of the base, in slot order) combined with the weapon's own (combineElements). Each
+ * type is rounded to the nearest 1/32 of the attack's listed total, as the game does before anything
+ * multiplies it (Damage and faction mods scale that total too, so they don't change the rounding).
+ * DoTs aren't rounded: they scale from `base`. Null for a part that does no damage.
  * @param {Part} p @param {Totals} t @param {(id: string) => number} m @param {Valence} [valence]
  */
 export function hitByType(p, t, m, valence) {
@@ -346,28 +429,57 @@ export function hitByType(p, t, m, valence) {
   // In game, Coda Bassocyst's 808 with 60% Heat totals 1292.8, and Incendiary Coat's 90% adds 1163.5.
   const own = { ...p.dmg };
   if (valence?.value) own[valence.type] = (own[valence.type] ?? 0) + valence.value * listed;
-  const base = listed * (1 + (valence?.value ?? 0));
+  // (`p.base`: an incarnon perk can put more into the hit than the mods scale from: src/incarnon.js.)
+  const base = (p.base ?? listed) * (1 + (valence?.value ?? 0));
+  const step = listed * (1 + (valence?.value ?? 0)) / 32;
+  const rounded = (/** @type {number} */ v) => Math.floor(v / step + 0.5) * step;
   for (const [type, v] of Object.entries(own)) {
-    if (PHYSICAL.includes(type)) byType[type] = v * Math.max(0, 1 + m(type));
+    if (PHYSICAL.includes(type)) byType[type] = rounded(v * Math.max(0, 1 + m(type)));
     else if (ELEMENTS.includes(type)) innate[type] = v;
-    else byType[type] = v;                                  // Tau, Void, True: as they are
+    else byType[type] = rounded(v);                         // Tau, Void, True
   }
-  const combined = combineElements(t.elements.map(e => ({ type: e.type, value: e.value * base })), innate);
-  for (const [type, v] of Object.entries(combined)) byType[type] = (byType[type] ?? 0) + v;
+  const combined = combineElements(t.elements.filter(e => !e.loose).map(e => ({ type: e.type, value: e.value * base })), innate);
+  // (A buff's element never combines, and joins the same element's sum before it's rounded.)
+  for (const e of t.elements) if (e.loose) combined[e.type] = (combined[e.type] ?? 0) + e.value * base;
+  for (const [type, v] of Object.entries(combined)) byType[type] = (byType[type] ?? 0) + rounded(v);
   const hit = Object.values(byType).reduce((s, v) => s + v, 0);
   return hit > 0 ? { base, byType, hit } : null;
 }
 
 /**
- * Procs per pellet of a type: the status chance, the type weighted by its share of the hit, plus
- * forced procs and Hunter Munitions' Slash proc chance on each critical hit.
- * @param {Part} p @param {Record<string, number>} byType @param {number} hit @param {number} cc @param {(id: string) => number} m
+ * The beams in a tick of a Held mode, on average, and their mean square. Each of the part's own beams
+ * rolls Multishot to a whole number (2.3: 2 or 3, 3 on 30% of ticks), and all of them merge into one
+ * tick on a target (the wiki's Multishot: "even for continuous weapons with innate Multishot").
+ * @param {Part} p @param {number} multishot @returns {Beams}
  */
-export function procsOf(p, byType, hit, cc, m) {
+export function beamCount(p, multishot) {
+  const over = multishot - Math.floor(multishot);
+  const mean = p.ms * multishot;
+  return { mean, square: mean * mean + p.ms * over * (1 - over) };
+}
+
+/** @typedef {{mean: number, square: number}} Beams */
+
+/**
+ * A shot's procs of a type, by what they take to work out: `n`, how many, and `strength`, how many
+ * weighted by what each proc carries (a pellet's damage is 1). From the status chance, the type
+ * weighted by its share of the hit, plus forced procs and Hunter Munitions' Slash proc chance on each
+ * critical hit. Each pellet rolls them all.
+ * A beam's tick rolls once, at the status chance x the beams in it, and a proc carries the whole tick:
+ * that's the square. Forced procs and Hunter Munitions come after the merge: one roll, so fewer of
+ * them, carrying the tick, the same damage as a gun's.
+ * @param {Part} p @param {Record<string, number>} byType @param {number} hit @param {number} cc @param {(id: string) => number} m
+ * @param {number} pellets @param {Beams | null} [beam]
+ */
+export function procsOf(p, byType, hit, cc, m, pellets, beam) {
   const chance = Math.max(0, p.sc * (1 + m('statusChance')));
   const slashOnCrit = Math.min(1, Math.max(0, cc)) * m('slashOnCrit');   // the only "on crit" proc stat
-  return (/** @type {string} */ type) => chance * (byType[type] ?? 0) / hit + (p.forced?.includes(type) ? 1 : 0)
-    + (type === 'slash' ? slashOnCrit : 0);
+  return (/** @type {string} */ type) => {
+    const rolled = chance * (byType[type] ?? 0) / hit;
+    const sure = (p.forced?.includes(type) ? 1 : 0) + (type === 'slash' ? slashOnCrit : 0);
+    return beam ? { n: rolled * beam.mean + sure, strength: rolled * beam.square + sure * beam.mean }
+      : { n: (rolled + sure) * pellets, strength: (rolled + sure) * pellets };
+  };
 }
 
 /**
@@ -381,21 +493,30 @@ function statusTypesUp(w, mode, t, opts, parts) {
   if (opts.primed) return STATUS_TYPES.length;
   const m = (/** @type {string} */ id) => t.stats[id] ?? 0;
   if (!Object.keys(t.stats).some(k => k.endsWith('PerStatus'))) return 0;
-  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1) + (w.bonus?.fireRate ?? 0)));
-  const pellets = m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot'));
+  const rate = mode.rate * (m('fireRateLocked') ? 1 : Math.max(0.05, 1 + m('fireRate') * (opts.bow ? 2 : 1) + m('fireRateFlat') + (w.bonus?.fireRate ?? 0)));
+  const multishot = m('multishotLocked') ? 1 : Math.max(0, 1 + m('multishot'));
   const uptime = opts.burst ? 1 : sustained(w, mode, rate, m);
   const seconds = STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
   /** @type {Record<string, number>} procs per second by type (only the types the hit has, forced ones and Slash) */
   const perSecond = {};
   for (const { p, typed } of parts) {
     if (!typed) continue;
-    const procs = procsOf(p, typed.byType, typed.hit, critChanceOf(p, m('critChance')), m);
+    const procs = procsOf(p, typed.byType, typed.hit, critChanceOf(p, m('critChance'), critFlatOf(p, m)), m, p.ms * multishot, mode.held != null ? beamCount(p, multishot) : null);
     for (const type of new Set([...Object.keys(typed.byType), ...(p.forced ?? []), 'slash'])) {
-      if (STATUS_TYPES.includes(type)) perSecond[type] = (perSecond[type] ?? 0) + procs(type) * p.ms * pellets * rate * uptime;
+      if (STATUS_TYPES.includes(type)) perSecond[type] = (perSecond[type] ?? 0) + procs(type).n * rate * uptime;
     }
   }
-  return Object.values(perSecond).reduce((n, r) => n + 1 - Math.exp(-r * seconds), 0);
+  // (A type a primer holds is up, whatever the weapon does.)
+  const held = STATUS_TYPES.filter(type => m(`prime:${type}`) > 0);
+  return held.length + Object.entries(perSecond).reduce((n, [type, r]) => n + (held.includes(type) ? 0 : 1 - Math.exp(-r * seconds)), 0);
 }
+
+/**
+ * What a shot costs in ammo, from Ammo Efficiency as a change to the cost (a riven's 70% is -0.7).
+ * It stops at 75% off; only a source that sets it to 100% (free shots) goes further, and none the
+ * model follows does (the user, 2026-11-04). @param {number} raw
+ */
+export const ammoCost = raw => Math.max(0.25, 1 + raw);
 
 /**
  * The share of time spent firing: a magazine's shots, then the reload. A one-shot magazine (bows)
@@ -407,10 +528,10 @@ function sustained(w, mode, rate, m) {
   if (w.mag <= 0 || w.reload <= 0 || mode.cost <= 0 || /incarnon/i.test(mode.name)) return 1;
 
   const mag = w.mag <= 1 ? w.mag : Math.max(1, Math.round(w.mag * Math.max(0, 1 + m('magazine'))));
-  const shots = mag / (mode.cost * Math.max(0.01, 1 + m('ammoEfficiency')));
+  const shots = mag / (mode.cost * ammoCost(m('ammoEfficiency')));
   const firing = shots / rate;
   const reload = w.reload / Math.max(0.05, 1 + m('reloadSpeed') + (w.bonus?.reloadSpeed ?? 0));
-  return firing / (firing + reload);
+  return firing / (firing + Math.max(0, reload - (w.quickReload ? 1 / rate : 0)));
 }
 
 /**

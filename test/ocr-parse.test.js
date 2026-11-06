@@ -148,6 +148,11 @@ test('a clean first word is enough when the rest of a stat name is garbled (Fela
   assert.equal(matchStat('Qwxyzzy Blorp'), null);
 });
 
+test('junk between the two lines of a wrapped stat name leaves the right stat (Corinth)', () => {
+  const r = parseRivenText('Corinth Concitak\n+14.3% Projectile Speed\n¢ +7.5% Reload Speed\n¢ -3.3% Magazine\nYule\n-\'T\n| 4\n83\nSOREN\nCapacity\nMR 13');
+  assert.deepEqual(r.stats.map(s => [s.statId, s.value]), [['projectileSpeed', '+14.3'], ['reloadSpeed', '+7.5'], ['magazine', '-3.3']]);
+});
+
 test('the fine-tuned model reads a padlock as "#" and the cycle arrow as "@"', () => {
   const r = parseRivenText('Glaxion Cori-ignitox\n+93.7% Heat\n# +106.2% Corrosive\n+93.5% Toxin\n# -58.4% Zoom\nMR 13\n@ 24');
   assert.deepEqual(r.stats.map(s => [s.statId, !!s.locked]), [['heat', false], ['corrosive', true], ['toxin', false], ['zoom', true]]);
