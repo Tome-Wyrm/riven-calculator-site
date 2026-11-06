@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUFFS, BUFF_GROUPS } from '../src/data/buffs.js';
-import { buffPiece, buildOf, buildPower, buildSlug, buildsFor, defaultBuild } from '../src/buffs.js';
+import { buffPiece, buildOf, buildPower, buildSlug, buildsFor, defaultBuild, ownFromText, ownText } from '../src/buffs.js';
 import { BLAST_ALONE, blastPay, dpsOf, hitByType, critChanceOf } from '../src/sim.js';
 import { fight } from '../src/fight.js';
 import { sparkReach } from '../src/crowd.js';
@@ -307,4 +307,32 @@ test('each buff scales with its own Strength; Brightbonnet raises the others fro
   const alone = piece(['roar', 'bonnet'], { roar: { strength: 2, duration: 1 }, bonnet: { strength: 1, duration: 1 } }).anyFaction;
   const boosted = piece(['roar', 'bonnet'], { roar: { strength: 2, duration: 1 }, bonnet: { strength: 2, duration: 1 } }).anyFaction;
   assert.ok(boosted > alone);
+});
+
+const mine = { frame: 'Rhino', tab: 'Mine', strength: 200, duration: 130, reads: 0, own: 1 };
+
+test('your own build comes first, for its frame only', () => {
+  assert.equal(defaultBuild(buff('roar'), [mine])?.tab, 'Mine');
+  assert.equal(buildsFor(buff('roar'), [mine]).length, buildsFor(buff('roar')).length + 1);
+  assert.equal(defaultBuild(buff('nourish'), [mine])?.tab, defaultBuild(buff('nourish'))?.tab);
+  assert.equal(buildOf(buff('roar'), buildSlug(/** @type {any} */ (buildsFor(buff('roar'))[0])), [mine])?.own, undefined);
+  assert.equal(buildSlug(mine), 'urhinomine');
+});
+
+test('a subsumed ability takes the build that subsumes it, with Precision Intensify from the 4th slot', () => {
+  const sub = { ...mine, frame: 'Sevagoth', sub: 'Roar' };
+  assert.equal(defaultBuild(buff('roar-sub'), [sub])?.strength, 200);
+  assert.equal(defaultBuild(buff('roar-sub'), [{ ...sub, fourth: 1 }])?.strength, 290);
+  assert.equal(defaultBuild(buff('nourish-sub'), [sub])?.own, undefined);
+});
+
+test('Arcane Bellicose counts at its maximum', () => assert.equal(buildPower({ ...mine, bellicose: 1 }).strength, 2.72));
+
+test('your builds survive a link, without what would break it', () => {
+  const builds = [{ ...mine, molt: 1, bellicose: 1, fourth: 1, sub: 'Roar' }, { ...mine, tab: 'Two' }];
+  assert.deepEqual(ownFromText(ownText(builds)), builds);
+  assert.equal(ownFromText(ownText([{ ...mine, tab: 'a~b|c' }]))[0].tab, 'a b c');
+  assert.deepEqual(ownFromText(''), []);
+  assert.deepEqual(ownFromText('Rhino~x~100~~~A'), []);
+  assert.equal(ownFromText('Rhino~5000~100~~~A')[0].strength, 999);
 });

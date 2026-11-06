@@ -17,7 +17,7 @@ import { targetOf, roomOf } from '../enemies.js';
 import { BATTLEGROUPS } from '../data/battlegroups.js';
 import { crowdRadius } from '../crowd.js';
 import { BUFFS, BUFF_GROUPS } from '../data/buffs.js';
-import { buffPiece, buildOf, buildPower, buildSlug, buildsFor } from '../buffs.js';
+import { buffPiece, buildOf, buildPower, buildSlug, buildsFor, ownFromText, ownText } from '../buffs.js';
 import { picksFor, communityFit } from '../picks.js';
 import { el, statName, segmented, select, ipsOf } from './dom.js';
 import { oneOf } from './state.js';
@@ -51,6 +51,7 @@ export const modelState = {
   panzer: 5,                                  // the stacks a primer companion keeps on the target
   heads: 90,                                  // the share of hits on heads in Void's bubble, %
   builds: /** @type {Record<string, string>} */ ({}), // a buff's build, where it isn't the default ('x': the two below)
+  own: /** @type {import('../buffs.js').BuffBuild[]} */ ([]), // the person's builds, read from Underframe links
   strength: 100,                              // Ability Strength and Duration, %, for buffs without a build
   duration: 100,
   energy: 0,                                  // the frame's Max Energy (Primary Overcharge; 0: not counted)
@@ -80,7 +81,7 @@ export function modelFields() {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
     armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '',
-    buffs: s.buffs.join('.'), bb: Object.entries(s.builds).filter(([id]) => s.buffs.includes(id)).map(e => e.join(':')).join('.'), str: s.strength === 100 ? '' : s.strength, dur: s.duration === 100 ? '' : s.duration, pz: s.panzer === 5 ? '' : s.panzer, ex: s.eximus === 5 ? '' : s.eximus, hd: s.heads === 90 ? '' : s.heads,
+    buffs: s.buffs.join('.'), bb: Object.entries(s.builds).filter(([id]) => s.buffs.includes(id)).map(e => e.join(':')).join('.'), own: ownText(s.own), str: s.strength === 100 ? '' : s.strength, dur: s.duration === 100 ? '' : s.duration, pz: s.panzer === 5 ? '' : s.panzer, ex: s.eximus === 5 ? '' : s.eximus, hd: s.heads === 90 ? '' : s.heads,
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
     arc: s.arcane === null ? '' : s.arcane || '-', combo: s.combo === 'build' ? '' : s.combo, sc2: s.stanceCombo,
@@ -121,6 +122,7 @@ export function restoreModel(raw) {
   modelState.builds = Object.fromEntries((raw.bb ?? '').split('.').map(e => e.split(':')).filter(e => e.length === 2));
   // A link from before buffs had builds keeps its numbers.
   if ((raw.str || raw.dur) && !raw.bb) modelState.builds = Object.fromEntries(modelState.buffs.map(id => [id, 'x']));
+  modelState.own = ownFromText(raw.own ?? '');
   modelState.strength = count(raw.str, 999) ?? 100;
   modelState.duration = count(raw.dur, 999) ?? 100;
   modelState.panzer = count(raw.pz, 10) ?? 5;
@@ -147,6 +149,8 @@ let worker = null;
 let onDone = () => {};
 /** Whether the buff list is open. */
 let buffsOpen = false;
+/** What became of the last link pasted under Buffs. */
+let ownNote = '';
 
 /**
  * A study's result, starting it in the worker when it isn't known yet ('pending' until it's in;
@@ -277,7 +281,7 @@ export function modelBlock(weapon, cls, rerender) {
   const chosenBuffs = usable.filter(b => s.buffs.includes(b.id));
   // What each is cast with, from its build.
   const scales = (/** @type {typeof BUFFS[number]} */ b) => b.effects.some(e => e[2] === 's' || e[2] === 'd');
-  const each = Object.fromEntries(chosenBuffs.filter(scales).flatMap(b => { const o = buildOf(b, s.builds[b.id]); return o ? [[b.id, buildPower(o)]] : []; }));
+  const each = Object.fromEntries(chosenBuffs.filter(scales).flatMap(b => { const o = buildOf(b, s.builds[b.id], s.own); return o ? [[b.id, buildPower(o)]] : []; }));
   const opts = {
     mode, ...(cycle ? { incarnon: cycle } : {}), enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
     ...(s.arcane !== null ? { arcane: s.arcane } : {}),
@@ -327,12 +331,49 @@ export function modelBlock(weapon, cls, rerender) {
     num('Within 20 m', s.close, 40, v => set({ close: v })),
     num('Clumping %', s.clump, 100, v => set({ clump: v })),
   ] : [];
+  const withBuild = chosenBuffs.filter(b => scales(b) && buildsFor(b, s.own).length);
+  const buildLabel = (/** @type {import('../buffs.js').BuffBuild} */ x) => `${x.frame}: ${x.tab}, ${x.strength}%${x.molt ? ' +60 Molt' : ''}${x.bellicose ? ' +72 Bellicose' : ''}`;
+  // A build of one's own, from an Underframe link.
+  const link = /** @type {HTMLInputElement} */ (el('input', { type: 'text', placeholder: 'underframe.site/share#v4…', spellcheck: 'false', autocomplete: 'off' }));
+  const take = async () => {
+    const text = link.value.trim();
+    if (!text) return;
+    link.value = '';
+    try {
+      const { ownBuild, readLink } = await import('../underframe.js');
+      const read = await readLink(text);
+      const b = ownBuild(read);
+      const precision = read.mods.some(m => m.name === 'Precision Intensify');
+      ownNote = [
+        `Read ${b.tab} (${b.frame}): ${read.mods.length} mods${read.helminth ? `, ${read.helminth.name} subsumed` : ''}.`,
+        read.unknown ? `${read.unknown} mods this page doesn’t know, so not counted.` : '',
+        b.molt || b.bellicose ? `At their maximum: ${[b.molt && 'Molt Augmented +60', b.bellicose && 'Arcane Bellicose +72 at 3000 Health'].filter(Boolean).join(', ')}.` : '',
+        precision ? (b.fourth ? `Precision Intensify’s +90 goes on ${read.helminth?.name} only.` : 'Precision Intensify’s +90 isn’t counted: this page only knows the 4th slot when an ability is subsumed there.') : '',
+        `Tick a ${b.frame} buff${b.sub ? ` or ${b.sub} (subsumed)` : ''} to use it.`,
+      ].filter(Boolean).join(' ');
+      set({ own: [...s.own.filter(o => buildSlug(o) !== buildSlug(b)), b] });
+    } catch (e) {
+      ownNote = `Couldn’t read it: ${e instanceof Error ? e.message : e}.`;
+      set({});
+    }
+  };
+  link.addEventListener('change', take);
+  link.addEventListener('paste', () => setTimeout(take));
   // Buffs, by group, each a tick box; the list stays open as the page redraws.
   const buffList = /** @type {HTMLDetailsElement} */ (el('details', { class: 'buffs', ...(buffsOpen ? { open: '' } : {}) }, [
     el('summary', {}, [`Buffs${chosenBuffs.length ? ` (${chosenBuffs.length})` : ''}`]),
     el('div', { class: 'controls' }, [num('Ability Strength %', s.strength, 999, v => set({ strength: v })), num('Ability Duration %', s.duration, 999, v => set({ duration: v })),
       ...(chosenBuffs.some(b => b.only === 'companion') ? [num('Primer stacks', s.panzer, 10, v => set({ panzer: v }))] : []),
       ...(chosenBuffs.some(b => b.id === 'xata') ? [num('Void bubble head hits %', s.heads, 100, v => set({ heads: v }))] : [])]),
+    el('div', { class: 'controls own-builds' }, [
+      el('label', { class: 'field own-link', title: 'From Share on Underframe, before Minify. Only the Strength and Duration it adds up to go in this page’s address.' }, [el('span', {}, ['Your build (Underframe link)']), link]),
+      ...s.own.map(b => {
+        const drop = el('button', { type: 'button', class: 'own-drop', 'aria-label': `Remove ${b.tab}` }, ['×']);
+        drop.addEventListener('click', () => { ownNote = ''; set({ own: s.own.filter(o => o !== b) }); });
+        return el('span', { class: 'own-build' }, [`${buildLabel(b)}, ${b.duration}% Duration`, drop]);
+      }),
+    ]),
+    ...(ownNote ? [el('p', { class: 'note' }, [ownNote])] : []),
     ...BUFF_GROUPS.filter(group => usable.some(b => b.group === group)).map(group => el('fieldset', {}, [el('legend', {}, [group]), ...usable.filter(b => b.group === group).map(b => {
       const box = /** @type {HTMLInputElement} */ (el('input', { type: 'checkbox', ...(s.buffs.includes(b.id) ? { checked: '' } : {}) }));
       // (One companion: taking one drops the other.)
@@ -340,10 +381,10 @@ export function modelBlock(weapon, cls, rerender) {
       box.addEventListener('change', () => set({ buffs: box.checked ? [...s.buffs.filter(id => !others.includes(id)), b.id] : s.buffs.filter(id => id !== b.id) }));
       return el('label', { title: b.from }, [box, ` ${b.name}`]);
     })])),
-    ...(chosenBuffs.some(b => scales(b) && buildsFor(b).length) ? [el('div', { class: 'controls buff-builds' }, chosenBuffs.filter(b => scales(b) && buildsFor(b).length).map(b => {
-      const o = buildOf(b, s.builds[b.id]);
+    ...(withBuild.length ? [el('div', { class: 'controls buff-builds' }, withBuild.map(b => {
+      const o = buildOf(b, s.builds[b.id], s.own);
       return select(`${b.name} from`, [
-        ...buildsFor(b).map(x => /** @type {[string, string]} */ ([buildSlug(x), `${x.frame}: ${x.tab}, ${x.strength}%${x.molt ? ' +60 Molt' : ''}`])),
+        ...buildsFor(b, s.own).map(x => /** @type {[string, string]} */ ([buildSlug(x), buildLabel(x)])),
         ['x', 'The boxes above'],
       ], o ? buildSlug(o) : 'x', v => set({ builds: { ...s.builds, [b.id]: v } }));
     }))] : []),

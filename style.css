@@ -408,3 +408,7 @@ dialog.gate::backdrop { background: rgb(0 0 0 / 0.4); }
 dialog.gate p { margin: 0 0 8px; }
 dialog.gate input { width: 100%; box-sizing: border-box; }
 .gate-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.own-builds { margin-top: 8px; align-items: center; }
+.own-link input { width: 16em; max-width: 100%; }
+.own-build { display: inline-flex; align-items: center; gap: 4px; font-size: 0.9rem; white-space: normal; }
+.own-drop { padding: 0 6px; }

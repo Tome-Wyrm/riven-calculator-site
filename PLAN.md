@@ -17,15 +17,16 @@ names given in brackets here.
 
 Needs the reference builds.
 
-- [ ] **Strength the builds don't show yet** (14): Precision Intensify's +90 for a buff in the 4th slot (needs each
-      ability's slot), and Arcane Bellicose rising with Health in play.
+- [ ] **Strength the builds don't show yet** (14): Precision Intensify's +90 for a frame's own 4th ability (needs each
+      ability's slot; a subsumed one is done), and Arcane Bellicose rising with Health in play.
 - [ ] **Pick a frame** (14c): its abilities, augments and a subsume, with the optimiser building around them.
 - [ ] **Primers from the companions' own weapons** (14d), replacing the "Primer stacks" setting.
 - [ ] **Buffs still missing**: Demonium's Vythelas rune; Resupply's other elements; the second list of frames (14f).
 - [ ] **The hard ones** (14e), each needing research first: Hall of Mirrors, Tornado, Crystallize, Prismatic Gem's
       beams, Molecular Prime's chaining explosions, Divine Retribution, The Lost's Gaze, Null Star, Antimatter Drop.
-- [ ] **Enter your own build**: people put in the build they use for a frame. Needs Strength per frame; the
-      reference builds can be its starting points.
+- [ ] **Ask Underframe's author** whether reading their links is fine, and whether short links could be opened from
+      other sites.
+- [ ] **Enter your own build without a link**: typing one in, with the reference builds as starting points.
 
 ## 3. Gun model gaps
 

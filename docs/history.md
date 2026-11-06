@@ -1311,6 +1311,19 @@ picks from any frame's build named for it. Molt Augmented counts at its full +60
 maximum, and abilities snapshot. The two boxes are for buffs without a build; a link with `str` or `dur` and no `bb`
 keeps its old numbers. Brightbonnet raises the others from its own Strength.
 
+**Underframe links** (2026-11-05): a long share link (`/share#v4.<token>`) is the whole build: JSON, gzipped, in
+base64url, read in `src/underframe.js` without asking Underframe anything. Frames and mods are a 64-bit FNV-1a hash of
+`namespace\0name`; Arcanes and shard effects are their text, because Underframe's index for them reads a field its data
+doesn't have (`name`, where the data says `arcane_name`; `effects`, where it says `Base Effects`). If they fix that those
+become positions in their lists, and this reader will need the lists. Short links (`/vshare/...`) need their server, and
+`/api/data` sends no CORS header, so a short link gets a message instead. v3 and older links aren't read: their
+ids are positions that only their server can resolve.
+A build's totals follow the panel; Molt Augmented and Arcane Bellicose are then added at their maximum, and Precision
+Intensify only for an ability subsumed into the 4th slot. Checked on a build made for it: Underframe shows 342% Strength
+and 127.5% Duration, ours 210 + 60 + 72 and 127.5. On the reference builds Strength matches 105 of 108; the other 3 are
+each 22 short, an Umbral mod the video reading missed. Those builds can't check Duration: they don't record Duration
+shards or ranks (73 of 108 match).
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.
