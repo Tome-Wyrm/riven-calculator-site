@@ -4,22 +4,18 @@
 // riven's slot, and what each curse costs on the best riven, against a chosen target (a unit at a
 // level, src/enemies.js). The work (src/study.js) runs in a worker, about a second per setting.
 
-import { STAT_BY_ID, SPLICED, SHAPES } from '../data/stats.js';
-import { WEAPONS } from '../data/weapons.js';
+import { STAT_BY_ID, SHAPES } from '../data/stats.js';
 import { SHAPE_ORDER } from '../engine.js';
-import { pools } from '../cycle.js';
 import { VALENCE_TYPES } from '../sim.js';
-import { cycleOf, evolutionsOf, isForm, takesAdapter } from '../incarnon.js';
-import { combosFor, PLAIN } from '../melee.js';
-import { arcaneNames, SCENARIOS } from '../build.js';
+import { takesAdapter } from '../incarnon.js';
+import { defaultModel, modelInput, comboId, ROLES } from '../model-input.js';
+import { SCENARIOS } from '../build.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
-import { targetOf, roomOf } from '../enemies.js';
-import { BATTLEGROUPS } from '../data/battlegroups.js';
 import { crowdRadius } from '../crowd.js';
 import { BUFFS, BUFF_GROUPS } from '../data/buffs.js';
-import { buffPiece, buildOf, buildPower, buildSlug, buildsFor, ownFromText, ownText } from '../buffs.js';
+import { buildOf, buildSlug, buildsFor, ownFromText, ownText } from '../buffs.js';
 import { picksFor, communityFit } from '../picks.js';
-import { el, statName, segmented, select, ipsOf } from './dom.js';
+import { el, statName, segmented, select } from './dom.js';
 import { oneOf } from './state.js';
 import { loadTargetIntoPlanner } from './planner.js';
 
@@ -28,51 +24,12 @@ import { loadTargetIntoPlanner } from './planner.js';
 /** @typedef {ReturnType<typeof import('../study.js').study>} Study */
 
 /** The kinds of build (src/build.js SCENARIOS). Weak points are a build of their own: hitting them is hard. */
-const SCENARIO = /** @type {[string, string][]} */ ([
-  ['room', 'Room clearing (kills keep stacks up)'], ['single', 'Single target (no kill stacks)'],
-  ['weak', 'Weak points (every direct hit)']]);
 /** @type {Record<string, string>} */
 /** A damage type's name: "heat" → "Heat". @param {string} id */
 const typeName = id => id[0].toUpperCase() + id.slice(1);
 /** @type {Record<string, string>} */
 
-export const modelState = {
-  shape: /** @type {Shape} */ ('+++-'),
-  mode: -1,                                   // fire mode index, -1 = the weapon's main one
-  scenario: /** @type {'room' | 'single' | 'weak'} */ ('room'),
-  enemy: '',                                  // the target's faction group (src/data/enemies.js GROUPS; '' = any)
-  unit: '',                                   // the faction's unit ('' = its default)
-  level: 150,
-  steelPath: false,
-  armor: 0,                                   // 0 = stripped; else full (2700 without a faction)
-  primed: false,                              // every status type on the target
-  buffs: /** @type {string[]} */ ([]),        // buffs from outside the build (src/data/buffs.js)
-  eximus: 5,                                  // how many of a battlegroup's 20 are Eximus
-  panzer: 5,                                  // the stacks a primer companion keeps on the target
-  heads: 90,                                  // the share of hits on heads in Void's bubble, %
-  builds: /** @type {Record<string, string>} */ ({}), // a buff's build, where it isn't the default ('x': the two below)
-  own: /** @type {import('../buffs.js').BuffBuild[]} */ ([]), // the person's builds, read from Underframe links
-  strength: 100,                              // Ability Strength and Duration, %, for buffs without a build
-  duration: 100,
-  energy: 0,                                  // the frame's Max Energy (Primary Overcharge; 0: not counted)
-  spread: false,                              // judge builds on a third of the level and three times it too
-  burst: false,
-  valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
-  valencePct: 60,                             // and its size, 25–60%
-  // An Incarnon gun: no adapter, evolved but never transforming, or the charge and form cycle.
-  incarnon: /** @type {'normal' | 'off' | 'on'} */ ('off'),
-  perks: /** @type {number[] | null} */ (null), // an incarnon's perk per evolution; null = the best combination
-  perksOf: '',                                // the weapon those perks are for
-  arcane: /** @type {string | null} */ (null), // the arcane builds carry: null = the best found, '' = none
-  // Melee:
-  combo: /** @type {'initial' | 'max' | 'build'} */ ('build'), // the combo counter
-  stanceCombo: '',                            // "Stance|Combo" ('' = the best per swing)
-  heavy: false,                               // heavy attacks, not only normal ones
-  heavyAt: 6,                                 // the combo tier a built-up counter spends at
-  nearby: 3,                                  // enemies inside a swing (room clearing)
-  close: 6,                                   // enemies within 20 m of the target (Melee Influence)
-  clump: 50,                                  // clumping, %: how many of those stand within 20 m of each other
-};
+export const modelState = defaultModel();
 
 /** The URL fields for the model's settings (defaults left out). */
 export function modelFields() {
@@ -95,7 +52,7 @@ export function restoreModel(raw) {
   const shape = oneOf(SHAPE_ORDER)(raw.shape ?? '');
   if (shape) modelState.shape = shape;
   if (raw.mode && Number.isInteger(Number(raw.mode))) modelState.mode = Number(raw.mode);
-  if (raw.sc === 'single' || raw.sc === 'weak') modelState.scenario = raw.sc;
+  if (raw.sc === 'single' || raw.sc === 'weak' || raw.sc === 'slam') modelState.scenario = raw.sc;
   if (/^[a-z]+$/.test(raw.enemy ?? '')) modelState.enemy = raw.enemy;      // checked against the groups when they're in
   if (raw.armor) modelState.armor = Number(raw.armor) > 0 ? 2700 : 0;
   modelState.unit = raw.unit ?? '';                        // checked against the faction's units when they're in
@@ -149,6 +106,8 @@ let worker = null;
 let onDone = () => {};
 /** Whether the buff list is open. */
 let buffsOpen = false;
+/** The model's settings sections open (Target, Arcane…), kept as the page redraws. @type {Set<string>} */
+const openSections = new Set();
 /** What became of the last link pasted under Buffs. */
 let ownNote = '';
 
@@ -240,62 +199,9 @@ export function modelBlock(weapon, cls, rerender) {
   if (!w) return [head, el('p', { class: 'note' }, [`No stats for ${weapon} in the wiki data (kitgun chambers and zaw strikes depend on their other parts).`])];
 
   const s = modelState;
-  const isMelee = cls === 'melee' && !!w.melee;
   const set = (/** @type {Partial<typeof modelState>} */ patch) => { Object.assign(s, patch); rerender(); };
-  if (s.mode >= w.modes.length) s.mode = -1;
-  // Chosen perks belong to one weapon (a link's to the weapon it opens with); another starts at the best.
-  const evolutions = evolutionsOf(weapon);
-  if (s.perksOf === '?') s.perksOf = weapon;
-  if (s.perksOf !== weapon || s.perks?.length !== evolutions.length) { s.perks = null; s.perksOf = weapon; }
-  // No adapter, normal fire or Incarnon: the choice decides the perks and which fire modes there are.
-  // (A link from before the choice names the Incarnon Form as its fire mode.)
-  if (w.modes[s.mode] && isForm(w.modes[s.mode])) s.incarnon = 'on';
-  const incarnon = !evolutions.length ? 'normal' : s.incarnon === 'normal' && !takesAdapter(weapon) ? 'off' : s.incarnon;
-  const modes = w.modes.flatMap((m, i) => (isForm(m) === (incarnon === 'on') ? [i] : []));
-  const mode = modes.includes(s.mode) ? s.mode : modes.includes(w.main) ? w.main : modes[0];
-  const isBeam = w.modes[mode]?.held != null;
-  const cycle = incarnon === 'on' ? cycleOf(weapon, w) : null;
-  // The target: one of the faction's units at its level. Any faction: a Grineer unit's health and
-  // armor without faction weaknesses (builds are judged by fights, src/fight.js, so there's always one).
-  const group = enemies.GROUPS.find(g => g.id === s.enemy) ?? null;
-  const pick = group?.id ?? 'grineer';
-  const units = enemies.UNITS[pick] ?? [];
-  const unit = units.find(u => u.name === s.unit) ?? units.find(u => u.name === enemies.DEFAULT_UNIT[pick]) ?? null;
-  const targetAt = (/** @type {number} */ lvl) => (unit ? targetOf(group ? unit : { ...unit, types: '' }, lvl, s.steelPath, !s.armor, enemies) : null);
-  const target = targetAt(s.level);
-  // Room clearing fights the faction's battlegroup, unless a unit is chosen.
-  const battlegroup = SCENARIOS[s.scenario].kills ? BATTLEGROUPS[pick] ?? null : null;
-  const mix = battlegroup && !s.unit ? battlegroup : null;
-  const roomAt = (/** @type {number} */ lvl) => (mix ? { room: roomOf(pick, mix.members, lvl, s.steelPath, !s.armor, enemies, group ? undefined : '', s.eximus) } : {});
-  // A third of the level and three times it: 150 is judged at 50 and 450 as well.
-  const levels = [Math.max(1, Math.round(s.level / 3)), Math.min(9999, s.level * 3)];
-  // The arcane: one of this weapon's slot, or the best found.
-  const arcanes = arcaneNames(cls);
-  if (s.arcane && !arcanes.includes(s.arcane)) s.arcane = null;
-  // Melee: the stance combo (the best per swing unless chosen), the combo counter and the crowd.
-  const combos = isMelee ? combosFor(w.kind, weapon) : [];
-  // A combo's id in links: stance, key and name (older links without the key still find theirs).
-  const comboId = (/** @type {typeof combos[number]} */ c) => `${c.stance}|${c.combo.key}|${c.combo.name}`;
-  const chosen = combos.find(c => comboId(c) === s.stanceCombo) ?? combos.find(c => `${c.stance}|${c.combo.name}` === s.stanceCombo) ?? combos[0] ?? null;
-  const comboName = chosen ? chosen.label : 'none in the wiki’s data: plain hits';
-  // The buffs this weapon can use, and those chosen.
-  const usable = BUFFS.filter(b => (b.for ?? (isMelee ? 'melee' : 'guns')) === (isMelee ? 'melee' : 'guns') && !(b.noArchgun && cls === 'archgun'));
-  const chosenBuffs = usable.filter(b => s.buffs.includes(b.id));
-  // What each is cast with, from its build.
-  const scales = (/** @type {typeof BUFFS[number]} */ b) => b.effects.some(e => e[2] === 's' || e[2] === 'd');
-  const each = Object.fromEntries(chosenBuffs.filter(scales).flatMap(b => { const o = buildOf(b, s.builds[b.id], s.own); return o ? [[b.id, buildPower(o)]] : []; }));
-  const opts = {
-    mode, ...(cycle ? { incarnon: cycle } : {}), enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
-    ...(s.arcane !== null ? { arcane: s.arcane } : {}),
-    ...(isMelee ? { melee: { attacks: chosen?.combo.attacks ?? PLAIN, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
-    ...(target ? { target, ...roomAt(s.level) } : { armor: s.armor }),
-    ...(target && s.spread ? { spread: levels.map(l => ({ target: /** @type {import('../sim.js').Target} */ (targetAt(l)), ...roomAt(l) })) } : {}),
-    ...(s.energy ? { maxEnergy: s.energy } : {}),
-    ...(chosenBuffs.length ? { buffs: buffPiece(chosenBuffs.map(b => b.id), s.strength / 100, s.duration / 100, s.panzer, s.heads / 100, each) } : {}),
-    ...(!isMelee && SCENARIOS[s.scenario].kills ? { crowd: { close: s.close, clump: s.clump / 100 } } : {}),
-    bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,
-    ...(w.adversary ? { valence: { type: s.valence, value: s.valencePct / 100 } } : {}),
-  };
+  const m = /** @type {NonNullable<ReturnType<typeof modelInput>>} */ (modelInput(weapon, cls, s, { stats, enemies }));
+  const { isMelee, role, evolutions, incarnon, modes, mode, isBeam, cycle, group, units, unit, target, battlegroup, mix, levels, arcanes, combos, chosen, comboName, usable, chosenBuffs, scales, each, opts, pool, input } = m;
   const level = /** @type {HTMLInputElement} */ (el('input', { type: 'number', min: '1', max: '9999', step: '1', value: String(s.level), inputmode: 'numeric' }));
   level.addEventListener('change', () => {
     const v = Math.round(Number(level.value));
@@ -306,8 +212,6 @@ export function modelBlock(weapon, cls, rerender) {
     const v = Math.round(Number(valencePct.value) * 10) / 10;
     if (v >= 25 && v <= 60) set({ valencePct: v }); else valencePct.value = String(s.valencePct);
   });
-  const pool = pools(cls, ipsOf(weapon));
-  const positives = [...pool.positive, ...SPLICED.filter(x => x.b[cls] !== undefined).map(x => x.id)];
   const rows = picksFor(weapon, cls);
   const name = (/** @type {string} */ id) => statName(STAT_BY_ID[id], cls);
 
@@ -392,41 +296,64 @@ export function modelBlock(weapon, cls, rerender) {
     }))] : []),
   ]));
   buffList.addEventListener('toggle', () => { buffsOpen = buffList.open; });
+  // The settings most want up front: the riven's shape, the fire mode and what the build is for. The
+  // rest in sections that stay shut unless opened (each says what it's set to), open as the page redraws.
+  const section = (/** @type {string} */ id, /** @type {string} */ title, /** @type {string} */ now, /** @type {HTMLElement[]} */ fields) => {
+    const d = /** @type {HTMLDetailsElement} */ (el('details', { class: 'buffs model-section', ...(openSections.has(id) ? { open: '' } : {}) }, [
+      el('summary', {}, [title, ...(now ? [el('span', { class: 'section-now' }, [` · ${now}`])] : [])]),
+      el('div', { class: 'controls' }, fields),
+    ]));
+    d.addEventListener('toggle', () => { if (d.open) openSections.add(id); else openSections.delete(id); });
+    return d;
+  };
+  const roles = ROLES.filter(([id]) => id !== 'slam' || isMelee);
   const controls = el('div', { class: 'controls model-controls' }, [
     el('div', { class: 'field' }, [el('span', {}, ['Shape']), segmented('Shape', SHAPE_ORDER, s.shape, v => set({ shape: /** @type {Shape} */ (v) }))]),
     ...(evolutions.length ? [el('div', { class: 'field' }, [el('span', {}, ['Incarnon']), segmented('Incarnon', takesAdapter(weapon) ? ['normal', 'off', 'on'] : ['off', 'on'], incarnon,
       v => set({ incarnon: /** @type {'normal' | 'off' | 'on'} */ (v), mode: -1 }), v => ({ normal: 'No adapter', off: takesAdapter(weapon) ? 'Adapter, normal fire' : 'Normal fire', on: 'Incarnon' })[v] ?? v,
       v => ({ normal: 'The plain gun, no Incarnon Genesis adapter: no perks', off: 'The evolutions’ perks, never transforming', on: 'The evolutions’ perks: charge the gauge, transform, fire the form dry, again' })[v] ?? v)])] : []),
-    ...(modes.length > 1 ? [select('Fire mode', modes.map(i => /** @type {[string, string]} */ ([String(i), w.modes[i].name])), String(mode), v => set({ mode: Number(v) }))] : []),
-    ...(w.adversary ? [
-      select('Valence bonus', [['best', 'Best (each tried)'], ...VALENCE_TYPES.map(v => /** @type {[string, string]} */ ([v, typeName(v)]))], s.valence, v => set({ valence: v })),
-      el('label', { class: 'field' }, [el('span', {}, ['Bonus %']), valencePct]),
-    ] : []),
-    select('Build', SCENARIO, s.scenario, v => set({ scenario: /** @type {'room' | 'single' | 'weak'} */ (v) })),
-    ...(arcanes.length ? [select('Arcane', [['*', 'Best (searched)'], ['-', 'None'], ...arcanes.map(a => /** @type {[string, string]} */ ([a, a]))],
-      s.arcane === null ? '*' : s.arcane || '-', v => set({ arcane: v === '*' ? null : v === '-' ? '' : v }))] : []),
-    ...(arcanes.includes('Primary Overcharge') ? [num('Max Energy', s.energy, 9999, v => set({ energy: v }))] : []),
-    ...meleeControls,
-    ...(!isMelee && SCENARIOS[s.scenario].kills ? [num('Within 20 m', s.close, 40, v => set({ close: v })), num('Clumping %', s.clump, 100, v => set({ clump: v }))] : []),
-    select('Enemy', [['', 'Any (no faction bonus)'], ...enemies.GROUPS.map(g => /** @type {[string, string]} */ ([g.id, g.name]))], group?.id ?? '',
-      v => set({ enemy: v, unit: '' })),
-    ...(unit ? [
-      ...(mix ? [num('Eximus of the 20', s.eximus, 20, v => set({ eximus: v }))] : []),
-      select('Target', [...(battlegroup ? [/** @type {[string, string]} */ (['', 'Battlegroup (mixed)'])] : []), ...units.map(u => /** @type {[string, string]} */ ([u.name, u.name]))],
-        mix ? '' : unit.name, v => set({ unit: v })),
-      el('label', { class: 'field' }, [el('span', {}, ['Level']), level]),
-      el('div', { class: 'field' }, [el('span', {}, ['Judged at']), segmented('Judged at', ['one', 'spread'], s.spread ? 'spread' : 'one',
-        v => set({ spread: v === 'spread' }), v => (v === 'spread' ? 'A spread' : 'This level'),
-        v => (v === 'spread' ? `Builds are judged at levels ${levels[0]}, ${s.level} and ${levels[1]} together` : 'Builds are judged at this level alone'))]),
-      el('div', { class: 'field' }, [el('span', {}, ['Mode']), segmented('Mode', ['normal', 'sp'], s.steelPath ? 'sp' : 'normal',
-        v => set({ steelPath: v === 'sp' }), v => (v === 'sp' ? 'Steel Path' : 'Normal'))]),
-    ] : []),
-    select('Armor', [['0', 'Stripped'], ['2700', 'Full']], s.armor ? '2700' : '0', v => set({ armor: Number(v) })),
-    el('div', { class: 'field' }, [el('span', {}, ['Statuses']), segmented('Statuses', ['own', 'primed'], s.primed ? 'primed' : 'own',
-      v => set({ primed: v === 'primed' }), v => (v === 'primed' ? 'Primed (all)' : 'The weapon’s own'))]),
-    ...(isMelee ? [] : [el('div', { class: 'field' }, [el('span', {}, ['DPS']), segmented('DPS', ['sustained', 'burst'], s.burst ? 'burst' : 'sustained',
-      v => set({ burst: v === 'burst' }), v => (v === 'burst' ? 'Burst' : 'With reloads'))])]),
+    ...(modes.length > 1 && role !== 'slam' ? [select('Fire mode', modes.map(i => /** @type {[string, string]} */ ([String(i), w.modes[i].name])), String(mode), v => set({ mode: Number(v) }))] : []),
+    el('div', { class: 'field' }, [el('span', {}, ['Build for']), segmented('Build for', roles.map(([id]) => id), role,
+      v => set({ scenario: /** @type {import('../model-input.js').Role} */ (v), stanceCombo: '' }), v => ROLES.find(([id]) => id === v)?.[1] ?? v,
+      v => ({ room: 'Clearing rooms: kills keep on-kill stacks up', single: 'One tough target: no kill stacks', weak: 'Every direct hit on a weak point', slam: 'Slam attacks through rooms: Slam Attack Damage counts' })[v] ?? v)]),
   ]);
+  const unitText = mix ? `${mix.name} battlegroup` : unit ? unit.name : group?.name ?? 'Any';
+  const sections = [
+    section('target', 'Target', `${unitText}, level ${s.level}${s.steelPath ? ' SP' : ''}, armor ${s.armor ? 'full' : 'stripped'}${s.primed ? ', primed' : ''}`, [
+      select('Enemy', [['', 'Any (no faction bonus)'], ...enemies.GROUPS.map(g => /** @type {[string, string]} */ ([g.id, g.name]))], group?.id ?? '',
+        v => set({ enemy: v, unit: '' })),
+      ...(unit ? [
+        ...(mix ? [num('Eximus of the 20', s.eximus, 20, v => set({ eximus: v }))] : []),
+        select('Target', [...(battlegroup ? [/** @type {[string, string]} */ (['', 'Battlegroup (mixed)'])] : []), ...units.map(u => /** @type {[string, string]} */ ([u.name, u.name]))],
+          mix ? '' : unit.name, v => set({ unit: v })),
+        el('label', { class: 'field' }, [el('span', {}, ['Level']), level]),
+        el('div', { class: 'field' }, [el('span', {}, ['Judged at']), segmented('Judged at', ['one', 'spread'], s.spread ? 'spread' : 'one',
+          v => set({ spread: v === 'spread' }), v => (v === 'spread' ? 'A spread' : 'This level'),
+          v => (v === 'spread' ? `Builds are judged at levels ${levels[0]}, ${s.level} and ${levels[1]} together` : 'Builds are judged at this level alone'))]),
+        el('div', { class: 'field' }, [el('span', {}, ['Mode']), segmented('Mode', ['normal', 'sp'], s.steelPath ? 'sp' : 'normal',
+          v => set({ steelPath: v === 'sp' }), v => (v === 'sp' ? 'Steel Path' : 'Normal'))]),
+      ] : []),
+      select('Armor', [['0', 'Stripped'], ['2700', 'Full']], s.armor ? '2700' : '0', v => set({ armor: Number(v) })),
+      el('div', { class: 'field' }, [el('span', {}, ['Statuses']), segmented('Statuses', ['own', 'primed'], s.primed ? 'primed' : 'own',
+        v => set({ primed: v === 'primed' }), v => (v === 'primed' ? 'Primed (all)' : 'The weapon’s own'))]),
+      ...(!isMelee && SCENARIOS[m.scenario].kills ? [num('Within 20 m', s.close, 40, v => set({ close: v })), num('Clumping %', s.clump, 100, v => set({ clump: v }))] : []),
+    ]),
+    ...(isMelee ? [section('melee', role === 'slam' ? 'Slam' : 'Stance and combo', `${comboName}, ${{ initial: 'initial combo', max: 'max combo', build: 'combo built up' }[s.combo]}${s.heavy && w.melee?.heavy ? ', heavy attacks' : ''}`, meleeControls)] : []),
+    ...(arcanes.length ? [section('arcane', 'Arcane', s.arcane === null ? 'the best found' : s.arcane || 'none', [
+      select('Arcane', [['*', 'Best (searched)'], ['-', 'None'], ...arcanes.map(a => /** @type {[string, string]} */ ([a, a]))],
+        s.arcane === null ? '*' : s.arcane || '-', v => set({ arcane: v === '*' ? null : v === '-' ? '' : v })),
+      ...(arcanes.includes('Primary Overcharge') ? [num('Max Energy', s.energy, 9999, v => set({ energy: v }))] : []),
+    ])] : []),
+    buffList,
+    ...(w.adversary || !isMelee ? [section('weapon', 'Weapon', [w.adversary ? `Valence ${s.valence === 'best' ? 'best' : typeName(s.valence)} ${s.valencePct}%` : '', !isMelee ? (s.burst ? 'burst DPS' : 'with reloads') : ''].filter(Boolean).join(', '), [
+      ...(w.adversary ? [
+        select('Valence bonus', [['best', 'Best (each tried)'], ...VALENCE_TYPES.map(v => /** @type {[string, string]} */ ([v, typeName(v)]))], s.valence, v => set({ valence: v })),
+        el('label', { class: 'field' }, [el('span', {}, ['Bonus %']), valencePct]),
+      ] : []),
+      ...(isMelee ? [] : [el('div', { class: 'field' }, [el('span', {}, ['DPS']), segmented('DPS', ['sustained', 'burst'], s.burst ? 'burst' : 'sustained',
+        v => set({ burst: v === 'burst' }), v => (v === 'burst' ? 'Burst' : 'With reloads'))])]),
+    ])] : []),
+  ];
   const about = el('p', { class: 'note' }, [
     `For each riven, the best build the search finds around it (eight slots, the riven taking one, and an arcane), `
     + `judged by fights against the target at the gun’s sustained rate: each shot carries its share of the reload, so a kill that only just fits a magazine counts for no more than one that doesn’t (twenty targets in a row for room clearing and weak points, one for single target). Damage past a one-shot kill still counts: a riven serves on tougher targets than this one too. The percentages are DPS, `
@@ -437,7 +364,8 @@ export function modelBlock(weapon, cls, rerender) {
       weak: 'Weak points: every direct hit lands on one (explosions never do), and weak point kills keep stacks up. '
         + 'The weak point multiplier is the target\u2019s own (3x for most heads, 1.5x for the Murmur and Techrot) plus 1.5x Weakpoint Damage, '
         + 'times headshot bonuses; critical headshots double the crit multiplier where the enemy allows it (not Corpus humanoids)',
-    }[s.scenario]}; aiming bonuses count. ${w.adversary
+      slam: 'Slam: room clearing with slam attacks, kills keeping on-kill stacks at their maximum',
+    }[role]}; aiming bonuses count. ${w.adversary
       ? `The Valence bonus (${s.valencePct}%${s.valence === 'best' ? ', the element whose best build does most' : ` ${typeName(s.valence)}`}) is the weapon’s own damage: elemental mods scale from the base with it, and a base element joins after the mods (Heat, Cold, Electricity, Toxin order), so it changes which elements the mods can make. `
       : ''}${s.primed
       ? 'Primed target: every status type on it (a primer companion’s or the squad’s work), Viral and Corrosive at 10 stacks, Heat burning. '
@@ -450,7 +378,7 @@ export function modelBlock(weapon, cls, rerender) {
       + `The combo counter is ${{ initial: 'held at the initial combo', max: 'held at 12x', build: 'built up by the hits (each hit adds its multiplier in points; room clearing carries it from kill to kill)' }[s.combo]}; Blood Rush and Weeping Wounds add theirs per tier past 1x. `
       + `Room clearing: ${s.nearby} enem${s.nearby === 1 ? 'y' : 'ies'} in each swing, each further one at ${Math.round((w.melee?.ft ?? 1) * 100)}% follow through of the one before; `
       + `Melee Influence spreads elemental procs to ${s.close} enem${s.close === 1 ? 'y' : 'ies'} within 20 m, each taking 1 + ${s.clump}% x the others as copies (clumped enemies pass it on to each other). ` : '')
-    + (cycle && !s.burst ? `Incarnon: normal fire until the gauge fills (${cycle.hits} ${cycle.any ? 'hits' : `weak point hits, each pellet counting, ${s.scenario === 'weak' ? 'every hit' : '75% of hits'} on them while charging, which speeds the gauge but isn’t counted as damage`}), a reload’s time to transform, then the form’s ${cycle.ammo} ammo, and under a second back. ${s.scenario === 'single' ? 'The gauge starts full. ' : ''}` : '')
+    + (cycle && !s.burst ? `Incarnon: normal fire until the gauge fills (${cycle.hits} ${cycle.any ? 'hits' : `weak point hits, each pellet counting, ${role === 'weak' ? 'every hit' : '75% of hits'} on them while charging, which speeds the gauge but isn’t counted as damage`}), a reload’s time to transform, then the form’s ${cycle.ammo} ammo, and under a second back. ${s.scenario === 'single' ? 'The gauge starts full. ' : ''}` : '')
     + (incarnon === 'on' && s.burst ? 'Incarnon, burst: the whole fight in the form. ' : '')
     + (opts.spread ? `Judged at levels ${levels[0]}, ${s.level} and ${levels[1]}: DPS and percentages are the geometric mean of the three (each level counts the same); shots and seconds are level ${s.level}’s. ` : '')
     + (arcanes.includes('Primary Overcharge') ? (s.energy ? `Primary Overcharge at ${s.energy} Max Energy: +${Math.round(Math.min(350, 0.35 * s.energy))}% Multishot, taken to be always on (it wants 90% Energy or more). ` : 'Primary Overcharge counts for nothing until you give your Max Energy. ') : '')
@@ -460,9 +388,12 @@ export function modelBlock(weapon, cls, rerender) {
     + 'A guide, not gospel: a good build, not a proven best, and it can’t see ammo economy or your frame.'
     + (s.armor ? ' Against full armor, Heat and Corrosive lead because their procs strip it; most squads strip armor with abilities instead.' : '')]);
 
-  const result = studyOf({ weapon, cls: /** @type {import('../study.js').StudyInput['cls']} */ (cls), shape: s.shape, scenario: s.scenario, opts, positives, negatives: pool.negative, perks: s.perks ?? 'best', adapter: incarnon !== 'normal' }, rerender);
-  if (result === 'pending') return [head, controls, buffList, about, el('p', { class: 'note busy' }, ['Working out the builds…'])];
-  if ('error' in result) return [head, controls, el('p', { class: 'note warn' }, [`The model failed: ${result.error}`])];
+  // How it all is judged, for those who want it.
+  const aboutBox = /** @type {HTMLDetailsElement} */ (el('details', { class: 'buffs model-section', ...(openSections.has('about') ? { open: '' } : {}) }, [el('summary', {}, ['How builds are judged']), about]));
+  aboutBox.addEventListener('toggle', () => { if (aboutBox.open) openSections.add('about'); else openSections.delete('about'); });
+  const result = studyOf(input, rerender);
+  if (result === 'pending') return [head, controls, ...sections, aboutBox, el('p', { class: 'note busy' }, ['Working out the builds…'])];
+  if ('error' in result) return [head, controls, ...sections, el('p', { class: 'note warn' }, [`The model failed: ${result.error}`])];
 
   const community = (/** @type {string} */ id, /** @type {boolean} */ negative) => {
     const fit = rows.length ? communityFit(rows, id, negative, weapon) : null;
@@ -548,7 +479,7 @@ export function modelBlock(weapon, cls, rerender) {
         return p ? [el('li', {}, [el('strong', {}, [`${roman[e.evolution]}: ${p.name}`]), ` ${p.text}`])] : [];
       })));
   }
-  const out = [head, controls, buffList, about, ...perkBlock, ...valenceBlock,
+  const out = [head, controls, ...sections, aboutBox, ...perkBlock, ...valenceBlock,
     el('h4', {}, ['Best build without a riven']), ...(result.none.fight ? [el('p', {}, killText(result.none, isMelee, isBeam))] : []), buildGrid(result.none),
     el('h4', {}, [`Best rivens (${k} positives${SHAPES[s.shape].negatives ? ' and a curse' : ''}) over no riven`]), setList,
     el('h4', {}, ['Each positive in the riven slot']),
