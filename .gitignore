@@ -25,3 +25,7 @@ tools/data/allowlist.txt
 # Tesseract language data, fetched for OCR work
 eng.traineddata
 *.mp4
+
+# Precomputed riven studies (tools/precompute-studies.mjs): kept out until the damage model settles;
+# committed then, and re-run on releases where the game changed things.
+src/data/studies/

@@ -4,6 +4,8 @@
 //   node tools/precompute-studies.mjs [--jobs N] [--only "Name,Name"] [--fresh] [--check]
 // Each weapon's studies go to src/data/studies/<slug>.json, keyed by the md5 of the study's input
 // (src/model-input.js builds it, the page too), so a stored study is only ever used for its own input.
+// Not committed while the damage model is still changing (.gitignore); the page runs the search
+// live for a weapon without a file.
 // It picks up where it left off: a weapon whose file already has every key is skipped (--fresh redoes
 // them). src/data/studies/index.json records the model's source hash; --check says whether it's stale
 // (the damage model changed since: run it again).
