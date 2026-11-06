@@ -10,6 +10,7 @@ import { VALENCE_TYPES } from '../sim.js';
 import { takesAdapter } from '../incarnon.js';
 import { defaultModel, modelInput, comboId, ROLES } from '../model-input.js';
 import { SCENARIOS } from '../build.js';
+import { studiesOf, studyKey } from '../studies.js';
 import { VALENCE_PICKS } from '../data/valence-picks.js';
 import { crowdRadius } from '../crowd.js';
 import { BUFFS, BUFF_GROUPS } from '../data/buffs.js';
@@ -123,13 +124,18 @@ function studyOf(input, rerender) {
   if (known) return known;
   studies.set(key, 'pending');
   const done = (/** @type {Study | {error: string}} */ r) => { studies.set(key, r); onDone(); };
-  try {
-    worker ??= new Worker(new URL('../worker.js', import.meta.url), { type: 'module' });
-    worker.onmessage = e => { studies.set(e.data.key, e.data.error ? { error: e.data.error } : e.data.result); onDone(); };
-    worker.postMessage({ key, input });
-  } catch {
-    setTimeout(() => import('../study.js').then(m => done(m.study(input))).catch(e => done({ error: String(e) })), 30);
-  }
+  // A precomputed study for exactly this input (the default settings) is shown at once; else the search.
+  studiesOf(input.weapon).then(stored => {
+    const hit = stored[studyKey(input)];
+    if (hit && !(/** @type {any} */ (hit)).error) { done(/** @type {Study} */ (hit)); return; }
+    try {
+      worker ??= new Worker(new URL('../worker.js', import.meta.url), { type: 'module' });
+      worker.onmessage = e => { studies.set(e.data.key, e.data.error ? { error: e.data.error } : e.data.result); onDone(); };
+      worker.postMessage({ key, input });
+    } catch {
+      setTimeout(() => import('../study.js').then(m => done(m.study(input))).catch(e => done({ error: String(e) })), 30);
+    }
+  });
   return 'pending';
 }
 
