@@ -18,17 +18,17 @@ Stats are Strength / Duration / Efficiency / Range, the general totals from the 
 | Cyte-09 | 267 |  |  | none | BoomZoom |  |
 | Dagath | 244 | 304 |  | 3 Tau | Hot Glue Factory |  |
 | Dante | 214 | 274 |  | none | Config A |  |
-| Ember | 229 | 289 |  | 2 Tau | Ember? |  |
+| Ember | 229 | 289 |  | 2 Tau | Stars > Ember |  |
 | Equinox | 40 |  |  | none | Config A |  |
 | Excalibur | 276 |  |  | none | Persist (Umbra) |  |
-| Follie | 223 | 283 | 313 | none | Roar? |  |
-| Frost | 267 | 327 |  | 4 Tau | Xata? |  |
-| Gara | 262 | 322 |  | none | Shield? |  |
+| Follie | 223 | 283 | 313 | none | Roar |  |
+| Frost | 267 | 327 |  | 4 Tau | Xata |  |
+| Gara | 262 | 322 |  | none | Shield Bombs |  |
 | Garuda | 238 | 298 |  | none | Ballin' |  |
-| Gauss | 168 | 228 |  | none | Classic? |  |
-| Grendel | 408 |  |  | 3 Tau | Nerf? |  |
+| Gauss | 168 | 228 |  | none | Classic |  |
+| Grendel | 408 |  |  | 3 Tau | Likely Nerf |  |
 | Gyre | 238 | 298 |  | none | Sculpt |  |
-| Harrow | 144 |  |  | none | Covenant? |  |
+| Harrow | 144 |  |  | none | Covenant |  |
 | Hildryn | 100 |  | 190 | 4 Tau (he says) | Greed |  |
 | Hydroid | 222 |  |  | 3 Tau | Persist |  |
 | Inaros | 271 |  |  | none | What are you |  |
@@ -42,20 +42,20 @@ Stats are Strength / Duration / Efficiency / Range, the general totals from the 
 | Loki | 100 |  |  | none | Config A | Yes |
 | Mag | 84 | 144 |  | none | Config A | Yes |
 | Mesa | 199 |  |  | none | Config A |  |
-| Mirage | 328 | 388 |  | 2 Tau | Dispensa? |  |
-| Narin | 238 | 298 |  | none | Full? |  |
+| Mirage | 328 | 388 |  | 2 Tau | First tab (an icon) |  |
+| Narin | 238 | 298 |  | none | Full |  |
 | Nekros | 144 |  |  | none | Config A | Yes |
 | Nezha | 129 | 189 |  | ? | Flare |  |
 | Nidus | 321 |  |  | 2 Tau | Abundant |  |
 | Nokko | 207 | 267 |  | none | Config A |  |
 | Nova | 144 | 204 |  | none | To Be Sure | Yes |
 | Nyx | 223 (from the user, not read from the clips) | 283 |  | none | Config A | Yes |
-| Oberon | 253 | 313 |  | none | LAlt? |  |
+| Oberon | 253 | 313 |  | none | LAlt F4 |  |
 | Octavia | 222 | 282 |  | none | Config B |  |
-| Oraxia | 194 | 254 |  | none | CONFIG D? |  |
+| Oraxia | 194 | 254 |  | none | Blightbrood |  |
 | Protea | 253 |  |  | 1 Tau | Infinite Casting |  |
 | Qorvex | 147 | 207 |  | 2 Tau | Config A |  |
-| Revenant | 367 | 427 |  | 2 (he says) | Roar? |  |
+| Revenant | 367 | 427 |  | 2 (he says) | Fifth tab (two hearts) |  |
 | Rhino | 376 | 436 |  | 3 Tau | Buff Bot |  |
 | Saryn | 187 | 247 |  | none | GenevaSuggestion |  |
 | Sevagoth | 145 | 205 | 235 | 3 Tau (he says) | Config A |  |
@@ -64,7 +64,7 @@ Stats are Strength / Duration / Efficiency / Range, the general totals from the 
 | Temple | 278 | 338 |  | none | Config A | Yes |
 | Titania | also 244 (169) |  |  | 2 Tau | Firefly | Yes |
 | Trinity | also 183 (from the user) (243) | 303 |  | none | Config A | Yes |
-| Uriel | 183 | 243 |  | none | CONFIG D? |  |
+| Uriel | 183 | 243 |  | none | Roar Aug |  |
 | Valkyr | 194 |  |  | none | Config A |  |
 | Vauban | 207 |  |  | none | BCVWWDITOFW |  |
 | Volt | 384 | 444 |  | 5 Tau | Boom Zoom | Yes |
@@ -88,23 +88,23 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Config A**: 161/100/100/280, [0:40](https://www.youtube.com/watch?v=N1z3fqZfNJk&t=40s) (Arcane Bellicose 44 on the panel, up to 72 in play)
   - Primed Flow, Steel Charge, Adaptation, Umbral Intensify, Umbral Vitality, Overextended, Archon Stretch, Umbral Fiber, Cunning Drift, Stealth Drift; arcanes: Arcane Blessing, Arcane Bellicose
-- **CONFIG B?**: 117/100/100/280, [3:03](https://www.youtube.com/watch?v=N1z3fqZfNJk&t=183s) (only seen with an arrow)
+- **Config B**: 117/100/100/280, [3:03](https://www.youtube.com/watch?v=N1z3fqZfNJk&t=183s) (only seen with an arrow)
   - Steel Charge, Cunning Drift, Umbral Vitality, Primed Flow, Umbral Fiber, Archon Stretch, Hunter Adrenaline, Umbral Intensify, Overextended; arcanes: Arcane Persistence, Arcane Blessing
 
 ### Banshee
 
 - **Evade**: 184/128/100/235, [0:16](https://www.youtube.com/watch?v=UU3l3Rq4Xyc&t=16s) (probably also Transient Fortitude)
   - Primed Sure Footed, Primed Flow, Resonance, Overextended, Primed Continuity, Brief Respite, Umbral Intensify, Archon Stretch; arcanes: Arcane Concentration, Arcane Pistoleer
-- **Quake?**: 184/155/45/235, [6:15](https://www.youtube.com/watch?v=UU3l3Rq4Xyc&t=375s) (Precision Intensify)
+- **Quake**: 184/155/45/235, [6:15](https://www.youtube.com/watch?v=UU3l3Rq4Xyc&t=375s) (mid-video edit; Precision Intensify)
   - Primed Sure Footed, Primed Flow, Primed Continuity, Gaseous Quake, Overextended, Blind Rage, Stretch, Brief Respite, Precision Intensify, Rolling Guard; arcanes: Arcane Sculptor, Arcane Circumvent
-- **Quake?**: 274/155/45/235, [6:55](https://www.youtube.com/watch?v=UU3l3Rq4Xyc&t=415s) (only seen with an arrow; Precision Intensify; Strength 135 above what its mods and shards explain)
+- **Quake**: 274/155/45/235, [6:55](https://www.youtube.com/watch?v=UU3l3Rq4Xyc&t=415s) (only seen with an arrow; Precision Intensify; Strength 135 above what its mods and shards explain)
   - Primed Sure Footed, Gaseous Quake, Overextended, Primed Flow, Stretch, Primed Continuity, Precision Intensify, Rolling Guard, Brief Respite, Blind Rage; arcanes: Arcane Circumvent, Arcane Sculptor
 
 ### Baruuk
 
 - **Astral**: 139/128/130/220, [0:16](https://www.youtube.com/watch?v=QbTsAtpdtpE&t=16s) (Molt Augmented; probably also Transient Fortitude)
   - Primed Flow, Streamline, Steel Charge, Primed Sure Footed, Primed Continuity, Umbral Intensify, Overextended; arcanes: Arcane Fury, Molt Augmented
-- **Astral?**: 108/95/160/220, [5:07](https://www.youtube.com/watch?v=QbTsAtpdtpE&t=307s) (only seen with an arrow; Molt Augmented)
+- **Astral**: 108/95/160/220, [5:07](https://www.youtube.com/watch?v=QbTsAtpdtpE&t=307s) (mid-video edit; only seen with an arrow; Molt Augmented)
   - Umbral Intensify, Primed Sure Footed, Primed Flow, Overextended, Steel Charge, Augur Secrets, Primed Continuity; arcanes: Arcane Fury, Molt Augmented
 
 ### Caliban
@@ -116,11 +116,11 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Guardian**: 306/199/45/34, [0:12](https://www.youtube.com/watch?v=zv0AQs_Vqow&t=12s)
   - Umbral Intensify, Primed Sure Footed, Primed Flow, Steel Charge, Hunter Adrenaline, Narrow Minded, Umbral Vitality, Guardian Armor, Blind Rage, Umbral Fiber; arcanes: Arcane Persistence, Arcane Blessing
-- **Firebreathing?**: 287/172/100/34, [4:47](https://www.youtube.com/watch?v=zv0AQs_Vqow&t=287s) (only seen with an arrow; Arcane Bellicose 25 on the panel, up to 72 in play)
+- **Fast Cosplayer**: 287/172/100/34, [4:47](https://www.youtube.com/watch?v=zv0AQs_Vqow&t=287s) (only seen with an arrow; Arcane Bellicose 25 on the panel, up to 72 in play)
   - Primed Sure Footed, Umbral Intensify, Umbral Fiber, Lightning Dash, Narrow Minded, Rush, Umbral Vitality, Energy Nexus, Transient Fortitude; arcanes: Arcane Expertise, Arcane Bellicose
-- **ardian?**: 330/199/45/34, [2:26](https://www.youtube.com/watch?v=zv0AQs_Vqow&t=146s) (only seen with an arrow)
+- **Guardian**: 330/199/45/34, [2:26](https://www.youtube.com/watch?v=zv0AQs_Vqow&t=146s) (mid-video edit; only seen with an arrow)
   - Primed Sure Footed, Guardian Armor, Hunter Adrenaline, Narrow Minded, Blind Rage, Augur Secrets, Umbral Fiber, Umbral Intensify; arcanes: Arcane Persistence
-- **Null Star?**: 174/155/100/175, [6:12](https://www.youtube.com/watch?v=zv0AQs_Vqow&t=372s) (only seen with an arrow; Molt Augmented)
+- **Null Star**: 174/155/100/175, [6:12](https://www.youtube.com/watch?v=zv0AQs_Vqow&t=372s) (only seen with an arrow; Molt Augmented)
   - Primed Continuity, Umbral Intensify, Primed Sure Footed, Stretch, Archon Vitality, Equilibrium, Corrosive Projection, Augur Reach, Neutron Star, Guardian Armor; arcanes: Arcane Concentration, Molt Augmented
 
 ### Citrine
@@ -145,7 +145,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 ### Ember
 
-- **Ember?**: 229/128/100/145, [5:16](https://www.youtube.com/watch?v=WgZZ-Ev_dR0&t=316s) (Molt Augmented)
+- **Stars > Ember**: 229/128/100/145, [5:16](https://www.youtube.com/watch?v=WgZZ-Ev_dR0&t=316s) (Molt Augmented)
   - Brief Respite, Primed Sure Footed, Primed Flow, Primed Continuity, Transient Fortitude, Adaptation, Umbral Intensify, Fireball Frenzy, Stretch, Archon Vitality; arcanes: Molt Augmented, Arcane Aegis
 - **NIKKE Ember**: 328/172/45/34, [2:47](https://www.youtube.com/watch?v=WgZZ-Ev_dR0&t=167s) (Molt Augmented)
   - Umbral Intensify, Blind Rage, Primed Sure Footed, Fireball Frenzy, Vigilante Vigor, Fast Deflection, Transient Fortitude, Brief Respite, Narrow Minded, Reflection; arcanes: Arcane Aegis, Molt Augmented
@@ -164,26 +164,26 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 - **Config A (Prime)**: 185/128/100/265, [6:05](https://www.youtube.com/watch?v=mdkYd53_r_U&t=365s) (Precision Intensify; Strength 90 above what its mods and shards explain)
   - Primed Sure Footed, Primed Flow, Primed Continuity, Steel Charge, Overextended, Stretch, Precision Intensify, Transient Fortitude; arcanes: Arcane Fury, Arcane Aegis
   - Suspect: 90 more than its mods and shards give. Possibly an Arsenal or Simulacrum bug; 95 if so.
-- **CONFIG B?**: 185/128/100/220, [7:17](https://www.youtube.com/watch?v=mdkYd53_r_U&t=437s) (only seen with an arrow; Precision Intensify; Strength 145 above what its mods and shards explain)
+- **Config A (Prime)**: 185/128/100/220, [7:17](https://www.youtube.com/watch?v=mdkYd53_r_U&t=437s) (mid-video edit; only seen with an arrow; Precision Intensify; Strength 145 above what its mods and shards explain)
   - Primed Sure Footed, Steel Charge, Overextended, Precision Intensify, Primed Flow, Primed Redirection, Primed Continuity, Chromatic Blade; arcanes: Arcane Fury, Arcane Aegis
 
 ### Follie
 
-- **Roar?**: 223/185/45/175, [15:21](https://www.youtube.com/watch?v=f83tZHVA-3Y&t=921s) (Molt Augmented; Precision Intensify)
+- **Roar**: 223/185/45/175, [15:21](https://www.youtube.com/watch?v=f83tZHVA-3Y&t=921s) (Molt Augmented; Precision Intensify)
   - Archon Flow, Primed Continuity, Primed Sure Footed, Blind Rage, Archon Stretch, Precision Intensify, Corrosive Projection, Augur Secrets; arcanes: Arcane Sculptor, Molt Augmented
 - **0 Forma**: 139/253/45/154, [0:12](https://www.youtube.com/watch?v=f83tZHVA-3Y&t=12s) (budget; Molt Augmented; Precision Intensify)
   - Dreamer's Bond, Overextended, Blind Rage, Narrow Minded, Augur Message, Precision Intensify; arcanes: Arcane Sculptor, Molt Augmented
 
 ### Frost
 
-- **Xata?**: 267/100/45/235, [6:31](https://www.youtube.com/watch?v=X2ENUGaXrfA&t=391s) (Molt Augmented)
+- **Xata**: 267/100/45/235, [6:31](https://www.youtube.com/watch?v=X2ENUGaXrfA&t=391s) (Molt Augmented)
   - Icy Avalanche, Umbral Intensify, Stretch, Blind Rage, Archon Flow, Overextended, Cold Front, Freeze Force, Augur Secrets; arcanes: Arcane Steadfast, Molt Augmented
 - **0 Forma**: 204/40/175/175, [0:24](https://www.youtube.com/watch?v=X2ENUGaXrfA&t=24s) (budget; Molt Augmented)
   - Boreal's Hatred, Freeze Force, Umbral Intensify, Stretch, Icy Avalanche, Fleeting Expertise, Dreamer's Bond, Primed Flow, Cold Front, Augur Reach; arcanes: Arcane Concentration, Molt Augmented
 
 ### Gara
 
-- **Shield?**: 262/117/45/265, [10:10](https://www.youtube.com/watch?v=12IOBmqd3H0&t=610s) (Molt Augmented)
+- **Shield Bombs**: 262/117/45/265, [10:10](https://www.youtube.com/watch?v=12IOBmqd3H0&t=610s) (Molt Augmented)
   - Shattered Storm, Overextended, Augur Secrets, Primed Sure Footed, Umbral Intensify, Archon Stretch, Transient Fortitude, Blind Rage; arcanes: Arcane Sculptor, Molt Augmented
 - **Influencer Gara**: 139/173/100/235, [7:14](https://www.youtube.com/watch?v=12IOBmqd3H0&t=434s) (Molt Augmented)
   - Primed Sure Footed, Primed Flow, Primed Continuity, Equilibrium, Overextended, Archon Stretch, Umbral Intensify, Transient Fortitude; arcanes: Arcane Fury, Molt Augmented
@@ -194,23 +194,23 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Ballin'**: 238/103/45/265, [7:35](https://www.youtube.com/watch?v=iPL08_jDp1E&t=455s) (Molt Augmented)
   - Primed Sure Footed, Primed Flow, Corrosive Projection, Overextended, Stretch, Blind Rage, Umbral Intensify, Rolling Guard, Transient Fortitude; arcanes: Molt Reconstruct, Molt Augmented
-- **Melee?**: 183/185/45/235, [12:31](https://www.youtube.com/watch?v=iPL08_jDp1E&t=751s) (Molt Augmented; probably also Blind Rage)
+- **Melee**: 183/185/45/235, [12:31](https://www.youtube.com/watch?v=iPL08_jDp1E&t=751s) (Molt Augmented; probably also Blind Rage)
   - Primed Sure Footed, Primed Flow, Primed Continuity, Umbral Intensify, Overextended, Stretch, Blending Talons, Brief Respite; arcanes: Molt Reconstruct, Molt Augmented
 - **0 Forma**: 163/103/100/265, [0:16](https://www.youtube.com/watch?v=iPL08_jDp1E&t=16s) (budget; Molt Augmented; probably also Augur Secrets)
   - Steel Charge, Overextended, Umbral Intensify, Transient Fortitude; arcanes: Molt Reconstruct, Molt Augmented
 
 ### Gauss
 
-- **Classic?**: 168/336/100/34, [8:12](https://www.youtube.com/watch?v=6dphFaMjpA4&t=492s) (only seen with an arrow; Molt Augmented)
+- **Classic**: 168/336/100/34, [8:12](https://www.youtube.com/watch?v=6dphFaMjpA4&t=492s) (only seen with an arrow; Molt Augmented)
   - Rush, Sprint Boost, Primed Continuity, Constitution, Umbral Intensify, Narrow Minded, Augur Secrets, Augur Message, Fast Deflection; arcanes: Molt Augmented, Arcane Aegis
-- **Bonnet?**: 139/185/45/265, [10:05](https://www.youtube.com/watch?v=6dphFaMjpA4&t=605s)
+- **Bonnet**: 139/185/45/265, [10:05](https://www.youtube.com/watch?v=6dphFaMjpA4&t=605s)
   - Corrosive Projection, Stretch, Primed Continuity, Overextended, Blind Rage, Fast Deflection, Rush, Primed Flow; arcanes: Arcane Sculptor, Arcane Aegis
 - **0 Forma**: 168/311/100/34, [0:34](https://www.youtube.com/watch?v=6dphFaMjpA4&t=34s) (budget; Molt Augmented)
   - Energy Siphon, Thermal Transfer, Augur Message, Constitution, Umbral Intensify, Fast Deflection, Narrow Minded, Continuity, Augur Secrets; arcanes: Molt Augmented, Arcane Aegis
 
 ### Grendel
 
-- **Nerf?**: 408/155/45/100, [13:05](https://www.youtube.com/watch?v=_OQpA9r2j9k&t=785s) (Arcane Bellicose 72 on the panel, up to 72 in play)
+- **Likely Nerf**: 408/155/45/100, [13:05](https://www.youtube.com/watch?v=_OQpA9r2j9k&t=785s) (Arcane Bellicose 72 on the panel, up to 72 in play)
   - Power Drift, Blind Rage, Umbral Vitality, Primed Continuity, Corrosive Projection, Hunter Adrenaline, Gastroparesis, Umbral Intensify, Primed Flow, Umbral Fiber; arcanes: Arcane Bellicose, Arcane Persistence
 - **Rollin' Rollin'**: 234/100/100/235, [11:04](https://www.youtube.com/watch?v=_OQpA9r2j9k&t=664s) (Arcane Bellicose 72 on the panel, up to 72 in play)
   - Primed Flow, Umbral Vitality, Umbral Intensify, Catapult, Stretch, Ready Steel, Gastro, Overextended, Hunter Adrenaline, Umbral Fiber; arcanes: Arcane Bellicose, Arcane Persistence
@@ -224,7 +224,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 ### Harrow
 
-- **Covenant?**: 144/155/130/175, [2:48](https://www.youtube.com/watch?v=Hi16HLCG5jQ&t=168s) (only seen with an arrow)
+- **Covenant**: 144/155/130/175, [2:48](https://www.youtube.com/watch?v=Hi16HLCG5jQ&t=168s) (only seen with an arrow)
   - Umbral Intensify, Corrosive Projection, Streamline, Adaptation, Stretch, Primed Sure Footed, Augur Reach, Primed Continuity, Lasting Covenant; arcanes: Arcane Aegis, Arcane Pistoleer
 
 ### Hildryn
@@ -236,7 +236,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Persist**: 222/155/100/145, [0:20](https://www.youtube.com/watch?v=Kl-rN1rBjJs&t=20s)
   - Umbral Intensify, Hunter Adrenaline, Stretch, Primed Flow, Umbral Vitality, Growing Power, Primed Continuity, Umbral Fiber, Viral Tempest, Primed Sure Footed; arcanes: Arcane Persistence, Arcane Blessing
-- **Persist?**: 200/155/100/145, [3:29](https://www.youtube.com/watch?v=Kl-rN1rBjJs&t=209s) (only seen with an arrow)
+- **Persist**: 200/155/100/145, [3:29](https://www.youtube.com/watch?v=Kl-rN1rBjJs&t=209s) (mid-video edit; only seen with an arrow)
   - Primed Continuity, Growing Power, Umbral Intensify, Stretch, Primed Flow, Umbral Vitality, Primed Sure Footed, Hunter Adrenaline, Viral Tempest; arcanes: Arcane Persistence, Arcane Blessing
 
 ### Inaros
@@ -304,18 +304,18 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 ### Mirage
 
-- **Dispensa?**: 328/167/45/175, [0:16](https://www.youtube.com/watch?v=ex37vQt6qa4&t=16s) (Molt Augmented; probably also Transient Fortitude)
+- **First tab (an icon)**: 328/167/45/175, [0:16](https://www.youtube.com/watch?v=ex37vQt6qa4&t=16s) (Molt Augmented; probably also Transient Fortitude)
   - Stretch, Blind Rage, Umbral Intensify, Primed Flow, Primed Sure Footed, Primed Continuity, Augur Reach, Corrosive Projection; arcanes: Arcane Concentration, Molt Augmented
 
 ### Narin
 
-- **Full?**: 238/173/45/280, [8:47](https://www.youtube.com/watch?v=AsEwOt42vag&t=527s) (Molt Augmented)
+- **Full**: 238/173/45/280, [8:47](https://www.youtube.com/watch?v=AsEwOt42vag&t=527s) (Molt Augmented)
   - Archon Flow, Blind Rage, Primed Continuity, Umbral Intensify, Overextended, Cunning Drift, Transient Fortitude, Augur Reach, Stretch, Energy Siphon; arcanes: Molt Augmented, Arcane Sculptor
 - **New Players**: 70/199/100/265, [0:32](https://www.youtube.com/watch?v=AsEwOt42vag&t=32s) (budget)
   - Intensify, Dreamer's Bond, Overextended, Continuity, Equilibrium, Stretch, Augur Message
 - **2 Forma**: 139/197/100/265, [6:04](https://www.youtube.com/watch?v=AsEwOt42vag&t=364s) (budget; Molt Augmented)
   - Primed Continuity, Overextended, Energy Siphon, Augur Message, Archon Flow, Stretch, Umbral Intensify, Transient Fortitude; arcanes: Arcane Ice Storm, Molt Augmented
-- **0 Forma?**: 108/224/100/265, [5:16](https://www.youtube.com/watch?v=AsEwOt42vag&t=316s) (budget; only seen with an arrow; Molt Augmented)
+- **0 Forma**: 108/224/100/265, [5:16](https://www.youtube.com/watch?v=AsEwOt42vag&t=316s) (budget; only seen with an arrow; Molt Augmented)
   - Umbral Intensify, Energy Siphon, Primed Flow, Primed Continuity, Stretch, Overextended, Augur Message, Augur Secrets; arcanes: Arcane Ice Storm, Molt Augmented
 
 ### Nekros
@@ -337,7 +337,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Config A**: 207/155/45/265, [1:06](https://www.youtube.com/watch?v=MAjj2_JYaZg&t=66s) (Molt Augmented)
   - Umbral Intensify, Overextended, Archon Continuity, Stretch, Blind Rage, Mecha Empowered, Primed Sure Footed, Augur Reach, Augur Secrets; arcanes: Arcane Crepuscular, Molt Augmented
-- **CONFIG A?**: 237/155/45/265, [6:39](https://www.youtube.com/watch?v=MAjj2_JYaZg&t=399s) (only seen with an arrow; Molt Augmented; probably also Intensify and Augur Secrets)
+- **Config A**: 237/155/45/265, [6:39](https://www.youtube.com/watch?v=MAjj2_JYaZg&t=399s) (mid-video edit; only seen with an arrow; Molt Augmented; probably also Intensify and Augur Secrets)
   - Primed Sure Footed, Mecha Empowered, Stretch, Umbral Intensify, Overextended, Archon Continuity, Blind Rage; arcanes: Arcane Crepuscular, Molt Augmented
 
 ### Nova
@@ -352,21 +352,21 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 ### Oberon
 
-- **LAlt?**: 253/128/45/265, [0:24](https://www.youtube.com/watch?v=oenw8Fk9kCs&t=24s) (Molt Augmented)
+- **LAlt F4**: 253/128/45/265, [0:24](https://www.youtube.com/watch?v=oenw8Fk9kCs&t=24s) (Molt Augmented)
   - Stretch, Umbral Intensify, Overextended, Blind Rage, Equilibrium, Growing Power, Fortitude, Power Drift, Primed Continuity, Transient Fortitude; arcanes: Molt Augmented, Arcane Battery
 
 ### Octavia
 
 - **Config B**: 222/230/45/265, [1:23](https://www.youtube.com/watch?v=sfrBs_QWVt4&t=83s) (Molt Augmented)
   - Primed Flow, Umbral Intensify, Overextended, Blind Rage, Stretch, Augur Secrets, Primed Continuity, Power Drift, Corrosive Projection, Augur Reach; arcanes: Arcane Crepuscular, Molt Augmented
-- **CONFIG B?**: 252/230/45/265, [4:46](https://www.youtube.com/watch?v=sfrBs_QWVt4&t=286s) (only seen with an arrow; Molt Augmented)
+- **Config B**: 252/230/45/265, [4:46](https://www.youtube.com/watch?v=sfrBs_QWVt4&t=286s) (mid-video edit; only seen with an arrow; Molt Augmented)
   - Primed Flow, Umbral Intensify, Overextended, Blind Rage, Stretch, Augur Secrets, Primed Continuity, Corrosive Projection; arcanes: Arcane Crepuscular, Molt Augmented
 
 ### Oraxia
 
-- **CONFIG D?**: 194/155/45/250, [11:40](https://www.youtube.com/watch?v=krPBoOx0XMM&t=700s) (Molt Augmented)
+- **Blightbrood**: 194/155/45/250, [11:40](https://www.youtube.com/watch?v=krPBoOx0XMM&t=700s) (Molt Augmented)
   - Primed Flow, Umbral Intensify, Cunning Drift, Summoner's Wrath, Stretch, Blind Rage, Umbral Vitality, Brood's Oversurge, Overextended, Archon Continuity; arcanes: Arcane Persistence, Molt Augmented
-- **Platform?**: 291/155/45/145, [9:58](https://www.youtube.com/watch?v=krPBoOx0XMM&t=598s) (only seen with an arrow)
+- **Weapon Platform**: 291/155/45/145, [9:58](https://www.youtube.com/watch?v=krPBoOx0XMM&t=598s) (only seen with an arrow)
   - Umbral Intensify, Power Drift, Blind Rage, Primed Flow, Growing Power, Archon Continuity, Umbral Fiber, Stretch, Umbral Vitality, Hunter Adrenaline; arcanes: Arcane Persistence, Arcane Grace
 - **0 Forma**: 179/155/100/145, [0:20](https://www.youtube.com/watch?v=krPBoOx0XMM&t=20s) (budget; Molt Augmented)
   - Primed Continuity, Stretch, Primed Flow, Equilibrium, Steel Charge, Umbral Intensify, Augur Secrets, Umbral Vitality; arcanes: Arcane Guardian, Molt Augmented
@@ -375,9 +375,9 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Infinite Casting**: 253/227/45/169, [0:16](https://www.youtube.com/watch?v=li7COBOaBhw&t=16s)
   - Narrow Minded, Primed Continuity, Umbral Intensify, Stretch, Archon Vitality, Overextended, Blind Rage, Primed Sure Footed, Transient Fortitude; arcanes: Arcane Concentration, Arcane Sculptor
-- **Silence?**: 198/155/45/235, [7:44](https://www.youtube.com/watch?v=li7COBOaBhw&t=464s) (Molt Augmented)
+- **Temp Artillery**: 198/155/45/235, [7:44](https://www.youtube.com/watch?v=li7COBOaBhw&t=464s) (Molt Augmented)
   - Temporal Artillery, Umbral Intensify, Overextended, Archon Vitality, Equilibrium, Primed Sure Footed, Blind Rage, Stretch, Corrosive Projection, Primed Continuity; arcanes: Arcane Concentration, Molt Augmented
-- **Silence?**: 99/155/130/235, [7:12](https://www.youtube.com/watch?v=li7COBOaBhw&t=432s) (only seen with an arrow; Molt Augmented)
+- **Silence**: 99/155/130/235, [7:12](https://www.youtube.com/watch?v=li7COBOaBhw&t=432s) (only seen with an arrow; Molt Augmented)
   - Primed Flow, Primed Sure Footed, Streamline, Overextended, Stretch, Primed Continuity, Umbral Intensify, Energy Siphon, Archon Vitality, Equilibrium; arcanes: Arcane Concentration, Molt Augmented
 
 ### Qorvex
@@ -387,11 +387,11 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 ### Revenant
 
-- **Roar?**: 367/128/75/145, [4:13](https://www.youtube.com/watch?v=WgHls_aafQ8&t=253s) (Molt Augmented)
+- **Fifth tab (two hearts)**: 367/128/75/145, [4:13](https://www.youtube.com/watch?v=WgHls_aafQ8&t=253s) (Molt Augmented)
   - Umbral Intensify, Primed Flow, Power Drift, Stretch, Primed Continuity, Blind Rage, Streamline, Augur Secrets, Corrosive Projection, Transient Fortitude; arcanes: Molt Efficiency, Molt Augmented
 - **Nourish**: 284/227/45/34, [1:26](https://www.youtube.com/watch?v=WgHls_aafQ8&t=86s) (Molt Augmented; Precision Intensify)
   - Mobilize, Primed Flow, Precision Intensify, Primed Continuity, Dreamer's Bond, Blind Rage, Transient Fortitude; arcanes: Arcane Precision, Molt Augmented
-- **Roar?**: 284/167/105/34, [3:18](https://www.youtube.com/watch?v=WgHls_aafQ8&t=198s) (only seen with an arrow; Molt Augmented; Precision Intensify)
+- **Roar**: 284/167/105/34, [3:18](https://www.youtube.com/watch?v=WgHls_aafQ8&t=198s) (only seen with an arrow; Molt Augmented; Precision Intensify)
   - Precision Intensify, Mobilize, Primed Continuity, Energy Siphon, Fleeting Expertise, Mesmer Shield, Narrow Minded, Blind Rage, Transient Fortitude; arcanes: Arcane Consequence, Molt Augmented
 
 ### Rhino
@@ -403,7 +403,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **GenevaSuggestion**: 187/128/100/235, [0:32](https://www.youtube.com/watch?v=t7wvqD7xLiA&t=32s) (Molt Augmented)
   - Umbral Intensify, Stretch, Power Drift, Overextended, Hunter Adrenaline, Growing Power, Primed Continuity, Fortitude, Umbral Vitality, Transient Fortitude; arcanes: Molt Augmented, Arcane Persistence
-- **CONFIG B?**: 291/100/45/100, [4:10](https://www.youtube.com/watch?v=t7wvqD7xLiA&t=250s) (Molt Augmented)
+- **Config B**: 291/100/45/100, [4:10](https://www.youtube.com/watch?v=t7wvqD7xLiA&t=250s) (Molt Augmented)
   - Primed Flow, Hunter Adrenaline, Blind Rage, Venom Dose, Umbral Intensify, Umbral Vitality, Growing Power, Power Drift, Umbral Fiber, Regenerative Molt; arcanes: Arcane Persistence, Molt Augmented
 
 ### Sevagoth
@@ -412,7 +412,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
   - Primed Sure Footed, Dark Propagation, Adaptation, Growing Power, Shadow Haze, Primed Flow, Stretch, Precision Intensify, Augur Reach, Equilibrium; arcanes: Arcane Blessing, Molt Augmented
 - **Shadow's stats**: 222/95/160/145, [4:43](https://www.youtube.com/watch?v=NTA5x_b25vc&t=283s)
   - Steel Charge, Adaptation, Stretch, Hunter Adrenaline, Umbral Vitality, Umbral Intensify, Primed Continuity, Umbral Fiber, Fleeting Expertise; arcanes: Arcane Strike, Arcane Fury
-- **CONFIG?**: 145/155/130/175, [6:28](https://www.youtube.com/watch?v=NTA5x_b25vc&t=388s) (only seen with an arrow; Molt Augmented; Precision Intensify)
+- **Config B**: 145/155/130/175, [6:28](https://www.youtube.com/watch?v=NTA5x_b25vc&t=388s) (only seen with an arrow; Molt Augmented; Precision Intensify)
   - Stretch, Primed Sure Footed, Primed Flow, Steel Charge, Primed Continuity, Streamline, Adaptation, Equilibrium, Augur Reach, Precision Intensify; arcanes: Arcane Blessing, Molt Augmented
 
 ### Sirius & Orion
@@ -436,7 +436,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Firefly**: 169/103/130/220, [0:16](https://www.youtube.com/watch?v=Re6sKheAT44&t=16s)
   - Primed Sure Footed, Corrosive Projection, Archon Vitality, Umbral Intensify, Overextended, Streamline, Razorwing Blitz, Augur Reach, Primed Flow, Transient Fortitude; arcanes: Arcane Steadfast, Arcane Impetus
-- **Actually Titania?**: 244/197/160/220, [4:55](https://www.youtube.com/watch?v=Re6sKheAT44&t=295s) (only seen with an arrow; Molt Augmented)
+- **Actually Titania**: 244/197/160/220, [4:55](https://www.youtube.com/watch?v=Re6sKheAT44&t=295s) (only seen with an arrow; Molt Augmented)
   - Primed Flow, Umbral Intensify, Stretch, Narrow Minded, Beguiling Lantern, Power Drift, Growing Power, Transient Fortitude, Fleeting Expertise, Primed Continuity; arcanes: Arcane Pistoleer, Molt Augmented
 
 ### Trinity
@@ -446,9 +446,9 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 ### Uriel
 
-- **CONFIG D?**: 183/155/45/235, [13:09](https://www.youtube.com/watch?v=nmQDPMR5G6o&t=789s) (Molt Augmented)
+- **Roar Aug**: 183/155/45/235, [13:09](https://www.youtube.com/watch?v=nmQDPMR5G6o&t=789s) (Molt Augmented)
   - Umbral Intensify, Overextended, Stretch, Blind Rage, Infernum, Archon Vitality, Primed Flow, Primed Continuity, Primed Sure Footed, Corrosive Projection; arcanes: Arcane Circumvent, Molt Augmented
-- **Classic?**: 139/68/160/235, [11:16](https://www.youtube.com/watch?v=nmQDPMR5G6o&t=676s) (only seen with an arrow; Molt Augmented)
+- **Classic**: 139/68/160/235, [11:16](https://www.youtube.com/watch?v=nmQDPMR5G6o&t=676s) (only seen with an arrow; Molt Augmented)
   - Overextended, Primed Sure Footed, Primed Flow, Primed Continuity, Umbral Intensify, Stretch, Archon Vitality, Brief Respite, Transient Fortitude; arcanes: Arcane Concentration, Molt Augmented
 - **0 Forma**: 108/70/160/235, [0:28](https://www.youtube.com/watch?v=nmQDPMR5G6o&t=28s) (budget; Molt Augmented; probably also Augur Secrets)
   - Steel Charge, Umbral Intensify, Archon Vitality, Continuity, Stretch, Overextended; arcanes: Molt Augmented, Arcane Concentration
@@ -476,7 +476,7 @@ Full Molt is Molt Augmented at 250 kills. Arcane Bellicose is in the Strength sh
 
 - **Quadruped**: 198/155/45/235, [0:30](https://www.youtube.com/watch?v=wy657hL2VfU&t=30s) (Molt Augmented)
   - Ulfrun's Endurance, Primed Flow, Umbral Intensify, Blind Rage, Archon Stretch, Prey Of Dynar, Corrosive Projection, Power Drift, Overextended, Archon Continuity; arcanes: Molt Augmented, Arcane Impetus
-- **Build?**: 183/155/45/280, [2:02](https://www.youtube.com/watch?v=wy657hL2VfU&t=122s) (only seen with an arrow; Molt Augmented)
+- **The Better Build**: 183/155/45/280, [2:02](https://www.youtube.com/watch?v=wy657hL2VfU&t=122s) (only seen with an arrow; Molt Augmented)
   - Steel Charge, Umbral Intensify, Overextended, Prey Of Dynar, Primed Flow, Blind Rage, Archon Stretch, Augur Reach, Cunning Drift, Archon Continuity; arcanes: Arcane Impetus, Molt Augmented
 
 ### Wisp

@@ -1304,6 +1304,13 @@ weaknesses, full armor, a crowd of 6 at 50% clumping; 36 minutes): first choices
 up the other way, in the model's top 3 on 72 guns where the community doesn't list it (Viral 76, Blast 52, Damage to
 Grineer 38). Most missed: Multishot 131, Critical Damage 91. So full armor swings the model past the sheet, not onto it.
 
+**Strength per buff** (2026-11-05): each buff is cast from a build (`src/data/frame-builds.js`, from docs/reference-builds.md), chosen under
+the Buffs list. The default is the build named for the buff, else its frame's most-read one, budget builds last (the
+user). Named tabs are mostly subsumed abilities on other frames (Revenant's Nourish, Follie's Roar), so a subsumed buff
+picks from any frame's build named for it. Molt Augmented counts at its full +60: conditional Strength is at its
+maximum, and abilities snapshot. The two boxes are for buffs without a build; a link with `str` or `dur` and no `bb`
+keeps its old numbers. Brightbonnet raises the others from its own Strength.
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

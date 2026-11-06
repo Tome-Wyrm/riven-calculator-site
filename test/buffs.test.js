@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUFFS, BUFF_GROUPS } from '../src/data/buffs.js';
-import { buffPiece } from '../src/buffs.js';
+import { buffPiece, buildOf, buildPower, buildSlug, buildsFor, defaultBuild } from '../src/buffs.js';
 import { BLAST_ALONE, blastPay, dpsOf, hitByType, critChanceOf } from '../src/sim.js';
 import { fight } from '../src/fight.js';
 import { sparkReach } from '../src/crowd.js';
@@ -257,4 +257,54 @@ test('Valence Formation: one element at a time, +200%, never combining', () => {
   const only = BUFFS.filter(b => b.only === 'valence');
   assert.equal(only.length, 4);
   assert.deepEqual(totals(['valence-heat']).elements, [{ type: 'heat', value: 2, loose: true }]);
+});
+
+const buff = (/** @type {string} */ id) => /** @type {typeof BUFFS[number]} */ (BUFFS.find(b => b.id === id));
+
+test('a buff is cast from the build named for it, else its frame\'s most-read one', () => {
+  assert.equal(defaultBuild(buff('roar'))?.tab, 'Buff Bot');
+  assert.equal(defaultBuild(buff('freeze'))?.tab, 'Xata');            // not 0 Forma, though it has more reads
+  assert.equal(defaultBuild(buff('bonnet'))?.frame, 'Nokko');
+  assert.equal(defaultBuild(buff('stars'))?.frame, 'Sirius & Orion');
+  assert.equal(defaultBuild(buff('avenger')), null);                  // no frame
+});
+
+test('a subsumed ability takes any frame\'s build named for it', () => {
+  assert.ok(buildsFor(buff('roar-sub')).every(b => /roar/i.test(b.tab)));
+  assert.equal(defaultBuild(buff('nourish-sub'))?.frame, 'Revenant');
+  assert.ok(buildsFor(buff('eclipse-sub')).some(b => b.frame === 'Ivara'));
+  assert.deepEqual(buildsFor(buff('bonnet-sub')).map(b => b.tab), ['Bonnet']);
+});
+
+test('a chosen build, the default, or the boxes', () => {
+  const list = buildsFor(buff('nourish'));
+  const other = /** @type {typeof list[number]} */ (list.find(b => b.tab === 'Rollin\' Rollin\''));
+  assert.equal(buildOf(buff('nourish'), buildSlug(other))?.strength, 234);
+  assert.equal(buildOf(buff('nourish'), 'gone')?.tab, defaultBuild(buff('nourish'))?.tab);
+  assert.equal(buildOf(buff('nourish'), 'x'), null);
+});
+
+test('every build a buff can use has its own name in a link', () => {
+  for (const b of BUFFS) {
+    const slugs = buildsFor(b).map(buildSlug);
+    assert.equal(new Set(slugs).size, slugs.length, b.id);
+  }
+  const frost = buildsFor(buff('freeze')).map(buildSlug);
+  assert.ok(frost.includes('frost0forma'));
+});
+
+test('Molt Augmented counts at its maximum', () => {
+  const b = { frame: '', tab: '', strength: 145, duration: 100, reads: 1 };
+  assert.deepEqual(buildPower(b), { strength: 1.45, duration: 1 });
+  assert.equal(buildPower({ ...b, molt: 1 }).strength, 2.05);
+});
+
+test('each buff scales with its own Strength; Brightbonnet raises the others from its own', () => {
+  const piece = (/** @type {string[]} */ ids, /** @type {any} */ each) => /** @type {any} */ (buffPiece(ids, 1, 1, 5, 0.9, each)).stats;
+  assert.equal(piece(['roar'], { roar: { strength: 3, duration: 1 } }).anyFaction, 1.5);
+  assert.equal(piece(['roar', 'vex'], { roar: { strength: 3, duration: 1 } }).anyFaction, 1.5);
+  assert.equal(piece(['roar', 'vex'], { roar: { strength: 3, duration: 1 } }).damage, 2.75);
+  const alone = piece(['roar', 'bonnet'], { roar: { strength: 2, duration: 1 }, bonnet: { strength: 1, duration: 1 } }).anyFaction;
+  const boosted = piece(['roar', 'bonnet'], { roar: { strength: 2, duration: 1 }, bonnet: { strength: 2, duration: 1 } }).anyFaction;
+  assert.ok(boosted > alone);
 });

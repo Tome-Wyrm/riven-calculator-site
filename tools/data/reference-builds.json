@@ -1,5 +1,6 @@
 [
  {
+  "edit": false,
   "frame": "Ash",
   "video": "ZJu_nC0rxWw",
   "at": 16,
@@ -38,6 +39,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Atlas",
   "video": "N1z3fqZfNJk",
   "at": 40,
@@ -78,11 +80,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Atlas",
   "video": "N1z3fqZfNJk",
   "at": 183,
-  "tab": "CONFIG B?",
-  "checked": false,
+  "tab": "Config B",
+  "checked": true,
   "stats": "117/100/100/280",
   "strength": 117,
   "reads": 28,
@@ -117,6 +120,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Banshee",
   "video": "UU3l3Rq4Xyc",
   "at": 16,
@@ -157,11 +161,12 @@
   "crimson": 3
  },
  {
+  "edit": true,
   "frame": "Banshee",
   "video": "UU3l3Rq4Xyc",
   "at": 375,
-  "tab": "Quake?",
-  "checked": false,
+  "tab": "Quake",
+  "checked": true,
   "stats": "184/155/45/235",
   "strength": 184,
   "reads": 24,
@@ -197,11 +202,12 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Banshee",
   "video": "UU3l3Rq4Xyc",
   "at": 415,
-  "tab": "Quake?",
-  "checked": false,
+  "tab": "Quake",
+  "checked": true,
   "stats": "274/155/45/235",
   "strength": 274,
   "reads": 9,
@@ -234,6 +240,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Baruuk",
   "video": "QbTsAtpdtpE",
   "at": 16,
@@ -273,11 +280,12 @@
   "crimson": 0
  },
  {
+  "edit": true,
   "frame": "Baruuk",
   "video": "QbTsAtpdtpE",
   "at": 307,
-  "tab": "Astral?",
-  "checked": false,
+  "tab": "Astral",
+  "checked": true,
   "stats": "108/95/160/220",
   "strength": 108,
   "reads": 9,
@@ -310,6 +318,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Caliban",
   "video": "mwvDP02OtYk",
   "at": 20,
@@ -350,6 +359,7 @@
   "crimson": 5
  },
  {
+  "edit": false,
   "frame": "Chroma",
   "video": "zv0AQs_Vqow",
   "at": 12,
@@ -390,11 +400,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Chroma",
   "video": "zv0AQs_Vqow",
   "at": 287,
-  "tab": "Firebreathing?",
-  "checked": false,
+  "tab": "Fast Cosplayer",
+  "checked": true,
   "stats": "287/172/100/34",
   "strength": 287,
   "reads": 21,
@@ -429,11 +440,12 @@
   "crimson": 2
  },
  {
+  "edit": true,
   "frame": "Chroma",
   "video": "zv0AQs_Vqow",
   "at": 146,
-  "tab": "ardian?",
-  "checked": false,
+  "tab": "Guardian",
+  "checked": true,
   "stats": "330/199/45/34",
   "strength": 330,
   "reads": 13,
@@ -466,11 +478,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Chroma",
   "video": "zv0AQs_Vqow",
   "at": 372,
-  "tab": "Null Star?",
-  "checked": false,
+  "tab": "Null Star",
+  "checked": true,
   "stats": "174/155/100/175",
   "strength": 174,
   "reads": 8,
@@ -506,6 +519,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Citrine",
   "video": "YbfG2vTew34",
   "at": 34,
@@ -544,6 +558,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Cyte-09",
   "video": "tqUHRmhupMA",
   "at": 24,
@@ -581,6 +596,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Dagath",
   "video": "rE1lZMKmQ-s",
   "at": 16,
@@ -621,6 +637,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Dante",
   "video": "mVZGFh2mvtI",
   "at": 20,
@@ -660,11 +677,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Ember",
   "video": "WgZZ-Ev_dR0",
   "at": 316,
-  "tab": "Ember?",
-  "checked": false,
+  "tab": "Stars > Ember",
+  "checked": true,
   "stats": "229/128/100/145",
   "strength": 229,
   "reads": 37,
@@ -700,6 +718,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Ember",
   "video": "WgZZ-Ev_dR0",
   "at": 167,
@@ -740,6 +759,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Ember",
   "video": "WgZZ-Ev_dR0",
   "at": 84,
@@ -779,6 +799,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Equinox",
   "video": "z2IHndnQBLw",
   "at": 20,
@@ -816,6 +837,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Excalibur",
   "video": "mdkYd53_r_U",
   "at": 32,
@@ -856,6 +878,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Excalibur",
   "video": "mdkYd53_r_U",
   "at": 365,
@@ -891,11 +914,12 @@
   "crimson": 0
  },
  {
+  "edit": true,
   "frame": "Excalibur",
   "video": "mdkYd53_r_U",
   "at": 437,
-  "tab": "CONFIG B?",
-  "checked": false,
+  "tab": "Config A (Prime)",
+  "checked": true,
   "stats": "185/128/100/220",
   "strength": 185,
   "reads": 9,
@@ -926,11 +950,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Follie",
   "video": "f83tZHVA-3Y",
   "at": 921,
-  "tab": "Roar?",
-  "checked": false,
+  "tab": "Roar",
+  "checked": true,
   "stats": "223/185/45/175",
   "strength": 223,
   "reads": 43,
@@ -964,6 +989,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Follie",
   "video": "f83tZHVA-3Y",
   "at": 12,
@@ -1000,11 +1026,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Frost",
   "video": "X2ENUGaXrfA",
   "at": 391,
-  "tab": "Xata?",
-  "checked": false,
+  "tab": "Xata",
+  "checked": true,
   "stats": "267/100/45/235",
   "strength": 267,
   "reads": 50,
@@ -1039,6 +1066,7 @@
   "crimson": 4
  },
  {
+  "edit": false,
   "frame": "Frost",
   "video": "X2ENUGaXrfA",
   "at": 24,
@@ -1079,11 +1107,12 @@
   "crimson": 4
  },
  {
+  "edit": false,
   "frame": "Gara",
   "video": "12IOBmqd3H0",
   "at": 610,
-  "tab": "Shield?",
-  "checked": false,
+  "tab": "Shield Bombs",
+  "checked": true,
   "stats": "262/117/45/265",
   "strength": 262,
   "reads": 27,
@@ -1117,6 +1146,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Gara",
   "video": "12IOBmqd3H0",
   "at": 434,
@@ -1155,6 +1185,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Gara",
   "video": "12IOBmqd3H0",
   "at": 16,
@@ -1193,6 +1224,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Garuda",
   "video": "iPL08_jDp1E",
   "at": 455,
@@ -1232,11 +1264,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Garuda",
   "video": "iPL08_jDp1E",
   "at": 751,
-  "tab": "Melee?",
-  "checked": false,
+  "tab": "Melee",
+  "checked": true,
   "stats": "183/185/45/235",
   "strength": 183,
   "reads": 7,
@@ -1272,6 +1305,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Garuda",
   "video": "iPL08_jDp1E",
   "at": 16,
@@ -1308,11 +1342,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Gauss",
   "video": "6dphFaMjpA4",
   "at": 492,
-  "tab": "Classic?",
-  "checked": false,
+  "tab": "Classic",
+  "checked": true,
   "stats": "168/336/100/34",
   "strength": 168,
   "reads": 29,
@@ -1347,11 +1382,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Gauss",
   "video": "6dphFaMjpA4",
   "at": 605,
-  "tab": "Bonnet?",
-  "checked": false,
+  "tab": "Bonnet",
+  "checked": true,
   "stats": "139/185/45/265",
   "strength": 139,
   "reads": 26,
@@ -1385,6 +1421,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Gauss",
   "video": "6dphFaMjpA4",
   "at": 34,
@@ -1424,11 +1461,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Grendel",
   "video": "_OQpA9r2j9k",
   "at": 785,
-  "tab": "Nerf?",
-  "checked": false,
+  "tab": "Likely Nerf",
+  "checked": true,
   "stats": "408/155/45/100",
   "strength": 408,
   "reads": 32,
@@ -1464,6 +1502,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Grendel",
   "video": "_OQpA9r2j9k",
   "at": 664,
@@ -1504,6 +1543,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Grendel",
   "video": "_OQpA9r2j9k",
   "at": 32,
@@ -1541,6 +1581,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Gyre",
   "video": "Xl4gVJdhFug",
   "at": 16,
@@ -1580,11 +1621,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Harrow",
   "video": "Hi16HLCG5jQ",
   "at": 168,
-  "tab": "Covenant?",
-  "checked": false,
+  "tab": "Covenant",
+  "checked": true,
   "stats": "144/155/130/175",
   "strength": 144,
   "reads": 34,
@@ -1619,6 +1661,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Hildryn",
   "video": "04WxMRoYNAE",
   "at": 20,
@@ -1659,6 +1702,7 @@
   "crimson": 4
  },
  {
+  "edit": false,
   "frame": "Hydroid",
   "video": "Kl-rN1rBjJs",
   "at": 20,
@@ -1699,11 +1743,12 @@
   "crimson": 3
  },
  {
+  "edit": true,
   "frame": "Hydroid",
   "video": "Kl-rN1rBjJs",
   "at": 209,
-  "tab": "Persist?",
-  "checked": false,
+  "tab": "Persist",
+  "checked": true,
   "stats": "200/155/100/145",
   "strength": 200,
   "reads": 16,
@@ -1738,6 +1783,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Inaros",
   "video": "mDuPuBN5Fdk",
   "at": 116,
@@ -1778,6 +1824,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Ivara",
   "video": "t2eJFhSKgB0",
   "at": 44,
@@ -1817,6 +1864,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Jade",
   "video": "GETM5iHn3Do",
   "at": 56,
@@ -1856,6 +1904,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Khora",
   "video": "j7RtQJ2gmdE",
   "at": 16,
@@ -1896,6 +1945,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Koumei",
   "video": "QCWxUQXiCRc",
   "at": 79,
@@ -1935,6 +1985,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Kullervo",
   "video": "h6T-kj1hktA",
   "at": 72,
@@ -1975,6 +2026,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Lavos",
   "video": "FCmk9jPY6Fw",
   "at": 24,
@@ -2015,6 +2067,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Lavos",
   "video": "UdVHWNFU0qY",
   "at": 28,
@@ -2055,6 +2108,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Limbo",
   "video": "G7jCAwLVKvA",
   "at": 120,
@@ -2094,6 +2148,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Limbo",
   "video": "G7jCAwLVKvA",
   "at": 292,
@@ -2134,6 +2189,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Limbo",
   "video": "G7jCAwLVKvA",
   "at": 364,
@@ -2173,6 +2229,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Loki",
   "video": "0gQ8dlc6K0w",
   "at": 54,
@@ -2212,6 +2269,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Mag",
   "video": "xE6KjdLcljU",
   "at": 98,
@@ -2251,6 +2309,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Mesa",
   "video": "iyoXzP5zI-o",
   "at": 44,
@@ -2291,11 +2350,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Mirage",
   "video": "ex37vQt6qa4",
   "at": 16,
-  "tab": "Dispensa?",
-  "checked": false,
+  "tab": "First tab (an icon)",
+  "checked": true,
   "stats": "328/167/45/175",
   "strength": 328,
   "reads": 48,
@@ -2331,11 +2391,12 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Narin",
   "video": "AsEwOt42vag",
   "at": 527,
-  "tab": "Full?",
-  "checked": false,
+  "tab": "Full",
+  "checked": true,
   "stats": "238/173/45/280",
   "strength": 238,
   "reads": 27,
@@ -2371,6 +2432,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Narin",
   "video": "AsEwOt42vag",
   "at": 32,
@@ -2405,6 +2467,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Narin",
   "video": "AsEwOt42vag",
   "at": 364,
@@ -2443,11 +2506,12 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Narin",
   "video": "AsEwOt42vag",
   "at": 316,
-  "tab": "0 Forma?",
-  "checked": false,
+  "tab": "0 Forma",
+  "checked": true,
   "stats": "108/224/100/265",
   "strength": 108,
   "reads": 22,
@@ -2481,6 +2545,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Nekros",
   "video": "5_h7_IsvUjk",
   "at": 72,
@@ -2521,6 +2586,7 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Nezha",
   "video": "Cjq-fgzGhvw",
   "at": 16,
@@ -2556,6 +2622,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Nidus",
   "video": "dDavAsWgzlk",
   "at": 58,
@@ -2595,6 +2662,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Nokko",
   "video": "MAjj2_JYaZg",
   "at": 66,
@@ -2634,11 +2702,12 @@
   "crimson": 0
  },
  {
+  "edit": true,
   "frame": "Nokko",
   "video": "MAjj2_JYaZg",
   "at": 399,
-  "tab": "CONFIG A?",
-  "checked": false,
+  "tab": "Config A",
+  "checked": true,
   "stats": "237/155/45/265",
   "strength": 237,
   "reads": 22,
@@ -2674,6 +2743,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Nova",
   "video": "aMwnWdgbzII",
   "at": 24,
@@ -2714,6 +2784,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Nyx",
   "video": "On5sbhxijv8",
   "at": 400,
@@ -2754,11 +2825,12 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Oberon",
   "video": "oenw8Fk9kCs",
   "at": 24,
-  "tab": "LAlt?",
-  "checked": false,
+  "tab": "LAlt F4",
+  "checked": true,
   "stats": "253/128/45/265",
   "strength": 253,
   "reads": 56,
@@ -2794,6 +2866,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Octavia",
   "video": "sfrBs_QWVt4",
   "at": 83,
@@ -2834,11 +2907,12 @@
   "crimson": 5
  },
  {
+  "edit": true,
   "frame": "Octavia",
   "video": "sfrBs_QWVt4",
   "at": 286,
-  "tab": "CONFIG B?",
-  "checked": false,
+  "tab": "Config B",
+  "checked": true,
   "stats": "252/230/45/265",
   "strength": 252,
   "reads": 11,
@@ -2872,11 +2946,12 @@
   "crimson": 5
  },
  {
+  "edit": false,
   "frame": "Oraxia",
   "video": "krPBoOx0XMM",
   "at": 700,
-  "tab": "CONFIG D?",
-  "checked": false,
+  "tab": "Blightbrood",
+  "checked": true,
   "stats": "194/155/45/250",
   "strength": 194,
   "reads": 36,
@@ -2912,11 +2987,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Oraxia",
   "video": "krPBoOx0XMM",
   "at": 598,
-  "tab": "Platform?",
-  "checked": false,
+  "tab": "Weapon Platform",
+  "checked": true,
   "stats": "291/155/45/145",
   "strength": 291,
   "reads": 22,
@@ -2952,6 +3028,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Oraxia",
   "video": "krPBoOx0XMM",
   "at": 20,
@@ -2990,6 +3067,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Protea",
   "video": "li7COBOaBhw",
   "at": 16,
@@ -3029,11 +3107,12 @@
   "crimson": 1
  },
  {
+  "edit": false,
   "frame": "Protea",
   "video": "li7COBOaBhw",
   "at": 464,
-  "tab": "Silence?",
-  "checked": false,
+  "tab": "Temp Artillery",
+  "checked": true,
   "stats": "198/155/45/235",
   "strength": 198,
   "reads": 9,
@@ -3069,11 +3148,12 @@
   "crimson": 1
  },
  {
+  "edit": false,
   "frame": "Protea",
   "video": "li7COBOaBhw",
   "at": 432,
-  "tab": "Silence?",
-  "checked": false,
+  "tab": "Silence",
+  "checked": true,
   "stats": "99/155/130/235",
   "strength": 99,
   "reads": 8,
@@ -3109,6 +3189,7 @@
   "crimson": 1
  },
  {
+  "edit": false,
   "frame": "Qorvex",
   "video": "YWrWiUkXcXc",
   "at": 24,
@@ -3148,11 +3229,12 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Revenant",
   "video": "WgHls_aafQ8",
   "at": 253,
-  "tab": "Roar?",
-  "checked": false,
+  "tab": "Fifth tab (two hearts)",
+  "checked": true,
   "stats": "367/128/75/145",
   "strength": 367,
   "reads": 35,
@@ -3188,6 +3270,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Revenant",
   "video": "WgHls_aafQ8",
   "at": 86,
@@ -3225,11 +3308,12 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Revenant",
   "video": "WgHls_aafQ8",
   "at": 198,
-  "tab": "Roar?",
-  "checked": false,
+  "tab": "Roar",
+  "checked": true,
   "stats": "284/167/105/34",
   "strength": 284,
   "reads": 9,
@@ -3264,6 +3348,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Rhino",
   "video": "x944XngvuEw",
   "at": 185,
@@ -3304,6 +3389,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Saryn",
   "video": "t7wvqD7xLiA",
   "at": 32,
@@ -3344,11 +3430,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Saryn",
   "video": "t7wvqD7xLiA",
   "at": 250,
-  "tab": "CONFIG B?",
-  "checked": false,
+  "tab": "Config B",
+  "checked": true,
   "stats": "291/100/45/100",
   "strength": 291,
   "reads": 13,
@@ -3384,6 +3471,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Sevagoth",
   "video": "NTA5x_b25vc",
   "at": 28,
@@ -3424,6 +3512,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Sevagoth",
   "video": "NTA5x_b25vc",
   "at": 283,
@@ -3463,11 +3552,12 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Sevagoth",
   "video": "NTA5x_b25vc",
   "at": 388,
-  "tab": "CONFIG?",
-  "checked": false,
+  "tab": "Config B",
+  "checked": true,
   "stats": "145/155/130/175",
   "strength": 145,
   "reads": 8,
@@ -3503,6 +3593,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Sirius & Orion",
   "video": "TAid72Kw4lA",
   "at": 195,
@@ -3540,6 +3631,7 @@
   "crimson": 4
  },
  {
+  "edit": false,
   "frame": "Sirius & Orion",
   "video": "TAid72Kw4lA",
   "at": 32,
@@ -3577,6 +3669,7 @@
   "crimson": 4
  },
  {
+  "edit": false,
   "frame": "Styanax",
   "video": "zv3C4JcIKa4",
   "at": 16,
@@ -3616,6 +3709,7 @@
   "crimson": 3
  },
  {
+  "edit": false,
   "frame": "Temple",
   "video": "vuhK84Btu1Q",
   "at": 28,
@@ -3656,6 +3750,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Titania",
   "video": "Re6sKheAT44",
   "at": 16,
@@ -3696,11 +3791,12 @@
   "crimson": 4
  },
  {
+  "edit": false,
   "frame": "Titania",
   "video": "Re6sKheAT44",
   "at": 295,
-  "tab": "Actually Titania?",
-  "checked": false,
+  "tab": "Actually Titania",
+  "checked": true,
   "stats": "244/197/160/220",
   "strength": 244,
   "reads": 8,
@@ -3736,6 +3832,7 @@
   "crimson": 4
  },
  {
+  "edit": false,
   "frame": "Trinity",
   "video": "8-O8jE4sxfY",
   "at": 231,
@@ -3776,11 +3873,12 @@
   "crimson": null
  },
  {
+  "edit": false,
   "frame": "Uriel",
   "video": "nmQDPMR5G6o",
   "at": 789,
-  "tab": "CONFIG D?",
-  "checked": false,
+  "tab": "Roar Aug",
+  "checked": true,
   "stats": "183/155/45/235",
   "strength": 183,
   "reads": 33,
@@ -3816,11 +3914,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Uriel",
   "video": "nmQDPMR5G6o",
   "at": 676,
-  "tab": "Classic?",
-  "checked": false,
+  "tab": "Classic",
+  "checked": true,
   "stats": "139/68/160/235",
   "strength": 139,
   "reads": 24,
@@ -3855,6 +3954,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Uriel",
   "video": "nmQDPMR5G6o",
   "at": 28,
@@ -3893,6 +3993,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Valkyr",
   "video": "hlE3SkuLRv4",
   "at": 80,
@@ -3933,6 +4034,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Vauban",
   "video": "OdK-FW7L_4M",
   "at": 42,
@@ -3973,6 +4075,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Vauban",
   "video": "OdK-FW7L_4M",
   "at": 385,
@@ -4011,6 +4114,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Vauban",
   "video": "OdK-FW7L_4M",
   "at": 708,
@@ -4051,6 +4155,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Volt",
   "video": "O7bX1gZ_RKQ",
   "at": 78,
@@ -4091,6 +4196,7 @@
   "crimson": 5
  },
  {
+  "edit": false,
   "frame": "Voruna",
   "video": "wy657hL2VfU",
   "at": 30,
@@ -4131,11 +4237,12 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Voruna",
   "video": "wy657hL2VfU",
   "at": 122,
-  "tab": "Build?",
-  "checked": false,
+  "tab": "The Better Build",
+  "checked": true,
   "stats": "183/155/45/280",
   "strength": 183,
   "reads": 29,
@@ -4171,6 +4278,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Wisp",
   "video": "3F3XGRW0G5o",
   "at": 52,
@@ -4209,6 +4317,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Wukong",
   "video": "0TjEGwAJyNI",
   "at": 95,
@@ -4249,6 +4358,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Xaku",
   "video": "GcBF9Skleo8",
   "at": 30,
@@ -4288,6 +4398,7 @@
   "crimson": 2
  },
  {
+  "edit": false,
   "frame": "Yareli",
   "video": "qarpyj1sSr0",
   "at": 181,
@@ -4327,6 +4438,7 @@
   "crimson": 0
  },
  {
+  "edit": false,
   "frame": "Zephyr",
   "video": "2X6j1L_fXq0",
   "at": 40,
