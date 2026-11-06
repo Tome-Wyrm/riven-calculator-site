@@ -304,9 +304,11 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
   if (arc) ({ slots, dps } = search(slots, arc));
   // Arcanes that change how the weapon works (Melee Influence needs Electricity procs; Afflictions
   // knockdowns with statuses up) can be worth nothing to the mods found without them: each gets a
-  // search of its own around it.
+  // search of its own around it. One worth under a quarter of the build when simply put in is passed
+  // over (a winning one was never seen below 0.4 of it).
   for (const a of arcanes) {
     if (a === arc || !Object.keys(a.stats).some(k => MECHANIC.has(k))) continue;
+    if (value(slots, a) < dps * 0.25) continue;
     const b = search(slots, a);
     if (b.dps > dps * (1 + 1e-9)) ({ slots, dps } = b), arc = a;
   }

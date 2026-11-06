@@ -992,8 +992,14 @@ Decisions (the user's, 2026-11-03):
 - [ ] In game: Melee Duplicate's yellow-crit chance, Doughty's steps, Influence's spread (does a spread
       proc spread again?), Afflictions' added ticks; Blood Rush additive vs multiplicative (the wiki's
       formula line and its example disagree; the example is used).
-- [ ] Speed: a melee study takes about a minute (built-up combos fight the room's targets one by one,
-      and each mechanic arcane gets its own search).
+- [ ] Speed: a melee study took about 30-60 s (built-up combos fight the room's targets one by one,
+      and each mechanic arcane gets its own search); now 4-12 s. Done: the hit by type worked out once
+      per fight, not per combo tier; one set of volleys for every tier without Blood Rush or Weeping
+      Wounds; without them every target in the room is alike, so one is simulated; a mechanic arcane
+      worth under a quarter of the build when put in gets no search (winners seen at 0.4+). Tried and
+      dropped: screening the best rivens' candidate sets before their searches (neither the riven put
+      in the empty-slot build nor its singles' product ranks the winners near the top). Left: built-up
+      combos with Blood Rush still fight the targets one by one until the max; workers in parallel.
 - [ ] Heavy attacks, slams, glaive throws, gunblade shots; Gladiator set bonus; melee incarnons;
       zaws (parts) and Dark Split-Sword.
 

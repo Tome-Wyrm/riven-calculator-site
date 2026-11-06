@@ -92,8 +92,9 @@ export function fight(w, t, opts) {
 
   // What one shot carries, before Galvanized's per-status Direct Damage (which depends on the target).
   // Melee: at each combo tier (Blood Rush's crit chance, Weeping Wounds' status chance per tier).
-  const volleysAt = (/** @type {(id: string) => number} */ raw) => mode.parts.flatMap(p => {
-    const typed = hitByType(p, t, raw, opts.valence);
+  // The hit by type reads only physical damage stats, never a per tier one: worked out once.
+  const typedParts = mode.parts.map(p => ({ p, typed: hitByType(p, t, raw, opts.valence) }));
+  const volleysAt = (/** @type {(id: string) => number} */ raw) => typedParts.flatMap(({ p, typed }) => {
     if (!typed) return [];
     const { base, byType, hit } = typed;
     const cc = critChanceOf(p, raw('critChance'));
@@ -122,9 +123,17 @@ export function fight(w, t, opts) {
   const melee = w.melee && opts.melee ? opts.melee : null;
   /** @type {Map<number, ReturnType<typeof volleysAt>>} */
   const byTier = new Map();
+  // The per tier stats (Blood Rush, Weeping Wounds) by their base stat; without any, every tier is alike.
+  const perTier = Object.entries(t.stats).filter(([k, v]) => v && k.endsWith('PerTier')).map(([k, v]) => /** @type {[string, number]} */ ([k.slice(0, -7), v]));
   const volleysOf = (/** @type {number} */ tier) => {
-    let v = byTier.get(tier);
-    if (!v) byTier.set(tier, v = volleysAt(tier <= 1 ? raw : id => raw(id) + raw(`${id}PerTier`) * (tier - 1)));
+    const key = perTier.length ? tier : 1;
+    let v = byTier.get(key);
+    if (!v) {
+      /** @type {Record<string, number>} */
+      const at = { ...t.stats };
+      for (const [id, per] of perTier) at[id] = (at[id] ?? 0) + per * (key - 1);
+      byTier.set(key, v = volleysAt(key <= 1 ? raw : id => at[id] ?? 0));
+    }
     return v;
   };
   const swings = melee ? melee.attacks.map(swingOf) : [];
@@ -187,6 +196,7 @@ export function fight(w, t, opts) {
     let heat = { rate: 0, until: -1, start: -1, owed: 0 };
     let elecSeen = 0, buffUp = 0;
     let dead = -1;
+    let last = combo;                           // the combo count at the last swing
 
     // Stacks still up at `at` (expired ones leave their queue for good: time only moves forward).
     const count = (/** @type {string} */ type, /** @type {number} */ at) => {
@@ -265,7 +275,7 @@ export function fight(w, t, opts) {
         // Still alive: finish it at the rate it has been losing health and shields.
         const lost = ehp - Math.max(0, health) - shields;
         const more = (Math.max(0, health) + shields) * now / Math.max(1e-9, lost);
-        return { time: now + more, shots: shots + more * rate, combo };
+        return { time: now + more, shots: shots + more * rate, combo, last };
       }
       // The shot: Galvanized counts the status types on the target now.
       const s = snap(now);
@@ -338,6 +348,7 @@ export function fight(w, t, opts) {
         buffUp = influence * lambda / (1 + influence * lambda);
       }
       shots++;
+      last = combo;
       if (sw && melee?.combo === 'build') combo += (sw.mult + sw.hits * comboChance) * nearby;
       lastTier = tier;
       if (shots === 1) perShot = ehp - health - shields;
@@ -345,14 +356,14 @@ export function fight(w, t, opts) {
         // Killed by this shot: it counts for the share of it that was needed (crits make the real
         // count a spread; this is its smooth average), but a kill always takes at least one shot.
         const f = Math.min(1, before / Math.max(1e-9, before - health - shields));
-        return { time: Math.max(1 / rate, now + f / rate), shots: Math.max(1, shots - 1 + f), combo };
+        return { time: Math.max(1 / rate, now + f / rate), shots: Math.max(1, shots - 1 + f), combo, last };
       }
       // The next shot (after a reload when the magazine is empty).
       inMag -= 1;
       let next = now + 1 / rate;
       if (inMag <= 0) { next = now + reload; inMag = shotsPerMag; }
       runDots(now, next);
-      if (dead >= 0) return { time: Math.max(1 / rate, dead), shots: Math.max(1, shots), combo };
+      if (dead >= 0) return { time: Math.max(1 / rate, dead), shots: Math.max(1, shots), combo, last };
       now = next;
     }
   };
@@ -369,9 +380,12 @@ export function fight(w, t, opts) {
       spread = 0;
       const r = one(false, combo);
       if (k === 0) first = perShot;
-      if (melee.combo !== 'build' || combo >= MAX_COMBO) {
+      // Without per tier stats (Blood Rush, Weeping Wounds) the tier changes nothing but itself: every
+      // target is alike, and the tier at the last kill follows from the combo each one adds.
+      if (melee.combo !== 'build' || combo >= MAX_COMBO || !perTier.length) {
         const left = targets - k;
         time += r.time * left; shots += r.shots * left; spreadAll += spread * left;
+        if (melee.combo === 'build') lastTier = comboTier(r.last + (r.combo - combo) * (left - 1));
         break;
       }
       time += r.time; shots += r.shots; spreadAll += spread; combo = r.combo;
