@@ -326,7 +326,8 @@ function fought(w, t, opts) {
     }
     return v;
   };
-  const swings = melee ? melee.attacks.map(swingOf) : [];
+  // Slam hits take Slam Attack Damage on their base damage (src/melee.js).
+  const swings = melee ? melee.attacks.map(a => swingOf(a, raw('slamDamage'))) : [];
   // Heavy attacks: what one does at 1x, its wind up, and what it leaves of the combo.
   const heavyBase = melee?.heavy ? heavyMult(w) * (D > 0 ? Math.max(0, D + raw('meleeDamageOnHeavy')) / D : 1) : 0;
   const windUp = (w.melee?.windUp ?? 0) / Math.max(0.05, 1 + raw('heavyWindup'));
@@ -516,7 +517,7 @@ function fought(w, t, opts) {
       // Melee: this swing's attack (its multiplier and hit count) at the combo's tier now.
       const tier = !melee ? 1 : comboTier(melee.combo === 'max' ? MAX_COMBO : combo);
       const heavy = heavyBase > 0 && (melee?.combo !== 'build' || tier >= heavyAt);
-      const sw = !melee ? null : heavy ? { mult: heavyBase * tier, hits: 1, knocks: 0 } : swings[swing % swings.length];
+      const sw = !melee ? null : heavy ? { mult: heavyBase * tier, points: 0, hits: 1, knocks: 0 } : swings[swing % swings.length];
       const mult = sw ? sw.mult : 1;
       const hitsPer = sw ? sw.hits : 1;
       const step = heavy ? Math.max(windUp, 1e-3) : interval;
@@ -590,7 +591,7 @@ function fought(w, t, opts) {
       if (heavy) { sinceHeavy = 0; if (melee?.combo === 'build') combo *= kept; }
       else if (sw) {
         swing++; sinceHeavy++;
-        if (melee?.combo === 'build') combo += (sw.mult + sw.hits * comboChance) * nearby;
+        if (melee?.combo === 'build') combo += (sw.points + sw.hits * comboChance) * nearby;
       }
       if (sw && melee?.combo === 'build' && combo < initial) combo = Math.min(initial, combo + COMBO_REGEN * step);
       lastTier = tier;

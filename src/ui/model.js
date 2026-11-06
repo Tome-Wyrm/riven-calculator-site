@@ -273,9 +273,11 @@ export function modelBlock(weapon, cls, rerender) {
   const arcanes = arcaneNames(cls);
   if (s.arcane && !arcanes.includes(s.arcane)) s.arcane = null;
   // Melee: the stance combo (the best per swing unless chosen), the combo counter and the crowd.
-  const combos = isMelee ? combosFor(w.kind) : [];
-  const chosen = combos.find(c => `${c.stance}|${c.combo.name}` === s.stanceCombo) ?? combos[0] ?? null;
-  const comboName = chosen ? `${chosen.stance}, ${chosen.combo.name}` : 'none in the wiki’s data: plain hits';
+  const combos = isMelee ? combosFor(w.kind, weapon) : [];
+  // A combo's id in links: stance, key and name (older links without the key still find theirs).
+  const comboId = (/** @type {typeof combos[number]} */ c) => `${c.stance}|${c.combo.key}|${c.combo.name}`;
+  const chosen = combos.find(c => comboId(c) === s.stanceCombo) ?? combos.find(c => `${c.stance}|${c.combo.name}` === s.stanceCombo) ?? combos[0] ?? null;
+  const comboName = chosen ? chosen.label : 'none in the wiki’s data: plain hits';
   // The buffs this weapon can use, and those chosen.
   const usable = BUFFS.filter(b => (b.for ?? (isMelee ? 'melee' : 'guns')) === (isMelee ? 'melee' : 'guns') && !(b.noArchgun && cls === 'archgun'));
   const chosenBuffs = usable.filter(b => s.buffs.includes(b.id));
@@ -318,8 +320,8 @@ export function modelBlock(weapon, cls, rerender) {
     return el('label', { class: 'field' }, [el('span', {}, [label]), input]);
   };
   const meleeControls = isMelee ? [
-    ...(combos.length ? [select('Stance combo', combos.map(c => /** @type {[string, string]} */ ([`${c.stance}|${c.combo.name}`, `${c.stance}: ${c.combo.name} (${c.perSwing.toFixed(1)}x a swing)`])),
-      chosen ? `${chosen.stance}|${chosen.combo.name}` : '', v => set({ stanceCombo: v === `${combos[0].stance}|${combos[0].combo.name}` ? '' : v }))] : []),
+    ...(combos.length ? [select('Stance combo', combos.map(c => /** @type {[string, string]} */ ([comboId(c), `${c.label} (${c.perSwing.toFixed(1)}x ${c.slam ? 'a slam' : 'a swing'})`])),
+      chosen ? comboId(chosen) : '', v => set({ stanceCombo: v === comboId(combos[0]) ? '' : v }))] : []),
     el('div', { class: 'field' }, [el('span', {}, ['Combo counter']), segmented('Combo counter', ['initial', 'max', 'build'], s.combo,
       v => set({ combo: /** @type {'initial' | 'max' | 'build'} */ (v) }), v => ({ initial: 'Initial', max: 'Max (12x)', build: 'Built up' })[v] ?? v,
       () => 'Held at the initial combo, held at the max, or built up by the hits (room clearing carries it from kill to kill)')]),
@@ -444,7 +446,7 @@ export function modelBlock(weapon, cls, rerender) {
     + (!mix && unit && target ? `Target: ${unit.name}${group ? (group.bane ? '' : ` (${group.name}: no riven faction stat applies)`) : ' (no faction weaknesses)'}, level ${s.level}${s.steelPath ? ' Steel Path' : ''}: ${big(target.health)} health`
       + `${target.shields ? `, ${big(target.shields)} shields (Toxin skips them; Magnetic procs multiply damage to them)` : ''}`
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
-    + (isMelee ? `${s.heavy && w.melee?.heavy ? `Heavy attacks: ${w.melee.heavy} damage x the combo multiplier, one hit after the ${w.melee.windUp} s wind up (Wind Up Speed shortens it, attack speed doesn’t; no recovery counted), ${s.combo === 'build' ? `spending the combo at ${s.heavyAt}x, keeping Heavy Attack Efficiency’s share (at most 90%); spent Initial Combo returns at 40 a second` : 'every attack, the counter held'}; True Steel’s and rivens’ Critical Chance count twice. ` : ''}Melee: no slams or finishers yet, a swing being the next attack of the stance combo (${comboName}): its hits’ multipliers and counts, not its timing. `
+    + (isMelee ? `${s.heavy && w.melee?.heavy ? `Heavy attacks: ${w.melee.heavy} damage x the combo multiplier, one hit after the ${w.melee.windUp} s wind up (Wind Up Speed shortens it, attack speed doesn’t; no recovery counted), ${s.combo === 'build' ? `spending the combo at ${s.heavyAt}x, keeping Heavy Attack Efficiency’s share (at most 90%); spent Initial Combo returns at 40 a second` : 'every attack, the counter held'}; True Steel’s and rivens’ Critical Chance count twice. ` : ''}Melee: no finishers yet, ${chosen?.slam ? `every attack the slam (${comboName}): its hits’ multipliers and counts, slam hits times 1 + Slam Attack Damage (Seismic Wave, rivens), not its timing` : `a swing being the next attack of the stance combo (${comboName}): its hits’ multipliers and counts (slam hits in it times 1 + Slam Attack Damage), not its timing`}. `
       + `The combo counter is ${{ initial: 'held at the initial combo', max: 'held at 12x', build: 'built up by the hits (each hit adds its multiplier in points; room clearing carries it from kill to kill)' }[s.combo]}; Blood Rush and Weeping Wounds add theirs per tier past 1x. `
       + `Room clearing: ${s.nearby} enem${s.nearby === 1 ? 'y' : 'ies'} in each swing, each further one at ${Math.round((w.melee?.ft ?? 1) * 100)}% follow through of the one before; `
       + `Melee Influence spreads elemental procs to ${s.close} enem${s.close === 1 ? 'y' : 'ies'} within 20 m, each taking 1 + ${s.clump}% x the others as copies (clumped enemies pass it on to each other). ` : '')

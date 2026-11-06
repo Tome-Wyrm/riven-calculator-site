@@ -51,7 +51,14 @@ Doesn't need section 2, and can run alongside it.
 
 Builds on the gun fight (15).
 
-- [ ] Slams, glaive throws and gunblade shots.
+- [x] Slams: each class's shared Slam and a unique stance's own (Sampotes, Tenet Exec: Slam, Heavy
+      Slam) in the stance list, after the combos and never the default; slam hits (the wiki's Types
+      "Slam", in combos too) take Slam Attack Damage on their base damage. Stances are labelled as the
+      wiki does (stance, key, combo); a weapon's unique stance only on that weapon.
+- [ ] Slams' timing and radial damage (a slam counts as one swing on the target), heavy slams for
+      every class (only unique ones are in the wiki's data), forced Bleed procs on hits, Impact
+      multipliers on hits.
+- [ ] Glaive throws and gunblade shots.
 - [ ] Gladiator set bonus, melee Incarnons, zaws (by parts), Dark Split-Sword.
 - [ ] Melee buffs: Valkyr, and Voruna's (needs combo modelling).
 - [ ] Speed: pre-screen the mechanic arcanes' searches and the riven candidates; parallel workers.

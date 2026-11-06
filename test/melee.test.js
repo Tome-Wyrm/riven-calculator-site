@@ -23,7 +23,14 @@ test('combo tiers: 1x below 20 points, +1x per 20, 12x from 220 (the wiki\'s Mel
 });
 
 test('a swing sums its hits\' multipliers and counts its knockdowns', () => {
-  assert.deepEqual(swingOf([[2, 2], [1, 2], [3, 2, 'knockdown'], [1, 1, 'knockback']]), { mult: 13, hits: 7, knocks: 3 });
+  assert.deepEqual(swingOf([[2, 2], [1, 2], [3, 2, 'knockdown'], [1, 1, 'knockback']]), { mult: 13, points: 13, hits: 7, knocks: 3 });
+});
+
+test('a slam hit takes Slam Attack Damage on its base damage; its combo points don\'t', () => {
+  // Seismic Wave's +200%: the 1x slam hit counts 3x, the 2x normal hit stays 2x.
+  assert.deepEqual(swingOf([[2, 1], [1, 1, '', 'slam']], 2), { mult: 5, points: 3, hits: 2, knocks: 0 });
+  const opts = () => ({ target: target(1e6), melee: { attacks: [[[1, 1, '', 'slam']]], combo: 'initial' } });
+  near(fight(sword(), totals({ slamDamage: 2 }), opts()).dps / fight(sword(), totals({}), opts()).dps, 3);
 });
 
 test('stances: Vermillion Storm\'s Crimson Hurricane from the wiki; the best combo first', () => {
@@ -31,7 +38,30 @@ test('stances: Vermillion Storm\'s Crimson Hurricane from the wiki; the best com
   const hurricane = storm.combos.find(c => c.name === 'Crimson Hurricane');
   assert.deepEqual(hurricane.attacks, [[[1, 1]], [[2, 1], [1, 3]], [[2, 1], [1, 1]]]);
   const list = combosFor('Tonfa');
-  assert.ok(list.length > 1 && list.every((c, i) => i === 0 || c.perSwing <= list[i - 1].perSwing));
+  const combos = list.filter(c => !c.slam);
+  assert.ok(combos.length > 1 && combos.every((c, i) => i === 0 || c.perSwing <= combos[i - 1].perSwing));
+  assert.ok(list.findIndex(c => c.slam) >= combos.length, 'slams after the combos');
+});
+
+test('stances: labelled as the wiki does; a unique stance only on its weapon; slams by stance, never the default', () => {
+  const hammer = combosFor('Hammer', 'Sancti Magistar');
+  assert.ok(!hammer.some(c => c.stance === 'Sampotes'), 'Sampotes\' stance is for the Sampotes');
+  assert.ok(!hammer[0].slam);
+  assert.ok(hammer.some(c => c.label === 'Shattering Storm: Neutral, Falling Rock'));
+  assert.ok(hammer.some(c => c.label === 'Slam' && c.slam));
+  const sampotes = combosFor('Hammer', 'Sampotes');
+  assert.ok(!sampotes[0].slam);
+  assert.deepEqual(sampotes.filter(c => c.stance === 'Sampotes').map(c => c.label).sort(), ['Sampotes: Heavy Slam', 'Sampotes: Slam']);
+  // Falling Rock's last attack ends in a 100% slam hit that knocks down (the wiki's red S).
+  const rock = hammer.find(c => c.combo.name === 'Falling Rock');
+  assert.deepEqual(rock.combo.attacks.at(-1).at(-1), [1, 1, 'knockdown', 'slam']);
+});
+
+test('Seismic Wave joins the mod pool when the attack slams, not otherwise', () => {
+  const w = WEAPON_STATS['Sancti Magistar'];
+  const pool = attacks => modPool('melee', w, SCENARIOS.room, { melee: { attacks, combo: 'initial' } }).map(p => p.name);
+  assert.ok(pool([[[2, 1, '', 'slam']]]).includes('Seismic Wave'));
+  assert.ok(!pool([[[2, 1]]]).includes('Seismic Wave'));
 });
 
 test('a swing deals its stance multiplier: a 3x attack kills a 250-health target in one swing', () => {
