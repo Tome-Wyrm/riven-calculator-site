@@ -46,6 +46,9 @@ export const BUFFS = [
   { id: 'gallery', name: 'Shooting Gallery', from: 'Mesa', group: 'Damage', effects: [['damage', 0.25, 's']] },
   { id: 'metamorphosis', name: 'Metamorphosis', from: 'Equinox', group: 'Damage', effects: [['damage', 0.25, 's']] },
   { id: 'torrent', name: 'Rift Torrent (10 enemies)', from: 'Limbo', group: 'Damage', effects: [['damage', 3, 's'], ['sparkMore', 3, 's']] },
+  // Nira's set: +150% Slam Attack Damage per piece; Hatred and Anguish are Warframe mods (Contempt,
+  // the third, is for whips).
+  { id: 'nira', name: 'Nira’s set (Hatred + Anguish)', from: 'Warframe mods', group: 'Damage', for: 'melee', effects: [['slamDamage', 3]] },
 
   { id: 'roar', name: 'Roar', from: 'Rhino', group: 'Faction', effects: [['anyFaction', 0.5, 's']] },
   { id: 'roar-sub', name: 'Roar (subsumed)', from: 'Helminth', group: 'Faction', effects: [['anyFaction', 0.3, 's']] },
