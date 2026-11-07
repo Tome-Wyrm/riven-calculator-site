@@ -212,12 +212,19 @@ test('Melee Exposure: at its cap unless switched off', () => {
   near(xp({ exposure: false }), 0);
 });
 
-test('Sampotes\' heavy slam: 12 pulses share its 744, one target takes one line of 4 (seen in game: ~62 a pulse)', () => {
+test('Sampotes\' heavy slam: each pulse its full Heavy Slam Attack less falloff, ~1.5 on an enemy (seen in game)', () => {
   return import('../src/model-input.js').then(({ slamsFor }) => {
     const heavy = slamsFor(WEAPON_STATS.Sampotes, 'Sampotes').find(c => c.combo.key === 'Heavy Slam');
     assert.equal(WEAPON_STATS.Sampotes.modes[heavy.mode].name, 'Heavy Slam Attack');
     const [[m, n]] = heavy.combo.attacks[0];
-    near(m * 744, 62);
-    near(n, 4);
+    near(m, 0.85);
+    near(n, 1.5);
   });
+});
+
+test('Killing Blow and Pressure Point add on a heavy slam: 3.4x (the arsenal: Sampotes 744 -> 2,529.6)', () => {
+  const opts = { target: target(1e9), melee: { attacks: [[[1, 1]]], combo: 'initial', heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 } };
+  const bare = fight(sword(), totals({}), opts).dps;
+  near(fight(sword(), totals({ meleeDamageOnHeavy: 1.2 }), opts).dps / bare, 2.2);
+  near(fight(sword(), totals({ meleeDamageOnHeavy: 1.2, damage: 1.2 }), opts).dps / bare, 3.4);
 });

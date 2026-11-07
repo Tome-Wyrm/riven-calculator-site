@@ -66,8 +66,10 @@ export const defaultModel = () => ({
 
 /** @typedef {ReturnType<typeof defaultModel>} ModelState */
 
-/** A unique slam's lines of pulses, where one target stands in only one (seen in game). @type {Record<string, number>} */
-const SLAM_LINES = { Sampotes: 3 };
+/** A unique slam's pulses that land on one enemy, on average (seen in game). @type {Record<string, number>} */
+const SLAM_PULSES = { Sampotes: 1.5 };
+/** A slam pulse's damage at its average distance, against its full (seen: 70-100%). */
+const SLAM_FALLOFF = 0.85;
 
 /**
  * The slams a melee weapon can be judged by, the heavy slam first: its own Heavy Slam Attack and Slam
@@ -83,15 +85,16 @@ export function slamsFor(w, weapon) {
     const i = w.modes.findIndex(m => m.name === modeName);
     const total = i < 0 ? 0 : Object.values(w.modes[i].parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0);
     if (unique && i >= 0) {
-      // A unique slam's pulses share the weapon's own slam damage (in game, an unmodded Sampotes heavy
-      // slam's 12 pulses do about 62 each: its 744 over 12, not the wiki's 500% each); one target
-      // stands in one of its lines (Sampotes: 3 lines of 4 pulses).
+      // A unique slam's pulses each do the weapon's own slam damage, less with distance (in game, a
+      // Sampotes heavy slam's pulses read 70-100% of its arsenal Heavy Slam Attack on unarmored
+      // Infested); one target takes a few of them (Sampotes: 3 lines of 4, about 1.5 on each enemy).
+      // (The wiki's 500% a pulse isn't of the normal attack.)
       const hits = unique.combo.attacks.flat();
       const pulses = hits.reduce((n, h) => n + h[1], 0);
-      const onTarget = pulses / (SLAM_LINES[weapon] ?? 1);
+      const onTarget = SLAM_PULSES[weapon] ?? pulses;
       /** @type {import('./data/stances.js').Hit[][]} */
-      const attacks = [[[1 / pulses, onTarget, hits[0]?.[2] ?? '', 'slam']]];
-      return { ...unique, combo: { ...unique.combo, attacks }, perSwing: total / normal * onTarget / pulses, mode: i, heavy: key === 'Heavy Slam' };
+      const attacks = [[[SLAM_FALLOFF, onTarget, hits[0]?.[2] ?? '', 'slam']]];
+      return { ...unique, combo: { ...unique.combo, attacks }, perSwing: total / normal * SLAM_FALLOFF * onTarget, mode: i, heavy: key === 'Heavy Slam' };
     }
     if (unique) return { ...unique, mode: w.main, heavy: key === 'Heavy Slam' };
     const shared = listed.find(c => !c.stance && c.combo.key === key);
