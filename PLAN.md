@@ -75,8 +75,9 @@ Builds on the gun fight (15).
 
 Built from parts, so a weapon's stats are a choice of parts and not one row of data.
 
-- [ ] **Kitguns**: chamber, grip and loader decide the stats; Pax and Residual arcanes.
-- [ ] **Zaws**: strike, grip and link decide the stats; Exodia arcanes.
+- [ ] **Kitguns**: the grip makes one a primary or a secondary, which changes how it works (its mods, its riven class),
+      and the other two parts change its stats too. Pax and Residual arcanes.
+- [ ] **Zaws**: melee weapons with odd stats: the melee model as it stands, once the parts give their stats. Exodia arcanes.
 
 ## 6. Using the model
 
