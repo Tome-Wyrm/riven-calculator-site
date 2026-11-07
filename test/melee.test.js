@@ -272,3 +272,10 @@ test('heavy attacks by class: in turn, the class table over the stored value, fo
   const bled = fight(heavySword, totals({}), opts([{ scale: 1, bleed: 1, bleeds: 1, hits: 1 }])).dps;
   assert.ok(bled / plain > 2.6 && bled / plain < 3.1, String(bled / plain));
 });
+
+test('Ready Steel gives Initial Combo from the Buffs section, and shares the aura slot with Steel Charge', async () => {
+  const { BUFFS } = await import('../src/data/buffs.js');
+  const { buffPiece } = await import('../src/buffs.js');
+  assert.equal(buffPiece(['ready-steel'], 1, 1, 5, 0.9, {}).stats.initialCombo, 24);
+  assert.equal(BUFFS.find(b => b.id === 'ready-steel').only, BUFFS.find(b => b.id === 'steel-charge').only);
+});

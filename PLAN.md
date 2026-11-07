@@ -46,6 +46,8 @@ Doesn't need section 2, and can run alongside it.
 - [ ] **Multishot against full armor**: the most missed pick there (131), while Viral, Corrosive and Blast crowd the top 3.
 - [ ] **Show shots per kill** on the page.
 - [ ] **"Judged at: A spread"**: decide its default once tried.
+- [ ] **Ammo**: Ammo Max, running dry and damage per ammo, so Ammo Efficiency and the like count for more than the
+      reload they save. Time with nothing to shoot isn't a weapon's doing: an uptime setting, as Galvanized uptime is.
 
 ## 4. Melee
 
@@ -62,6 +64,12 @@ Builds on the gun fight (15).
 - [ ] Gladiator set bonus, melee Incarnons, zaws (by parts), Dark Split-Sword.
 - [ ] Melee buffs: Valkyr, and Voruna's (needs combo modelling).
 - [ ] Speed: pre-screen the mechanic arcanes' searches and the riven candidates; parallel workers.
+- [ ] **Mods the builder leaves out**: it takes class mods only. Thrown Melee (glaives, 11), the weapon-only ones by
+      compat (some 100: Amalgam, augments, the Polearms / Whips / Daggers set mods), Pistol and Rifle (No Aoe).
+- [ ] **Auras as buffs**: Corrosive Projection, Rifle / Pistol / Shotgun Amp, Dead Eye, Worthy Comradery, Swift
+      Momentum; Empowered Blades needs status on heavy attacks only.
+- [ ] Melee Assimilation's +150% Melee Damage on Heavy Attack (on shield break) isn't read.
+- [ ] Heavy slam scale: the model's non-crit hit is about ten times the missions' typical one.
 
 ## 5. Using the model
 

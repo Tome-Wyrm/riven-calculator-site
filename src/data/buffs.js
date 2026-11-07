@@ -48,6 +48,9 @@ export const BUFFS = [
   { id: 'torrent', name: 'Rift Torrent (10 enemies)', from: 'Limbo', group: 'Damage', effects: [['damage', 3, 's'], ['sparkMore', 3, 's']] },
   // Nira's set: +150% Slam Attack Damage per piece; Hatred and Anguish are Warframe mods (Contempt,
   // the third, is for whips).
+  // Auras: one a frame.
+  { id: 'steel-charge', name: 'Steel Charge', from: 'Aura', group: 'Damage', for: 'melee', only: 'aura', effects: [['damage', 0.6]] },
+  { id: 'ready-steel', name: 'Ready Steel', from: 'Aura', group: 'Damage', for: 'melee', only: 'aura', effects: [['initialCombo', 24]] },
   { id: 'nira', name: 'Nira’s set (Hatred + Anguish)', from: 'Warframe mods', group: 'Damage', for: 'melee', effects: [['slamDamage', 3]] },
 
   { id: 'roar', name: 'Roar', from: 'Rhino', group: 'Faction', effects: [['anyFaction', 0.5, 's']] },
