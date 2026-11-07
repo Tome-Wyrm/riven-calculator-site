@@ -274,9 +274,13 @@ function fought(w, t, opts) {
     const dotCrit = (1 - onWp) * crit(cc, cd, p) + onWp * weakPointMult(p, enemy, opts, raw) / (raw('sonar') || 1) * onHead;
     // Melee Duplicate: a base (yellow) critical hit strikes again, crit and status rolled anew. A hit
     // is yellow with the chance it crits below 100%, and with 2 - CC between 100% and 200%.
+    // (A bug the wiki records: with Xata's Whisper or Toxic Lash up, it copies their extra hit instead
+    // of the melee hit: Xata's when both are, though in game it's the earlier ability slot's.)
     const yellow = cc < 1 ? Math.max(0, cc) : cc < 2 ? 2 - cc : 0;
+    const duplicate = Math.min(1, raw('duplicate')) * yellow;
+    const dupExtra = duplicate > 0 && (raw('extraVoid') > 0 || extraHits.length > 0);
     const multishot = raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot'));
-    const pellets = p.ms * multishot * (1 + Math.min(1, raw('duplicate')) * yellow);
+    const pellets = p.ms * multishot * (1 + (dupExtra ? 0 : duplicate));
     const procsOfType = procsOf(p, byType, hit, cc, raw, pellets, mode.held != null ? beamCount(p, multishot) : null);
     /** @type {[string, number, number][]} per type: expected procs a shot, and a tick of its DoT per proc */
     const procs = [];
@@ -294,12 +298,15 @@ function fought(w, t, opts) {
     const hits = Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets * more]));
     // An Extra Hit: a share of the whole hit, faction and weak points again.
     const whole = hits.reduce((s, [, v]) => s + v, 0) * faction * extraWeak(p, onWp, enemy, opts, raw);
-    const extra = whole * raw('extraVoid');
+    const extra = whole * raw('extraVoid') * (dupExtra ? 1 + duplicate : 1);
     if (extra) hits.push(['void', extra]);
     // The others (Toxic Lash, Resupply): a proc each, guaranteed, whose seed is the extra hit.
-    for (const [type, value] of extraHits) {
+    for (const [i, [type, v]] of extraHits.entries()) {
+      // (Melee Duplicate's copy, when it falls on this one: no Xata hit, and the first of them.)
+      const copies = dupExtra && !raw('extraVoid') && i === 0 ? 1 + duplicate : 1;
+      const value = v * copies;
       hits.push([type, whole * value]);
-      const n = mode.held != null ? 1 : pellets;
+      const n = (mode.held != null ? 1 : pellets) * copies;
       const share = DOT[/** @type {keyof typeof DOT} */ (type)];
       if (share) procs.push([type, n, (whole * value * D / n + 1) * faction * share * statusDamage * (1 + (matching[type] ?? 0))]);
     }

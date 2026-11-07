@@ -228,3 +228,13 @@ test('Killing Blow and Pressure Point add on a heavy slam: 3.4x (the arsenal: Sa
   near(fight(sword(), totals({ meleeDamageOnHeavy: 1.2 }), opts).dps / bare, 2.2);
   near(fight(sword(), totals({ meleeDamageOnHeavy: 1.2, damage: 1.2 }), opts).dps / bare, 3.4);
 });
+
+test('Melee Duplicate copies yellow crits; with Xata\'s Whisper up, it copies the Xata hit instead (the wiki\'s bug)', () => {
+  const w = sword();
+  w.modes[0].parts[0].cc = 0.5;                            // half the hits yellow crits
+  const opts = { target: target(1e9), melee: { attacks: [[[1, 1]]], combo: 'initial' } };
+  const dps = stats => fight(w, totals(stats), opts).dps;
+  near(dps({ duplicate: 1 }) / dps({}), 1.5);              // each yellow crit strikes again
+  // A 50% Xata hit: 1 + 0.5 = 1.5 hits; Duplicate copies the 0.5 on half the hits: 1 + 0.75.
+  near(dps({ duplicate: 1, extraVoid: 0.5 }) / dps({ extraVoid: 0.5 }), 1.75 / 1.5);
+});
