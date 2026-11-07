@@ -240,3 +240,12 @@ test('Melee Duplicate copies yellow crits; with Xata\'s Whisper up, it copies th
   // A 50% Xata hit: 1 + 0.5 = 1.5 hits; Duplicate copies the 0.5 on half the hits: 1 + 0.75.
   near(dps({ duplicate: 1, extraVoid: 0.5 }) / dps({ extraVoid: 0.5 }), 1.75 / 1.5);
 });
+
+test('True Steel\'s double crit chance is for heavy attacks, not heavy slams', () => {
+  const w = sword({ melee: { ft: 0.5, range: 2.5, sweep: 0.25, combo: 5, heavy: 100, windUp: 1 } });
+  w.modes[0].parts[0].cc = 0.5;
+  const t = totals({ critChance: 1, critChanceHeavy: 1 });
+  const dps = melee => fight(w, t, { target: target(1e9), melee: { attacks: [[[1, 1]]], combo: 'initial', ...melee } }).perShot;
+  near(dps({ heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 }), 200);   // 100% crit at 2x
+  near(dps({ heavy: true }), 250);                                   // 150% crit at 2x
+});

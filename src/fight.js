@@ -328,7 +328,9 @@ function fought(w, t, opts) {
     if (!v) {
       const stats = { ...t.stats };
       for (const k of perTier) { const id = k.slice(0, -'PerTier'.length); stats[id] = (stats[id] ?? 0) + t.stats[k] * (level - 1); }
-      if (animosity >= 0) stats.critChance = (stats.critChance ?? 0) + (stats.critChanceHeavy ?? 0) + (stats.animosity ?? 0) * animosity / ANIMOSITY_HITS;
+      // (A heavy slam isn't doubled: 9% of a Blood Rush Sampotes' big hits were orange at 5x in a mission,
+      // where doubling would make it 44%.)
+      if (animosity >= 0) stats.critChance = (stats.critChance ?? 0) + (melee?.heavySlam ? 0 : stats.critChanceHeavy ?? 0) + (stats.animosity ?? 0) * animosity / ANIMOSITY_HITS;
       byTier.set(key, v = volleysAt(id => stats[id] ?? 0));
     }
     return v;
