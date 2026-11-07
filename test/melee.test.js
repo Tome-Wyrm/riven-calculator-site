@@ -179,3 +179,15 @@ test('heavy-only mods join the pool only for heavy attacks', () => {
   assert.ok(!names({ enemy: '' }).includes('Killing Blow'));
   assert.ok(names({ enemy: '', melee: { heavy: true } }).includes('Killing Blow'));
 });
+
+test('a heavy slam is a heavy attack of slam hits: x the combo multiplier, Slam Attack Damage on it, no wind up', () => {
+  const opts = combo => ({ target: target(1e9), melee: { attacks: [[[1, 1]]], combo, heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 } });
+  const t = totals({ initialCombo: 60 });                  // 60 points: 4x
+  near(fight(sword(), t, opts('initial')).dps, 400);       // 100 a slam at 4x, one a second
+  near(fight(sword(), totals({ initialCombo: 60, slamDamage: 2 }), opts('initial')).dps, 1200);
+});
+
+test('Seismic Wave and initial combo mods join the pool for a heavy slam', () => {
+  const pool = modPool('melee', WEAPON_STATS['Sancti Magistar'], SCENARIOS.room, { melee: { attacks: [[[1, 1]]], combo: 'build', heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 } }).map(p => p.name);
+  assert.ok(pool.includes('Seismic Wave') && pool.includes('Corrupt Charge'));
+});

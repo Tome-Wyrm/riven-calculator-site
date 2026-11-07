@@ -169,7 +169,7 @@ export function modPool(cls, w, sc, opts) {
   const enemy = opts.enemy ?? '';
   return GUN_MODS.filter(m => fits.includes(m.compat) && (!m.needs || m.needs.some(t => tags.has(t)))
     && !(m.notWith ?? []).some(t => tags.has(t))).map(m => ({ m, p: piece(m.name, m.effects, sc, opts, m.excl ?? []) }))
-    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k) || k === enemy || (opts.melee?.heavy && HEAVY_STATS.has(k)) || (k === 'slamDamage' && hasSlam(opts.melee?.attacks ?? [])) || (opts.crowd && k === 'punchThrough')) || p.elements.length)
+    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k) || k === enemy || ((opts.melee?.heavy || opts.melee?.heavySlam) && HEAVY_STATS.has(k) && !(opts.melee?.heavySlam && k === 'heavyWindup')) || (k === 'slamDamage' && hasSlam([...(opts.melee?.attacks ?? []), opts.melee?.heavySlam ?? []])) || (opts.crowd && k === 'punchThrough')) || p.elements.length)
     .map(({ p }) => p);
 }
 
@@ -399,7 +399,7 @@ export function optimise(w, pool, arcanes, opts, o = {}) {
   // knockdowns with statuses up) can be worth nothing to the mods found without them: each gets a
   // search of its own around it.
   for (const a of arcanes) {
-    if (a === arc || !Object.keys(a.stats).some(k => MECHANIC.has(k) || (opts.melee?.heavy && k === 'animosity'))) continue;
+    if (a === arc || !Object.keys(a.stats).some(k => MECHANIC.has(k) || ((opts.melee?.heavy || opts.melee?.heavySlam) && k === 'animosity'))) continue;
     const b = search(slots, a);
     if (b.dps > dps * (1 + 1e-9)) ({ slots, dps } = b), arc = a;
   }

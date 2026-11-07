@@ -64,6 +64,29 @@ export const defaultModel = () => ({
 
 /** @typedef {ReturnType<typeof defaultModel>} ModelState */
 
+/**
+ * The slams a melee weapon can be judged by, the heavy slam first: its own Heavy Slam Attack and Slam
+ * Attack (the wiki's damage and type: Blast at three times the normal attack's, Impact at twice), or
+ * a unique stance's own (Sampotes, Tenet Exec: multiples of the normal attack) in their place.
+ * @param {import('./data/weapon-stats.js').WeaponStats} w @param {string} weapon
+ */
+export function slamsFor(w, weapon) {
+  const listed = combosFor(w.kind, weapon).filter(c => c.slam);
+  const normal = Object.values(w.modes[w.main]?.parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0) || 1;
+  const own = (/** @type {string} */ key, /** @type {string} */ modeName) => {
+    const unique = listed.find(c => c.stance && c.combo.key === key);
+    if (unique) return { ...unique, mode: w.main, heavy: key === 'Heavy Slam' };
+    const i = w.modes.findIndex(m => m.name === modeName);
+    const shared = listed.find(c => !c.stance && c.combo.key === key);
+    if (i < 0) return shared ? { ...shared, mode: -1, heavy: false } : null;
+    const total = Object.values(w.modes[i].parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0);
+    /** @type {import('./data/stances.js').Hit[][]} */
+    const attacks = [[[1, 1, '', 'slam']]];
+    return { stance: '', combo: { key, name: key, attacks }, slam: true, label: key, perSwing: total / normal, mode: i, heavy: key === 'Heavy Slam' };
+  };
+  return [own('Heavy Slam', 'Heavy Slam Attack'), own('Slam', 'Slam Attack')].filter(c => c !== null);
+}
+
 /** A combo's id in links: stance, key and name. @param {ReturnType<typeof combosFor>[number]} c */
 export const comboId = c => `${c.stance}|${c.combo.key}|${c.combo.name}`;
 
@@ -112,16 +135,14 @@ export function modelInput(weapon, cls, s, { stats, enemies }) {
   // The arcane: one of this weapon's slot, or the best found.
   const arcanes = arcaneNames(cls);
   if (s.arcane && !arcanes.includes(s.arcane)) s.arcane = null;
-  // Melee: the stance combos (the best per swing unless chosen), or for slamming the slams (the best
-  // unless chosen); then the combo counter and the crowd.
-  const combos = isMelee ? combosFor(w.kind, weapon).filter(c => c.slam === (role === 'slam')) : [];
+  // Melee: the stance combos (the best per swing unless chosen), or for slamming the slams (the heavy
+  // slam unless chosen); then the combo counter and the crowd.
+  const combos = !isMelee ? [] : role === 'slam' ? slamsFor(w, weapon) : combosFor(w.kind, weapon).filter(c => !c.slam);
   const chosen = combos.find(c => comboId(c) === s.stanceCombo) ?? combos.find(c => `${c.stance}|${c.combo.name}` === s.stanceCombo) ?? combos[0] ?? null;
-  // The class's shared Slam is the weapon's own Slam Attack (its damage and type: Impact at twice the
-  // normal attack's) where the wiki gives one; a unique stance's slams are multiples of the normal attack.
-  // (Slamming always slams: a 200% slam when there are no stance data.)
-  let attacks = chosen?.combo.attacks ?? (role === 'slam' ? [[[2, 1, '', 'slam']]] : PLAIN);
-  const ownSlam = w.modes.findIndex(m => m.name === 'Slam Attack');
-  if (role === 'slam' && (!chosen || !chosen.stance) && ownSlam >= 0) { mode = ownSlam; attacks = [[[1, 1, '', 'slam']]]; }
+  // (Slamming always slams: a 200% slam when there are no slam data.)
+  const attacks = chosen?.combo.attacks ?? (role === 'slam' ? [[[2, 1, '', 'slam']]] : PLAIN);
+  if (chosen && 'mode' in chosen && chosen.mode >= 0) mode = chosen.mode;
+  const heavySlam = chosen && 'heavy' in chosen && chosen.heavy ? chosen.combo.attacks[0] : null;
   const comboName = chosen ? chosen.label : role === 'slam' ? 'a 200% slam' : 'none in the wiki’s data: plain hits';
   // The buffs this weapon can use, and those chosen.
   const usable = BUFFS.filter(b => (b.for ?? (isMelee ? 'melee' : 'guns')) === (isMelee ? 'melee' : 'guns') && !(b.noArchgun && cls === 'archgun'));
@@ -132,7 +153,11 @@ export function modelInput(weapon, cls, s, { stats, enemies }) {
   const opts = {
     mode, ...(cycle ? { incarnon: cycle } : {}), enemy: group?.bane ?? '', burst: s.burst, primed: s.primed,
     ...(s.arcane !== null ? { arcane: s.arcane } : {}),
-    ...(isMelee ? { melee: { attacks, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
+    ...(isMelee ? { melee: heavySlam
+      // A heavy slam every attack: it spends the combo (keeping Heavy Attack Efficiency's share), and
+      // a built-up counter only climbs back to the initial combo between them.
+      ? { attacks, combo: s.combo, heavySlam, heavyAt: 1, nearby: s.nearby, close: s.close, clump: s.clump / 100 }
+      : { attacks, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
     ...(target ? { target, ...roomAt(s.level) } : { armor: s.armor }),
     ...(target && s.spread ? { spread: levels.map(l => ({ target: /** @type {import('./sim.js').Target} */ (targetAt(l)), ...roomAt(l) })) } : {}),
     ...(s.energy ? { maxEnergy: s.energy } : {}),

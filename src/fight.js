@@ -329,8 +329,11 @@ function fought(w, t, opts) {
   // Slam hits take Slam Attack Damage on their base damage (src/melee.js).
   const swings = melee ? melee.attacks.map(a => swingOf(a, raw('slamDamage'))) : [];
   // Heavy attacks: what one does at 1x, its wind up, and what it leaves of the combo.
-  const heavyBase = melee?.heavy ? heavyMult(w) * (D > 0 ? Math.max(0, D + raw('meleeDamageOnHeavy')) / D : 1) : 0;
-  const windUp = (w.melee?.windUp ?? 0) / Math.max(0.05, 1 + raw('heavyWindup'));
+  // A heavy slam (opts.melee.heavySlam) is a heavy attack made of its slam hits (multiples of the fire
+  // mode's damage, Slam Attack Damage on them), with no wind up (it comes down from the air).
+  const heavySwing = melee?.heavySlam ? swingOf(melee.heavySlam, raw('slamDamage')) : null;
+  const heavyBase = melee?.heavy || heavySwing ? (heavySwing ? heavySwing.mult : heavyMult(w)) * (D > 0 ? Math.max(0, D + raw('meleeDamageOnHeavy')) / D : 1) : 0;
+  const windUp = heavySwing ? 0 : (w.melee?.windUp ?? 0) / Math.max(0.05, 1 + raw('heavyWindup'));
   const kept = Math.min(MAX_EFFICIENCY, Math.max(0, raw('heavyEfficiency')));
   const heavyAt = Math.min(MAX_TIER, Math.max(1, melee?.heavyAt ?? MAX_TIER));
   // The enemies inside a swing (room clearing): the target, then each further one at the follow
@@ -517,10 +520,10 @@ function fought(w, t, opts) {
       // Melee: this swing's attack (its multiplier and hit count) at the combo's tier now.
       const tier = !melee ? 1 : comboTier(melee.combo === 'max' ? MAX_COMBO : combo);
       const heavy = heavyBase > 0 && (melee?.combo !== 'build' || tier >= heavyAt);
-      const sw = !melee ? null : heavy ? { mult: heavyBase * tier, points: 0, hits: 1, knocks: 0 } : swings[swing % swings.length];
+      const sw = !melee ? null : heavy ? { mult: heavyBase * tier, points: 0, hits: heavySwing?.hits ?? 1, knocks: heavySwing?.knocks ?? 0 } : swings[swing % swings.length];
       const mult = sw ? sw.mult : 1;
       const hitsPer = sw ? sw.hits : 1;
-      const step = heavy ? Math.max(windUp, 1e-3) : interval;
+      const step = heavy && !heavySwing ? Math.max(windUp, 1e-3) : interval;
       const ramp = mode.held == null ? 1 : Math.min(1, mode.held + (1 - mode.held) * now / BEAM_RAMP);
       const volleys = heavy ? volleysOf(tier, melee?.combo === 'build' ? Math.min(ANIMOSITY_HITS, sinceHeavy) : ANIMOSITY_HITS) : volleysOf(tier);
       for (const v of volleys) {
@@ -600,8 +603,8 @@ function fought(w, t, opts) {
       if (health <= 0) {
         // Dead by this shot, or the DoTs before it: these count for the share of them that was needed
         // (crits make the real count a spread; this is its smooth average), but a kill always takes
-        // at least one shot. (A heavy attack's wind up is all spent before it lands.)
-        const f = !heavy ? Math.min(1, last / Math.max(1e-9, last - health - shields - overguard)) : dotKilled ? 0 : 1;
+        // at least one shot. (A heavy attack's wind up is all spent before it lands; a heavy slam has none.)
+        const f = !heavy || heavySwing ? Math.min(1, last / Math.max(1e-9, last - health - shields - overguard)) : dotKilled ? 0 : 1;
         // (`pace`: the time without that floor, for the DPS.)
         return { time: Math.max(step, now + f * step), pace: now + f * step, shots: Math.max(1, shots - 1 + f), combo };
       }
