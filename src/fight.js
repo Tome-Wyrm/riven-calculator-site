@@ -67,6 +67,8 @@
 // and add combo points: the room falls that much faster.
 // Heavy attacks (opts.melee.heavy): the wiki's heavy damage x the combo multiplier, one hit after the
 // wind up (Wind Up Speed shortens it; attack speed doesn't; no recovery is known, so none is counted).
+// A heavy slam's hits don't take the combo multiplier: simulacrum clips of Sampotes and Magistar at
+// 1x and 2x read the same numbers. The tier still counts for Blood Rush and Weeping Wounds.
 // A built-up counter swings normally until opts.melee.heavyAt's tier, then spends the combo, keeping
 // Heavy Attack Efficiency's share (at most 90%); it adds no combo, and spent Initial Combo comes back
 // at 40 points a second. A held counter heavy attacks every time. True Steel's and rivens' crit chance
@@ -556,7 +558,7 @@ function fought(w, t, opts) {
       const tier = !melee ? 1 : comboTier(melee.combo === 'max' ? MAX_COMBO : combo);
       const heavy = heavyBase > 0 && (melee?.combo !== 'build' || tier >= heavyAt);
       const turn = heavy && cycle.length ? cycle[heavies % cycle.length] : null;
-      const sw = !melee ? null : heavy ? { mult: heavyBase * tier * (turn?.scale ?? 1), points: 0, hits: heavySwing?.hits ?? turn?.hits ?? 1, knocks: heavySwing?.knocks ?? 0 } : swings[swing % swings.length];
+      const sw = !melee ? null : heavy ? { mult: heavyBase * (heavySwing ? 1 : tier) * (turn?.scale ?? 1), points: 0, hits: heavySwing?.hits ?? turn?.hits ?? 1, knocks: heavySwing?.knocks ?? 0 } : swings[swing % swings.length];
       const mult = sw ? sw.mult : 1;
       const hitsPer = sw ? sw.hits : 1;
       // (A heavy slam's pace is the jump, the fall and the recovery: attack speed doesn't touch it.)

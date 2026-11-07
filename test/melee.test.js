@@ -180,13 +180,13 @@ test('heavy-only mods join the pool only for heavy attacks', () => {
   assert.ok(names({ enemy: '', melee: { heavy: true } }).includes('Killing Blow'));
 });
 
-test('a heavy slam is a heavy attack of slam hits: x the combo multiplier, Slam Attack Damage on it, no wind up', () => {
+test('a heavy slam is a heavy attack of slam hits: not x the combo multiplier (seen in game), Slam Attack Damage on it, no wind up', () => {
   const opts = combo => ({ target: target(1e9), melee: { attacks: [[[1, 1]]], combo, heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 } });
   const t = totals({ initialCombo: 60 });                  // 60 points: 4x
-  near(fight(sword(), t, opts('initial')).dps, 100);       // 400 a slam at 4x, one every 4 s
-  near(fight(sword(), totals({ initialCombo: 60, slamDamage: 2 }), opts('initial')).dps, 300);
+  near(fight(sword(), t, opts('initial')).dps, 25);        // 100 a slam even at 4x, one every 4 s
+  near(fight(sword(), totals({ initialCombo: 60, slamDamage: 2 }), opts('initial')).dps, 75);
   // Attack speed doesn't hurry it.
-  near(fight(sword(), totals({ initialCombo: 60, fireRate: 1 }), opts('initial')).dps, 100);
+  near(fight(sword(), totals({ initialCombo: 60, fireRate: 1 }), opts('initial')).dps, 25);
 });
 
 test('Seismic Wave and initial combo mods join the pool for a heavy slam', () => {
@@ -256,7 +256,8 @@ test('Galvanized uptime: on-melee-kill stacks for their share of the fight, whol
   assert.equal(reflex(1).stats.initialCombo, 80);
   assert.equal(reflex(0.5).stats.initialComboStacked, 80);
   // 5x with the stacks, 1x without: 3x on average, not the 2x of 40 points.
-  near(fight(sword(), totals({ initialComboStacked: 80 }), opts(0.5)).perShot, 300);
+  const heavy = sword({ melee: { ft: 0.5, range: 2.5, sweep: 0.25, combo: 5, heavy: 100, windUp: 1 } });
+  near(fight(heavy, totals({ initialComboStacked: 80 }), { target: target(1e9), melee: { attacks: [[[1, 1]]], combo: 'initial', heavy: true, uptime: 0.5 } }).perShot, 300);
 });
 
 test('heavy attacks by class: in turn, the class table over the stored value, forced Bleeds counted', async () => {
