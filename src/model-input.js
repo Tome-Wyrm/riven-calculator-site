@@ -66,6 +66,9 @@ export const defaultModel = () => ({
 
 /** @typedef {ReturnType<typeof defaultModel>} ModelState */
 
+/** A unique slam's lines of pulses, where one target stands in only one (seen in game). @type {Record<string, number>} */
+const SLAM_LINES = { Sampotes: 3 };
+
 /**
  * The slams a melee weapon can be judged by, the heavy slam first: its own Heavy Slam Attack and Slam
  * Attack (the wiki's damage and type: Blast at three times the normal attack's, Impact at twice), or
@@ -77,11 +80,22 @@ export function slamsFor(w, weapon) {
   const normal = Object.values(w.modes[w.main]?.parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0) || 1;
   const own = (/** @type {string} */ key, /** @type {string} */ modeName) => {
     const unique = listed.find(c => c.stance && c.combo.key === key);
-    if (unique) return { ...unique, mode: w.main, heavy: key === 'Heavy Slam' };
     const i = w.modes.findIndex(m => m.name === modeName);
+    const total = i < 0 ? 0 : Object.values(w.modes[i].parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0);
+    if (unique && i >= 0) {
+      // A unique slam's pulses share the weapon's own slam damage (in game, an unmodded Sampotes heavy
+      // slam's 12 pulses do about 62 each: its 744 over 12, not the wiki's 500% each); one target
+      // stands in one of its lines (Sampotes: 3 lines of 4 pulses).
+      const hits = unique.combo.attacks.flat();
+      const pulses = hits.reduce((n, h) => n + h[1], 0);
+      const onTarget = pulses / (SLAM_LINES[weapon] ?? 1);
+      /** @type {import('./data/stances.js').Hit[][]} */
+      const attacks = [[[1 / pulses, onTarget, hits[0]?.[2] ?? '', 'slam']]];
+      return { ...unique, combo: { ...unique.combo, attacks }, perSwing: total / normal * onTarget / pulses, mode: i, heavy: key === 'Heavy Slam' };
+    }
+    if (unique) return { ...unique, mode: w.main, heavy: key === 'Heavy Slam' };
     const shared = listed.find(c => !c.stance && c.combo.key === key);
     if (i < 0) return shared ? { ...shared, mode: -1, heavy: false } : null;
-    const total = Object.values(w.modes[i].parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0);
     /** @type {import('./data/stances.js').Hit[][]} */
     const attacks = [[[1, 1, '', 'slam']]];
     return { stance: '', combo: { key, name: key, attacks }, slam: true, label: key, perSwing: total / normal, mode: i, heavy: key === 'Heavy Slam' };

@@ -211,3 +211,13 @@ test('Melee Exposure: at its cap unless switched off', () => {
   near(xp({}), 2.4);
   near(xp({ exposure: false }), 0);
 });
+
+test('Sampotes\' heavy slam: 12 pulses share its 744, one target takes one line of 4 (seen in game: ~62 a pulse)', () => {
+  return import('../src/model-input.js').then(({ slamsFor }) => {
+    const heavy = slamsFor(WEAPON_STATS.Sampotes, 'Sampotes').find(c => c.combo.key === 'Heavy Slam');
+    assert.equal(WEAPON_STATS.Sampotes.modes[heavy.mode].name, 'Heavy Slam Attack');
+    const [[m, n]] = heavy.combo.attacks[0];
+    near(m * 744, 62);
+    near(n, 4);
+  });
+});
