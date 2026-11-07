@@ -61,7 +61,7 @@ Builds on the gun fight (15).
       every class (only unique ones are in the wiki's data), forced Bleed procs on hits, Impact
       multipliers on hits.
 - [ ] Glaive throws and gunblade shots.
-- [ ] Gladiator set bonus, melee Incarnons, zaws (by parts), Dark Split-Sword.
+- [ ] Gladiator set bonus, melee Incarnons, Dark Split-Sword.
 - [ ] Melee buffs: Valkyr, and Voruna's (needs combo modelling).
 - [ ] Speed: pre-screen the mechanic arcanes' searches and the riven candidates; parallel workers.
 - [ ] **Mods the builder leaves out**: it takes class mods only. Thrown Melee (glaives, 11), the weapon-only ones by
@@ -71,7 +71,14 @@ Builds on the gun fight (15).
 - [ ] Melee Assimilation's +150% Melee Damage on Heavy Attack (on shield break) isn't read.
 - [ ] Heavy slam scale: the model's non-crit hit is about ten times the missions' typical one.
 
-## 5. Using the model
+## 5. Kitguns and zaws
+
+Built from parts, so a weapon's stats are a choice of parts and not one row of data.
+
+- [ ] **Kitguns**: chamber, grip and loader decide the stats; Pax and Residual arcanes.
+- [ ] **Zaws**: strike, grip and link decide the stats; Exodia arcanes.
+
+## 6. Using the model
 
 Needs sections 2 and 3 far enough along to trust the results.
 
@@ -82,7 +89,7 @@ Needs sections 2 and 3 far enough along to trust the results.
 - [ ] **Precomputed results**: ship the default studies as data. Paused until the simulation is decent.
 - [ ] **GPU**: not now. Only if the above isn't fast enough.
 
-## 6. Any time
+## 7. Any time
 
 Needs nothing above.
 
