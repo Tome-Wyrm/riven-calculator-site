@@ -235,6 +235,8 @@ export function arcaneNames(cls) {
 
 /** Primary Overcharge: Multishot, as a raw value, per point of Max Energy, and at most. */
 const OVERCHARGE_PER_ENERGY = 0.0035, OVERCHARGE_MAX = 3.5;
+/** Melee Retaliation: its most Melee Damage, and the current shields that reach it. */
+const RETALIATION_MAX = 4.2, RETALIATION_SHIELDS = 2800;
 
 /**
  * An arcane's effects. Primary Overcharge's depend on the frame: 35% of its Max Energy as Multishot,
@@ -243,7 +245,11 @@ const OVERCHARGE_PER_ENERGY = 0.0035, OVERCHARGE_MAX = 3.5;
  * @param {typeof GUN_ARCANES[number]} a @param {SimOptions} opts @returns {Effect[]}
  */
 const arcaneEffects = (a, opts) => (a.name === 'Primary Overcharge' && opts.maxEnergy
-  ? [{ stat: 'multishot', value: Math.min(OVERCHARGE_MAX, OVERCHARGE_PER_ENERGY * opts.maxEnergy) }] : a.effects);
+  ? [{ stat: 'multishot', value: Math.min(OVERCHARGE_MAX, OVERCHARGE_PER_ENERGY * opts.maxEnergy) }]
+  // Melee Retaliation: Melee Damage by the frame's current shields, its 420% at 2,800 (overshields
+  // don't count). Nothing unless the shields are given: few frames hold that many.
+  : a.name === 'Melee Retaliation' ? [{ stat: 'damage', value: RETALIATION_MAX * Math.min(1, Math.max(0, opts.shields ?? 0) / RETALIATION_SHIELDS) }]
+  : a.effects);
 
 /**
  * The arcanes (as pieces) a weapon's arcane slot takes: those that do something here, or only the

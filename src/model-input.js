@@ -43,6 +43,7 @@ export const defaultModel = () => ({
   strength: 100,                              // Ability Strength and Duration, %, for buffs without a build
   duration: 100,
   energy: 0,                                  // the frame's Max Energy (Primary Overcharge; 0: not counted)
+  shields: 0,                                 // the frame's current shields (Melee Retaliation; 0: not counted)
   spread: false,                              // judge builds on a third of the level and three times it too
   burst: false,
   valence: 'best',                            // an adversary weapon's Valence bonus: its element ('best': each tried)
@@ -161,6 +162,7 @@ export function modelInput(weapon, cls, s, { stats, enemies }) {
     ...(target ? { target, ...roomAt(s.level) } : { armor: s.armor }),
     ...(target && s.spread ? { spread: levels.map(l => ({ target: /** @type {import('./sim.js').Target} */ (targetAt(l)), ...roomAt(l) })) } : {}),
     ...(s.energy ? { maxEnergy: s.energy } : {}),
+    ...(s.shields && isMelee ? { shields: s.shields } : {}),
     ...(chosenBuffs.length ? { buffs: buffPiece(chosenBuffs.map(b => b.id), s.strength / 100, s.duration / 100, s.panzer, s.heads / 100, each) } : {}),
     ...(!isMelee && SCENARIOS[scenario].kills ? { crowd: { close: s.close, clump: s.clump / 100 } } : {}),
     bow: WEAPONS.find(x => x[0] === weapon)?.[2] === 1,

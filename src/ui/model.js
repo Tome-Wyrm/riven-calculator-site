@@ -38,7 +38,7 @@ export function modelFields() {
   return {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
-    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '',
+    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '', shd: s.shields || '',
     buffs: s.buffs.join('.'), bb: Object.entries(s.builds).filter(([id]) => s.buffs.includes(id)).map(e => e.join(':')).join('.'), own: ownText(s.own), str: s.strength === 100 ? '' : s.strength, dur: s.duration === 100 ? '' : s.duration, pz: s.panzer === 5 ? '' : s.panzer, ex: s.eximus === 5 ? '' : s.eximus, hd: s.heads === 90 ? '' : s.heads,
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
@@ -76,6 +76,7 @@ export function restoreModel(raw) {
   if (raw.hv === '1') modelState.heavy = true;
   const count = (/** @type {string | undefined} */ v, /** @type {number} */ max) => (v && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= max ? Number(v) : null);
   modelState.energy = count(raw.en, 9999) ?? 0;
+  modelState.shields = count(raw.shd, 9999) ?? 0;
   modelState.buffs = (raw.buffs ?? '').split('.').filter(id => BUFFS.some(b => b.id === id));
   modelState.builds = Object.fromEntries((raw.bb ?? '').split('.').map(e => e.split(':')).filter(e => e.length === 2));
   // A link from before buffs had builds keeps its numbers.
@@ -349,6 +350,7 @@ export function modelBlock(weapon, cls, rerender) {
       select('Arcane', [['*', 'Best (searched)'], ['-', 'None'], ...arcanes.map(a => /** @type {[string, string]} */ ([a, a]))],
         s.arcane === null ? '*' : s.arcane || '-', v => set({ arcane: v === '*' ? null : v === '-' ? '' : v })),
       ...(arcanes.includes('Primary Overcharge') ? [num('Max Energy', s.energy, 9999, v => set({ energy: v }))] : []),
+      ...(arcanes.includes('Melee Retaliation') ? [num('Current shields', s.shields, 9999, v => set({ shields: v }))] : []),
     ])] : []),
     buffList,
     ...(w.adversary || !isMelee ? [section('weapon', 'Weapon', [w.adversary ? `Valence ${s.valence === 'best' ? 'best' : typeName(s.valence)} ${s.valencePct}%` : '', !isMelee ? (s.burst ? 'burst DPS' : 'with reloads') : ''].filter(Boolean).join(', '), [
@@ -387,6 +389,7 @@ export function modelBlock(weapon, cls, rerender) {
     + (cycle && !s.burst ? `Incarnon: normal fire until the gauge fills (${cycle.hits} ${cycle.any ? 'hits' : `weak point hits, each pellet counting, ${role === 'weak' ? 'every hit' : '75% of hits'} on them while charging, which speeds the gauge but isn’t counted as damage`}), a reload’s time to transform, then the form’s ${cycle.ammo} ammo, and under a second back. ${s.scenario === 'single' ? 'The gauge starts full. ' : ''}` : '')
     + (incarnon === 'on' && s.burst ? 'Incarnon, burst: the whole fight in the form. ' : '')
     + (opts.spread ? `Judged at levels ${levels[0]}, ${s.level} and ${levels[1]}: DPS and percentages are the geometric mean of the three (each level counts the same); shots and seconds are level ${s.level}’s. ` : '')
+    + (arcanes.includes('Melee Retaliation') ? (s.shields ? `Melee Retaliation at ${s.shields} current shields: +${Math.round(Math.min(420, 0.15 * s.shields))}% Melee Damage (420% takes 2,800; overshields don’t count). ` : 'Melee Retaliation counts for nothing until you give your current shields (under Arcane): its 420% takes 2,800, which few frames hold. ') : '')
     + (arcanes.includes('Primary Overcharge') ? (s.energy ? `Primary Overcharge at ${s.energy} Max Energy: +${Math.round(Math.min(350, 0.35 * s.energy))}% Multishot, taken to be always on (it wants 90% Energy or more). ` : 'Primary Overcharge counts for nothing until you give your Max Energy. ') : '')
     + (opts.crowd ? `A crowd of ${s.close} enem${s.close === 1 ? 'y' : 'ies'} around each target, within ${Math.round(crowdRadius(opts.crowd))} m at ${s.clump}% clumping: explosions, chains and Punch Through reach them, and the room falls that much faster. ` : '')
     + (opts.buffs ? `Buffs (conditional ones at their maximum): ${chosenBuffs.map(b => (each[b.id] ? `${b.name} at ${Math.round(each[b.id].strength * 100)}% Strength` : b.name)).join(', ')}${chosenBuffs.some(b => !each[b.id] && scales(b)) ? `; the others at ${s.strength}% Strength, ${s.duration}% Duration` : ''}. ` : '')

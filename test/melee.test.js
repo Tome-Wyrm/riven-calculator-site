@@ -191,3 +191,10 @@ test('Seismic Wave and initial combo mods join the pool for a heavy slam', () =>
   const pool = modPool('melee', WEAPON_STATS['Sancti Magistar'], SCENARIOS.room, { melee: { attacks: [[[1, 1]]], combo: 'build', heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 } }).map(p => p.name);
   assert.ok(pool.includes('Seismic Wave') && pool.includes('Corrupt Charge'));
 });
+
+test('Melee Retaliation counts the frame\'s current shields: nothing unless given, 420% at 2,800', () => {
+  const ret = opts => arcanePool('melee', SCENARIOS.room, opts).find(a => a.name === 'Melee Retaliation')?.stats.damage ?? 0;
+  near(ret({}), 0);
+  near(ret({ shields: 280 }), 0.42);
+  near(ret({ shields: 9000 }), 4.2);
+});
