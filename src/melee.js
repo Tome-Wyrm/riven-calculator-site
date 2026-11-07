@@ -25,6 +25,8 @@ export const MAX_COMBO = TIER_POINTS * (MAX_TIER - 1);
 /** Heavy Attack Efficiency's cap, Initial Combo's regeneration (points a second), and Animosity's stacks to its cap. */
 export const MAX_EFFICIENCY = 0.9;
 export const COMBO_REGEN = 40;
+/** Seconds from one heavy slam to the next in play, whatever the attack speed (the user: 0.25 a second or less). */
+export const HEAVY_SLAM_CYCLE = 4;
 export const ANIMOSITY_HITS = 10;
 
 /** The combo multiplier at a count of combo points. @param {number} points */

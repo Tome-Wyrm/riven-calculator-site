@@ -84,7 +84,7 @@
 
 import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, beamCount, blastDetonates, blastPay, BLAST_DETONATED, critFlatOf, extraWeak, factionOf, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
 import { reachOf, sparkReach, within } from './crowd.js';
-import { comboTier, swingOf, heavyMult, ANIMOSITY_HITS, COMBO_REGEN, MAX_COMBO, MAX_EFFICIENCY, MAX_TIER, TIER_POINTS } from './melee.js';
+import { comboTier, swingOf, heavyMult, HEAVY_SLAM_CYCLE, ANIMOSITY_HITS, COMBO_REGEN, MAX_COMBO, MAX_EFFICIENCY, MAX_TIER, TIER_POINTS } from './melee.js';
 
 /** The elemental statuses Melee Influence spreads (not physical, Void or Tau). */
 const ELEMENTAL = new Set(['cold', 'electricity', 'heat', 'toxin', 'blast', 'corrosive', 'gas', 'magnetic', 'radiation', 'viral']);
@@ -530,7 +530,8 @@ function fought(w, t, opts) {
       const sw = !melee ? null : heavy ? { mult: heavyBase * tier, points: 0, hits: heavySwing?.hits ?? 1, knocks: heavySwing?.knocks ?? 0 } : swings[swing % swings.length];
       const mult = sw ? sw.mult : 1;
       const hitsPer = sw ? sw.hits : 1;
-      const step = heavy && !heavySwing ? Math.max(windUp, 1e-3) : interval;
+      // (A heavy slam's pace is the jump, the fall and the recovery: attack speed doesn't touch it.)
+      const step = heavySwing && heavy ? HEAVY_SLAM_CYCLE : heavy ? Math.max(windUp, 1e-3) : interval;
       const ramp = mode.held == null ? 1 : Math.min(1, mode.held + (1 - mode.held) * now / BEAM_RAMP);
       const volleys = heavy ? volleysOf(tier, melee?.combo === 'build' ? Math.min(ANIMOSITY_HITS, sinceHeavy) : ANIMOSITY_HITS) : volleysOf(tier);
       for (const v of volleys) {

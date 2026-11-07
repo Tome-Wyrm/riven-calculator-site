@@ -183,8 +183,10 @@ test('heavy-only mods join the pool only for heavy attacks', () => {
 test('a heavy slam is a heavy attack of slam hits: x the combo multiplier, Slam Attack Damage on it, no wind up', () => {
   const opts = combo => ({ target: target(1e9), melee: { attacks: [[[1, 1]]], combo, heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 } });
   const t = totals({ initialCombo: 60 });                  // 60 points: 4x
-  near(fight(sword(), t, opts('initial')).dps, 400);       // 100 a slam at 4x, one a second
-  near(fight(sword(), totals({ initialCombo: 60, slamDamage: 2 }), opts('initial')).dps, 1200);
+  near(fight(sword(), t, opts('initial')).dps, 100);       // 400 a slam at 4x, one every 4 s
+  near(fight(sword(), totals({ initialCombo: 60, slamDamage: 2 }), opts('initial')).dps, 300);
+  // Attack speed doesn't hurry it.
+  near(fight(sword(), totals({ initialCombo: 60, fireRate: 1 }), opts('initial')).dps, 100);
 });
 
 test('Seismic Wave and initial combo mods join the pool for a heavy slam', () => {
