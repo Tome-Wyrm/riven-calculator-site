@@ -33,6 +33,7 @@ COLOURS = ('white', 'yellow', 'orange')
 # A number in the same spot (to the nearest CELL pixels) in more than this share of the frames isn't a hit.
 PERSISTENT = 0.3
 CELL = 24
+HUD_SECONDS = 3
 
 
 def masks(frame):
@@ -141,7 +142,9 @@ def only_hits(sightings, frames):
     for s in sightings:
         key = (s['value'], s['colour'], s['x'] // CELL, s['y'] // CELL)
         spots.setdefault(key, set()).add(s['time'])
-    hud = {k[:2] for k, times in spots.items() if len(times) > PERSISTENT * frames}
+    # Up longer than a damage number lasts, too: in a clip of a second or two, hits stay put throughout.
+    hud = {k[:2] for k, times in spots.items()
+           if len(times) > PERSISTENT * frames and max(times) - min(times) > HUD_SECONDS}
     hits = [s for s in sightings if (s['value'], s['colour']) not in hud]
     seen = Counter((s['value'], s['colour']) for s in hits)
     pieces = {(v, c) for v, c in seen
