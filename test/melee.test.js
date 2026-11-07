@@ -198,3 +198,16 @@ test('Melee Retaliation counts the frame\'s current shields: nothing unless give
   near(ret({ shields: 280 }), 0.42);
   near(ret({ shields: 9000 }), 4.2);
 });
+
+test('Galvanized melee mods are in, their on-melee-kill stacks kept up by room clearing', () => {
+  const pool = sc => modPool('melee', WEAPON_STATS['Sancti Magistar'], SCENARIOS[sc], { melee: { attacks: [[[1, 1]]], combo: 'build' } });
+  const steel = sc => pool(sc).find(p => p.name === 'Galvanized Steel')?.stats;
+  near(steel('room').critDamage, 1.2);                     // 30% x 4 stacks
+  assert.equal(steel('single').critDamage ?? 0, 0);        // no kills, no stacks
+});
+
+test('Melee Exposure: at its cap unless switched off', () => {
+  const xp = opts => arcanePool('melee', SCENARIOS.room, opts).find(a => a.name === 'Melee Exposure')?.elements.find(e => e.type === 'corrosive')?.value ?? 0;
+  near(xp({}), 2.4);
+  near(xp({ exposure: false }), 0);
+});

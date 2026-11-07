@@ -38,7 +38,7 @@ export function modelFields() {
   return {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
-    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '', shd: s.shields || '',
+    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '', shd: s.shields || '', xp: s.exposure ? '' : '0',
     buffs: s.buffs.join('.'), bb: Object.entries(s.builds).filter(([id]) => s.buffs.includes(id)).map(e => e.join(':')).join('.'), own: ownText(s.own), str: s.strength === 100 ? '' : s.strength, dur: s.duration === 100 ? '' : s.duration, pz: s.panzer === 5 ? '' : s.panzer, ex: s.eximus === 5 ? '' : s.eximus, hd: s.heads === 90 ? '' : s.heads,
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
@@ -77,6 +77,7 @@ export function restoreModel(raw) {
   const count = (/** @type {string | undefined} */ v, /** @type {number} */ max) => (v && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= max ? Number(v) : null);
   modelState.energy = count(raw.en, 9999) ?? 0;
   modelState.shields = count(raw.shd, 9999) ?? 0;
+  modelState.exposure = raw.xp !== '0';
   modelState.buffs = (raw.buffs ?? '').split('.').filter(id => BUFFS.some(b => b.id === id));
   modelState.builds = Object.fromEntries((raw.bb ?? '').split('.').map(e => e.split(':')).filter(e => e.length === 2));
   // A link from before buffs had builds keeps its numbers.
@@ -351,6 +352,9 @@ export function modelBlock(weapon, cls, rerender) {
         s.arcane === null ? '*' : s.arcane || '-', v => set({ arcane: v === '*' ? null : v === '-' ? '' : v })),
       ...(arcanes.includes('Primary Overcharge') ? [num('Max Energy', s.energy, 9999, v => set({ energy: v }))] : []),
       ...(arcanes.includes('Melee Retaliation') ? [num('Current shields', s.shields, 9999, v => set({ shields: v }))] : []),
+      ...(arcanes.includes('Melee Exposure') ? [el('div', { class: 'field' }, [el('span', {}, ['Melee Exposure']), segmented('Melee Exposure', ['on', 'off'], s.exposure ? 'on' : 'off',
+        v => set({ exposure: v === 'on' }), v => (v === 'on' ? 'Capped' : 'Off'),
+        v => (v === 'on' ? 'Abilities cast often enough to keep its 240% Corrosive stacked' : 'Abilities cast too rarely to stack it: it counts for nothing'))])] : []),
     ])] : []),
     buffList,
     ...(w.adversary || !isMelee ? [section('weapon', 'Weapon', [w.adversary ? `Valence ${s.valence === 'best' ? 'best' : typeName(s.valence)} ${s.valencePct}%` : '', !isMelee ? (s.burst ? 'burst DPS' : 'with reloads') : ''].filter(Boolean).join(', '), [

@@ -159,6 +159,7 @@ export const HEADS = {
  * @property {import('./build.js').Piece | null} [buffs]  buffs from outside the build (src/buffs.js)
  * @property {number} [maxEnergy]  the frame's Max Energy, for Primary Overcharge (src/build.js)
  * @property {number} [shields]  the frame's current shields, for Melee Retaliation (src/build.js)
+ * @property {boolean} [exposure]  false: Melee Exposure isn't kept stacked (abilities cast rarely)
  * @property {boolean} [primed]    every status type on the target (Viral and Corrosive at 10 stacks, Heat burning)
  * @property {number} [targets]    targets fought in a row (src/fight.js: 20 room clearing, 1 single target)
  * @property {Valence} [valence]   an adversary weapon's Valence bonus

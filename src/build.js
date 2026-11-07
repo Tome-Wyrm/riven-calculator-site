@@ -68,7 +68,7 @@ export function liveFactor(e, sc) {
   let f = 0;
   const on = e.on;
   if (!on) f = 1;
-  else if (/^kill(\/passive)?$/.test(on)) f = sc.kills ? (e.stacks ?? 1) : 0;
+  else if (/^(melee )?kill(\/passive)?$/.test(on)) f = sc.kills ? (e.stacks ?? 1) : 0;
   else if (/(weak point|headshot) kill/.test(on)) f = sc.kills && wp ? (e.stacks ?? 1) : 0;
   else if (/(weak point|headshot)( hit)?$/.test(on)) f = wp ? (e.stacks ?? 1) : 0;
   else if (on === 'hit') f = e.stacks ?? 1;                 // sustained fire keeps on-hit stacks up
@@ -248,6 +248,8 @@ const arcaneEffects = (a, opts) => (a.name === 'Primary Overcharge' && opts.maxE
   ? [{ stat: 'multishot', value: Math.min(OVERCHARGE_MAX, OVERCHARGE_PER_ENERGY * opts.maxEnergy) }]
   // Melee Retaliation: Melee Damage by the frame's current shields, its 420% at 2,800 (overshields
   // don't count). Nothing unless the shields are given: few frames hold that many.
+  // Melee Exposure: at its 240% cap when abilities are cast often enough, else nothing.
+  : a.name === 'Melee Exposure' && opts.exposure === false ? []
   : a.name === 'Melee Retaliation' ? [{ stat: 'damage', value: RETALIATION_MAX * Math.min(1, Math.max(0, opts.shields ?? 0) / RETALIATION_SHIELDS) }]
   : a.effects);
 

@@ -42,10 +42,11 @@ const ufNames = new Set(/** @type {any[]} */ (uf.data.mods).map(m => lc(m['Local
 // Conclave, Flawed (Beginner / Intermediate) and riven entries aren't part of a real build. Nor are
 // the export's 10-rank "Expert" copies under an ordinary name (".../Expert/WeaponFireIterationsModExpert"
 // is "Split Chamber" at +165%): unreleased. Released Expert mods are named "Primed …", but not every
-// "Primed …" is released (Primed Blunderbuss isn't): see released().
+// "Primed …" is released (Primed Blunderbuss isn't): see released(). The melee Galvanized mods sit
+// under /Expert/ too (Galvanized Steel is .../Melee/Expert/WeaponCritChanceSPMod).
 const candidates = /** @type {any[]} */ (wfcd.data).filter(m => CLASS_COMPAT.includes(m.compatName)
   && !/PvP|Conclave|Beginner|Intermediate|Riven/i.test(m.uniqueName) && m.levelStats?.length
-  && !(/\/Expert\//.test(m.uniqueName) && !/^Primed /.test(m.name)));
+  && !(/\/Expert\//.test(m.uniqueName) && !/^(Primed|Galvanized) /.test(m.name)));
 
 const unreleased = [];
 const doubtful = [];
