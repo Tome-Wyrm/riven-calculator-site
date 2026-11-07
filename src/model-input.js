@@ -61,6 +61,8 @@ export const defaultModel = () => ({
   heavyAt: 6,                                 // the combo tier a built-up counter spends at
   nearby: 3,                                  // enemies inside a swing (room clearing)
   close: 6,                                   // enemies within 20 m of the target (Melee Influence)
+  uptime: 50,                                 // %, the time on-melee-kill stacks (Galvanized) are all up: four Steel Path
+  //                                             missions, recorded, fit 40-50, and 43-57% of their slams had 4 in the 20 s before
   clump: 50,                                  // clumping, %: how many of those stand within 20 m of each other
 });
 
@@ -175,8 +177,8 @@ export function modelInput(weapon, cls, s, { stats, enemies }) {
     ...(isMelee ? { melee: heavySlam
       // A heavy slam every attack: it spends the combo (keeping Heavy Attack Efficiency's share), and
       // a built-up counter only climbs back to the initial combo between them.
-      ? { attacks, combo: s.combo, heavySlam, heavyAt: 1, nearby: s.nearby, close: s.close, clump: s.clump / 100 }
-      : { attacks, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
+      ? { attacks, combo: s.combo, heavySlam, heavyAt: 1, ...(s.uptime < 100 ? { uptime: s.uptime / 100 } : {}), nearby: s.nearby, close: s.close, clump: s.clump / 100 }
+      : { attacks, combo: s.combo, heavy: s.heavy, heavyAt: s.heavyAt, ...(s.uptime < 100 ? { uptime: s.uptime / 100 } : {}), nearby: s.nearby, close: s.close, clump: s.clump / 100 } } : {}),
     ...(target ? { target, ...roomAt(s.level) } : { armor: s.armor }),
     ...(target && s.spread ? { spread: levels.map(l => ({ target: /** @type {import('./sim.js').Target} */ (targetAt(l)), ...roomAt(l) })) } : {}),
     ...(s.energy ? { maxEnergy: s.energy } : {}),

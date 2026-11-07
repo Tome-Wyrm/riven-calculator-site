@@ -249,3 +249,12 @@ test('True Steel\'s double crit chance is for heavy attacks, not heavy slams', (
   near(dps({ heavySlam: [[1, 1, '', 'slam']], heavyAt: 1 }), 200);   // 100% crit at 2x
   near(dps({ heavy: true }), 250);                                   // 150% crit at 2x
 });
+
+test('Galvanized uptime: on-melee-kill stacks for their share of the fight, whole tiers either way', () => {
+  const opts = uptime => ({ target: target(1e9), melee: { attacks: [[[1, 1]]], combo: 'initial', heavySlam: [[1, 1, '', 'slam']], heavyAt: 1, ...(uptime < 1 ? { uptime } : {}) } });
+  const reflex = uptime => modPool('melee', WEAPON_STATS['Sancti Magistar'], SCENARIOS.room, opts(uptime)).find(p => p.name === 'Galvanized Reflex');
+  assert.equal(reflex(1).stats.initialCombo, 80);
+  assert.equal(reflex(0.5).stats.initialComboStacked, 80);
+  // 5x with the stacks, 1x without: 3x on average, not the 2x of 40 points.
+  near(fight(sword(), totals({ initialComboStacked: 80 }), opts(0.5)).perShot, 300);
+});

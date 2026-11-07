@@ -108,7 +108,9 @@ function piece(name, effects, sc, opts, excl = []) {
     const f = liveFactor(e, sc);
     if (!f) continue;
     // Per status type on the target, or per melee combo tier past 1x (Blood Rush): counted in the fight.
-    const stat = e.per === 'status type' ? `${e.stat}PerStatus` : e.per === 'combo tier' ? `${e.stat}PerTier` : e.stat;
+    const stat = e.per === 'status type' ? `${e.stat}PerStatus` : e.per === 'combo tier' ? `${e.stat}PerTier`
+      // (Kept apart when they're only up for a share of the fight: src/fight.js.)
+      : e.on === 'melee kill' && (opts.melee?.uptime ?? 1) < 1 ? `${e.stat}Stacked` : e.stat;
     if (ELEMENTS.includes(e.stat)) elements.push({ type: e.stat, value: e.value * f });
     // (Ammo Efficiency: mods list what comes off the cost; the stat is the change to it, as on a riven.)
     else stats[stat] = (stats[stat] ?? 0) + (stat === 'ammoEfficiency' ? -1 : 1) * e.value * f;
@@ -169,7 +171,7 @@ export function modPool(cls, w, sc, opts) {
   const enemy = opts.enemy ?? '';
   return GUN_MODS.filter(m => fits.includes(m.compat) && (!m.needs || m.needs.some(t => tags.has(t)))
     && !(m.notWith ?? []).some(t => tags.has(t))).map(m => ({ m, p: piece(m.name, m.effects, sc, opts, m.excl ?? []) }))
-    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k) || k === enemy || ((opts.melee?.heavy || opts.melee?.heavySlam) && HEAVY_STATS.has(k) && !(opts.melee?.heavySlam && k === 'heavyWindup')) || (k === 'slamDamage' && hasSlam([...(opts.melee?.attacks ?? []), opts.melee?.heavySlam ?? []])) || (opts.crowd && k === 'punchThrough')) || p.elements.length)
+    .filter(({ p }) => Object.keys(p.stats).some(k => DPS_STATS.has(k.replace(/Stacked$/, '')) || k === enemy || ((opts.melee?.heavy || opts.melee?.heavySlam) && HEAVY_STATS.has(k) && !(opts.melee?.heavySlam && k === 'heavyWindup')) || (k === 'slamDamage' && hasSlam([...(opts.melee?.attacks ?? []), opts.melee?.heavySlam ?? []])) || (opts.crowd && k === 'punchThrough')) || p.elements.length)
     .map(({ p }) => p);
 }
 

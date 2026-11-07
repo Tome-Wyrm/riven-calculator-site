@@ -38,7 +38,7 @@ export function modelFields() {
   return {
     shape: s.shape === '+++-' ? '' : s.shape, mode: s.mode < 0 ? '' : s.mode, sc: s.scenario === 'room' ? '' : s.scenario,
     enemy: s.enemy, unit: s.unit, lvl: s.level !== 150 ? s.level : '', sp: s.steelPath ? 1 : '',
-    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '', shd: s.shields || '', xp: s.exposure ? '' : '0',
+    armor: s.armor || '', primed: s.primed ? 1 : '', burst: s.burst ? 1 : '', spread: s.spread ? 1 : '', en: s.energy || '', shd: s.shields || '', up: s.uptime === defaultModel().uptime ? '' : s.uptime, xp: s.exposure ? '' : '0',
     buffs: s.buffs.join('.'), bb: Object.entries(s.builds).filter(([id]) => s.buffs.includes(id)).map(e => e.join(':')).join('.'), own: ownText(s.own), str: s.strength === 100 ? '' : s.strength, dur: s.duration === 100 ? '' : s.duration, pz: s.panzer === 5 ? '' : s.panzer, ex: s.eximus === 5 ? '' : s.eximus, hd: s.heads === 90 ? '' : s.heads,
     val: s.valence === 'best' ? '' : s.valence, valp: s.valencePct === 60 ? '' : s.valencePct,
     inc: s.incarnon === 'off' ? '' : s.incarnon, perks: s.perks ? s.perks.join('.') : '',
@@ -77,6 +77,7 @@ export function restoreModel(raw) {
   const count = (/** @type {string | undefined} */ v, /** @type {number} */ max) => (v && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= max ? Number(v) : null);
   modelState.energy = count(raw.en, 9999) ?? 0;
   modelState.shields = count(raw.shd, 9999) ?? 0;
+  modelState.uptime = count(raw.up, 100) ?? modelState.uptime;
   modelState.exposure = raw.xp !== '0';
   modelState.buffs = (raw.buffs ?? '').split('.').filter(id => BUFFS.some(b => b.id === id));
   modelState.builds = Object.fromEntries((raw.bb ?? '').split('.').map(e => e.split(':')).filter(e => e.length === 2));
@@ -244,6 +245,7 @@ export function modelBlock(weapon, cls, rerender) {
     num('In the swing', s.nearby, 20, v => set({ nearby: Math.max(1, v) })),
     num('Within 20 m', s.close, 40, v => set({ close: v })),
     num('Clumping %', s.clump, 100, v => set({ clump: v })),
+    num('Galvanized uptime %', s.uptime, 100, v => set({ uptime: v })),
   ] : [];
   const withBuild = chosenBuffs.filter(b => scales(b) && buildsFor(b, s.own).length);
   const buildLabel = (/** @type {import('../buffs.js').BuffBuild} */ x) => `${x.frame}: ${x.tab}, ${x.strength}%${x.molt ? ' +60 Molt' : ''}${x.bellicose ? ' +72 Bellicose' : ''}`;
@@ -388,6 +390,7 @@ export function modelBlock(weapon, cls, rerender) {
       + `, ${target.armor ? `${Math.round(target.armor)} armor` : 'armor stripped'}${weakText(target.weak)}. ` : '')
     + (isMelee ? `${s.heavy && w.melee?.heavy ? `Heavy attacks: ${w.melee.heavy} damage x the combo multiplier, one hit after the ${w.melee.windUp} s wind up (Wind Up Speed shortens it, attack speed doesn’t; no recovery counted), ${s.combo === 'build' ? `spending the combo at ${s.heavyAt}x, keeping Heavy Attack Efficiency’s share (at most 90%); spent Initial Combo returns at 40 a second` : 'every attack, the counter held'}; True Steel’s and rivens’ Critical Chance count twice. ` : ''}Melee: no finishers yet, ${opts.melee?.heavySlam ? `every attack the heavy slam (${comboName}): a heavy attack, so x the combo multiplier, spending the combo down to Heavy Attack Efficiency’s share, a built-up counter climbing back to the initial combo between slams at 40 a second; no wind up; its hits’ multipliers, slam hits times 1 + Slam Attack Damage` : chosen?.slam ? `every attack the slam (${comboName}): its hits’ multipliers and counts, slam hits times 1 + Slam Attack Damage (Seismic Wave, rivens), not its timing` : `a swing being the next attack of the stance combo (${comboName}): its hits’ multipliers and counts (slam hits in it times 1 + Slam Attack Damage), not its timing`}. `
       + `The combo counter is ${{ initial: 'held at the initial combo', max: 'held at 12x', build: 'built up by the hits (each hit adds its multiplier in points; room clearing carries it from kill to kill)' }[s.combo]}; Blood Rush and Weeping Wounds add theirs per tier past 1x. `
+      + `On melee kill stacks (Galvanized mods) are all up ${s.uptime}% of the time and gone the rest. `
       + `Room clearing: ${s.nearby} enem${s.nearby === 1 ? 'y' : 'ies'} in each swing, each further one at ${Math.round((w.melee?.ft ?? 1) * 100)}% follow through of the one before; `
       + `Melee Influence spreads elemental procs to ${s.close} enem${s.close === 1 ? 'y' : 'ies'} within 20 m, each taking 1 + ${s.clump}% x the others as copies (clumped enemies pass it on to each other). ` : '')
     + (cycle && !s.burst ? `Incarnon: normal fire until the gauge fills (${cycle.hits} ${cycle.any ? 'hits' : `weak point hits, each pellet counting, ${role === 'weak' ? 'every hit' : '75% of hits'} on them while charging, which speeds the gauge but isn’t counted as damage`}), a reload’s time to transform, then the form’s ${cycle.ammo} ammo, and under a second back. ${s.scenario === 'single' ? 'The gauge starts full. ' : ''}` : '')

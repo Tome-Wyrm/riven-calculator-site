@@ -149,6 +149,24 @@ export function chargedPellets(pellets, perShot, ehp, spread) {
  * @returns {FightResult}
  */
 export function fight(w, t, opts) {
+  // On-melee-kill stacks (Galvanized mods) for their share of the time: a fight with them all and one
+  // with none, not one at the average, since their Initial Combo counts by whole tiers.
+  const stacked = Object.keys(t.stats).filter(k => k.endsWith('Stacked'));
+  if (!stacked.length) return fightNow(w, t, opts);
+  const up = opts.melee?.uptime ?? 1;
+  const none = { ...t.stats }, all = { ...t.stats };
+  for (const k of stacked) {
+    const id = k.slice(0, -'Stacked'.length);
+    delete none[k]; delete all[k];
+    all[id] = (all[id] ?? 0) + t.stats[k];
+  }
+  const on = fightNow(w, { ...t, stats: all }, opts), off = fightNow(w, { ...t, stats: none }, opts);
+  const mix = (/** @type {number} */ a, /** @type {number} */ b) => up * a + (1 - up) * b;
+  return { ...on, dps: mix(on.dps, off.dps), timePerKill: mix(on.timePerKill, off.timePerKill), shotsPerKill: mix(on.shotsPerKill, off.shotsPerKill), perShot: mix(on.perShot, off.perShot) };
+}
+
+/** One fight, or the Incarnon cycle of two, with these stats as they stand. @param {WeaponStats} w @param {Totals} t @param {SimOptions & {target: Target, targets?: number}} opts @returns {FightResult} */
+function fightNow(w, t, opts) {
   if (opts.room) return clear(w, t, opts.room, opts);
   const c = opts.incarnon;
   const { interval: _i, reload: _r, hits: _h, spread: _s, aimed: _a, ...once } = engage(w, t, opts);
