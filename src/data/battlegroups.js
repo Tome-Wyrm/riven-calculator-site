@@ -10,8 +10,8 @@
 export const BATTLEGROUPS = {
   grineer: { name: 'Grineer', members: [['Heavy Gunner', 2], ['Bombard', 2], ['Lancer', 6], ['Butcher', 6], ['Scorpion', 4]] },
   corpus: { name: 'Corpus', members: [['Elite Crewman', 4], ['Crewman', 6], ['MOA', 6], ['Mine Osprey', 4]] },
-  // Kill counts from a Zabala (Eris) run (1,213 unit kills; eximus/specter tags, turret and camera left out):
-  // Charger 46%, Runner 24%, Leaper 6%, Volatile 5%, Mutalist MOAs 5%, crawlers of all kinds 4%, Osprey 4%, Maggot 4%.
+  // Kill counts from two Zabala (Eris) runs (1,812 unit kills; eximus/specter tags, turret and camera left out):
+  // Charger 45%, Runner 24%, Leaper 6%, Volatile 5%, Mutalist MOAs 5%, crawlers of all kinds 4%, Osprey 4%, Maggot 4%.
   infested: { name: 'Infested', members: [['Charger', 9], ['Runner', 4.75], ['Leaper', 1.25], ['Volatile Runner', 1], ['Mutalist Tar MOA', 0.5], ['Mutalist Swarm MOA', 0.5], ['Mutalist Osprey', 0.75], ['Maggot', 0.75], ['Crawler', 0.75], ['Boiler', 0.25], ['Brood Mother', 0.25], ['Ancient Healer', 0.25]] },
   orokin: { name: 'Orokin', members: [['Corrupted Heavy Gunner', 2], ['Corrupted Bombard', 4], ['Corrupted Lancer', 6], ['Corrupted Butcher', 8]] },
   sentient: { name: 'Sentient', members: [['Conculyst', 6], ['Battalyst', 6], ['Brachiolyst', 5], ['Summulyst', 2], ['Ortholyst', 1]] },
