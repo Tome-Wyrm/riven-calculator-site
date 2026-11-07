@@ -11,7 +11,7 @@
 // multiply normal attacks: Blood Rush and Weeping Wounds add their bonus once per tier past 1x (the
 // wiki's worked example: 20% x (1 + 1.2 True Steel + 0.4 x (4 - 1)) at 4x).
 
-import { STANCES } from './data/stances.js';
+import { STANCES, HEAVIES, UNIQUE_HEAVIES, HEAVY_USUAL } from './data/stances.js';
 
 /** @typedef {import('./data/stances.js').Hit} Hit */
 /** @typedef {import('./data/stances.js').Combo} Combo */
@@ -59,6 +59,27 @@ export const hasSlam = attacks => attacks.some(a => a.some(h => h[3] === 'slam')
 export function heavyMult(w) {
   const normal = Object.values(w.modes[w.main]?.parts[0]?.dmg ?? {}).reduce((a, b) => a + b, 0);
   return normal > 0 ? (w.melee?.heavy ?? 0) / normal : 0;
+}
+
+/**
+ * A weapon's heavy attacks in turn (each class has two), for the fight: `scale` against heavyMult(w),
+ * `bleed` the share of its damage on hits that force a Bleed, `bleeds` those hits, `hits` all of them.
+ * The class's table decides; a weapon stored away from its class's usual value keeps that difference.
+ * A unique stance's are kept to the weapon's own value, its first attack being 1.
+ * @param {import('./data/weapon-stats.js').WeaponStats} w @param {string} [weapon]
+ */
+export function heaviesFor(w, weapon = '') {
+  const own = heavyMult(w);
+  const unique = UNIQUE_HEAVIES[weapon];
+  const table = unique ?? HEAVIES[w.kind];
+  if (!table?.length || !own) return [];
+  const total = (/** @type {[number, number, string?][]} */ a) => a.reduce((s, [m, n]) => s + m * n, 0);
+  const usual = HEAVY_USUAL[w.kind];
+  const per = unique ? 1 / total(table[0]) : (usual ? own / usual : 1) / own;
+  return table.map(a => {
+    const forced = a.filter(h => h[2] === 'bleed');
+    return { scale: total(a) * per, bleed: total(forced) / total(a), bleeds: forced.reduce((s, h) => s + h[1], 0), hits: a.reduce((s, h) => s + h[1], 0) };
+  });
 }
 
 /** A combo's damage per swing on average. @param {Combo} c */

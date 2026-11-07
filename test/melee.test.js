@@ -258,3 +258,17 @@ test('Galvanized uptime: on-melee-kill stacks for their share of the fight, whol
   // 5x with the stacks, 1x without: 3x on average, not the 2x of 40 points.
   near(fight(sword(), totals({ initialComboStacked: 80 }), opts(0.5)).perShot, 300);
 });
+
+test('heavy attacks by class: in turn, the class table over the stored value, forced Bleeds counted', async () => {
+  const { heaviesFor } = await import('../src/melee.js');
+  const dagger = heaviesFor(WEAPON_STATS.Skana && Object.values(WEAPON_STATS).find(w => w.kind === 'Dagger' && w.melee?.heavy));
+  near(dagger[0].bleed, 0.5);
+  const heavySword = sword({ melee: { ft: 0.5, range: 2.5, sweep: 0.25, combo: 5, heavy: 600, windUp: 1 } });
+  const opts = heavyCycle => ({ target: target(1e9), melee: { attacks: [[[1, 1]]], combo: 'initial', heavy: true, heavyCycle } });
+  const plain = fight(heavySword, totals({}), opts([{ scale: 1, bleed: 0, bleeds: 0, hits: 1 }])).dps;
+  const turns = fight(heavySword, totals({}), opts([{ scale: 1, bleed: 0, bleeds: 0, hits: 1 }, { scale: 2, bleed: 0, bleeds: 0, hits: 1 }])).dps;
+  near(turns / plain, 1.5, 0.05);
+  // A forced Bleed: 6 ticks of 35% of the hit, 2.1x, once they're all running.
+  const bled = fight(heavySword, totals({}), opts([{ scale: 1, bleed: 1, bleeds: 1, hits: 1 }])).dps;
+  assert.ok(bled / plain > 2.6 && bled / plain < 3.1, String(bled / plain));
+});

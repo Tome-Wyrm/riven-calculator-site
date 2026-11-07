@@ -174,7 +174,7 @@ export const HEADS = {
  * How a melee weapon fights: its stance combo's attacks (each a swing), the combo counter (held at
  * the initial combo, held at the max, or built up by the hits), and the enemies inside each swing
  * (room clearing: each further one takes the follow through's share and adds combo points).
- * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', heavy?: boolean, heavyAt?: number, heavySlam?: import('./data/stances.js').Hit[], uptime?: number, nearby?: number, close?: number, clump?: number}} MeleeOptions
+ * @typedef {{attacks: import('./data/stances.js').Hit[][], combo: 'initial' | 'max' | 'build', heavy?: boolean, heavyAt?: number, heavySlam?: import('./data/stances.js').Hit[], heavyCycle?: {scale: number, bleed: number, bleeds: number, hits: number}[], uptime?: number, nearby?: number, close?: number, clump?: number}} MeleeOptions
  */
 
 /**

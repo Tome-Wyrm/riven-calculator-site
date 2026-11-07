@@ -212,6 +212,9 @@ function clear(w, t, room, opts) {
     ...(toughest.r.inForm !== undefined ? { inForm: sum(u => u.time * (u.r.inForm ?? 0)) / Math.max(1e-9, time) } : {}) };
 }
 
+/** A melee setting's heavy attacks in turn, unless it's heavy slamming. @param {import('./sim.js').MeleeOptions | null} melee */
+const heavySwingless = melee => (melee?.heavySlam ? [] : melee?.heavyCycle ?? []);
+
 /** Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more. @param {number} n */
 const amplify = n => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
 
@@ -330,7 +333,9 @@ function fought(w, t, opts) {
     }
     // A Blast proc's Extra Hit: the pellet's, at what the proc pays, Status Damage and faction again.
     const blastVoid = extra * procsOfType('blast').strength / Math.max(1e-9, pellets) * statusDamage * faction;
-    return [{ hits, coShare, coMult, procs, blastVoid,
+    // A forced Bleed, as a tick for a hit of 1x: Slash's share of the hit, faction twice (the wiki's Melee).
+    const bleed = base * D * faction * dotCrit * faction * DOT.slash * statusDamage * more;
+    return [{ hits, coShare, coMult, procs, blastVoid, bleed,
       reach: crowd ? reachOf(p, mode, raw('punchThrough'), crowd) : 0 }];
   });
   const melee = w.melee && opts.melee ? opts.melee : null;
@@ -358,6 +363,9 @@ function fought(w, t, opts) {
   // Heavy attacks: what one does at 1x, its wind up, and what it leaves of the combo.
   // A heavy slam (opts.melee.heavySlam) is a heavy attack made of its slam hits (multiples of the fire
   // mode's damage, Slam Attack Damage on them), with no wind up (it comes down from the air).
+  // A heavy attack's turn in its class's sequence, and the Bleeds it forces (src/melee.js).
+  const cycle = heavySwingless(melee);
+  let heavies = 0;
   const heavySwing = melee?.heavySlam ? swingOf(melee.heavySlam, raw('slamDamage')) : null;
   const heavyBase = melee?.heavy || heavySwing ? (heavySwing ? heavySwing.mult : heavyMult(w)) * (D > 0 ? Math.max(0, D + raw('meleeDamageOnHeavy')) / D : 1) : 0;
   const windUp = heavySwing ? 0 : (w.melee?.windUp ?? 0) / Math.max(0.05, 1 + raw('heavyWindup'));
@@ -547,7 +555,8 @@ function fought(w, t, opts) {
       // Melee: this swing's attack (its multiplier and hit count) at the combo's tier now.
       const tier = !melee ? 1 : comboTier(melee.combo === 'max' ? MAX_COMBO : combo);
       const heavy = heavyBase > 0 && (melee?.combo !== 'build' || tier >= heavyAt);
-      const sw = !melee ? null : heavy ? { mult: heavyBase * tier, points: 0, hits: heavySwing?.hits ?? 1, knocks: heavySwing?.knocks ?? 0 } : swings[swing % swings.length];
+      const turn = heavy && cycle.length ? cycle[heavies % cycle.length] : null;
+      const sw = !melee ? null : heavy ? { mult: heavyBase * tier * (turn?.scale ?? 1), points: 0, hits: heavySwing?.hits ?? turn?.hits ?? 1, knocks: heavySwing?.knocks ?? 0 } : swings[swing % swings.length];
       const mult = sw ? sw.mult : 1;
       const hitsPer = sw ? sw.hits : 1;
       // (A heavy slam's pace is the jump, the fall and the recovery: attack speed doesn't touch it.)
@@ -557,6 +566,13 @@ function fought(w, t, opts) {
       for (const v of volleys) {
         const Dshot = Math.max(0, v.coMult ? D * (1 + v.coShare * direct) : D + v.coShare * direct);
         for (const [type, amount] of v.hits) land(type, amount * Dshot * mult * ramp, s);
+        if (turn?.bleeds) {
+          let q = stacks.get('slash');
+          if (!q) stacks.set('slash', q = { list: [], head: 0, sum: 0 });
+          q.list.push({ until: now + duration, n: turn.bleeds });
+          q.sum += turn.bleeds;
+          pending.push({ at: now + 0.5, rate: v.bleed * mult * turn.bleed, type: 'slash-dot', ticks: ticksOf('slash', duration) });
+        }
         for (const [type, n0, perProc0] of v.procs) {
           // Each hit of a swing rolls status; a proc's ticks follow its hit's multiplier (on average).
           const n = n0 * hitsPer;
@@ -619,7 +635,7 @@ function fought(w, t, opts) {
       }
       shots++;
       const swungAt = combo;
-      if (heavy) { sinceHeavy = 0; if (melee?.combo === 'build') combo *= kept; }
+      if (heavy) { heavies++; sinceHeavy = 0; if (melee?.combo === 'build') combo *= kept; }
       else if (sw) {
         swing++; sinceHeavy++;
         if (melee?.combo === 'build') combo += (sw.points + sw.hits * comboChance) * nearby;
@@ -680,7 +696,7 @@ function fought(w, t, opts) {
       const tier = comboTier(combo);
       const steady = !perTier.length || tier >= MAX_TIER || gain <= 0;
       // (Heavy attacks spend the combo, so a built-up counter's targets all differ.)
-      const alike = melee.combo !== 'build' ? left
+      const alike = melee.combo !== 'build' && cycle.length < 2 ? left
         : heavyBase > 0 ? 1
         : steady ? left
         : comboTier(lastCombo) !== tier ? 1
