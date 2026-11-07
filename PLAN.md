@@ -69,7 +69,6 @@ Builds on the gun fight (15).
 - [ ] **Auras as buffs**: Corrosive Projection, Rifle / Pistol / Shotgun Amp, Dead Eye, Worthy Comradery, Swift
       Momentum; Empowered Blades needs status on heavy attacks only.
 - [ ] Melee Assimilation's +150% Melee Damage on Heavy Attack (on shield break) isn't read.
-- [ ] Heavy slam scale: the model's non-crit hit is about ten times the missions' typical one.
 
 ## 5. Kitguns and zaws
 
