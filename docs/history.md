@@ -1324,6 +1324,32 @@ and 127.5% Duration, ours 210 + 60 + 72 and 127.5. On the reference builds Stren
 each 22 short, an Umbral mod the video reading missed. Those builds can't check Duration: they don't record Duration
 shards or ranks (73 of 108 match).
 
+**Heavy slams against the simulacrum** (2026-11-07). Bare Sancti Magistar's heavy slam, 720 Blast, one mod at a time
+(clips read with `tools/read-clip.py`, the rest by eye):
+- 1x: 572 on Ancient Healers (79% of 720: the slam's falloff, 30% at 10 m). 2x: 1,100-1,200. 12x (Melee Crescendo):
+  5,775-6,933. **The combo multiplier applies to heavy slams in full.** A change taking it off (865b756, from a Sampotes
+  clip at "2x" that didn't double) was wrong and reverted: that clip's 1x reading was missed, and Sampotes compared.
+- Seismic Wave: 1,890 (3.3x; the model's +200% on base gives 3.0x, the rest falloff noise).
+- Primed Fever Strike: 1,604 (2.8x, model 2.65x); with Melee Exposure ~3,100 (5.4x, model 5.05x).
+- Organ Shatter + Galvanized Steel at 12x: yellow crits 34,487-44,500, 6.4x the non-crits; 2 x (1 + 0.9 + 1.2 at 4
+  stacks) = 6.2x. 18 of 24 hits crit, against the model's 54% (a small sample).
+- Level 157 Steel Path Murmurs, bare at 1x: Fragments, Anatomizer and Hollow Vein 560-630 (no armor; Hollow Vein a flat
+  630 every time); Rogue Arcocanid 139-159 (~25%; model 1,866 armor, 25.2%); Rogue Culverin 49-57 (~9%; model at the
+  2,700 cap, 10%).
+
+So the model is right per hit, weapon and enemy. The "10x too high" heavy slam scale (the plan, 2026-11-06) came from
+comparing a whole averaged slam (every pulse, crits averaged) with the median white number of the missions, most of them
+on armored Rogues.
+
+**Murmur room mix from kill counts** (2026-11-07): the end-of-mission kill list gives each unit's count, no clips needed.
+Three Steel Path Nex runs, 1,036 kills: Rogue Culverin 36%, Rogue Arcocanid 30%, Shuffling Fragment 20%, Lumbering
+Fragment 7%, others 5%, Eximus 3%. The battlegroup (`src/data/battlegroups.js`) was 6/6/3/2/1/2 of 20; now
+7.25/6/4/1.5/0.75/0.5. The four Murmur missions (Blood Rush, Killing Blow + Exposure, Corrupt Charge, Killing Blow +
+Duplicate): in game 100 / 96 / 88 / 87, the model 100 / 96 / 83 / 91.
+
+**Clip reader** (2026-11-07): a number is HUD only if it also stays put over 3 s. On a clip of a second, every hit
+stayed put and was dropped.
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

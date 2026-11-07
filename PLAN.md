@@ -68,6 +68,10 @@ Builds on the gun fight (15).
       compat (some 100: Amalgam, augments, the Polearms / Whips / Daggers set mods), Pistol and Rifle (No Aoe).
 - [ ] **Auras as buffs**: Corrosive Projection, Rifle / Pistol / Shotgun Amp, Dead Eye, Worthy Comradery, Swift
       Momentum; Empowered Blades needs status on heavy attacks only.
+- [ ] **Kill counts for the other battlegroups**: the end-of-mission kill list gives each faction's real mix (the
+      Murmur's is from three runs). The rest of `src/data/battlegroups.js` is estimated.
+- [ ] **Eximus share**: the setting's default is 5 of 20 (25%); the Murmur runs had 3%. Check other missions' lists.
+- [ ] **The four Murmur missions' gaps**: Corrupt Charge 5 under the recordings, Melee Duplicate 4 over.
 - [ ] Melee Assimilation's +150% Melee Damage on Heavy Attack (on shield break) isn't read.
 
 ## 5. Kitguns and zaws
@@ -149,6 +153,8 @@ Melee:
 - [ ] **Arcanes and combos.** Melee Duplicate's yellow-crit chance, Doughty's steps, Influence's spread (does a
   spread proc spread again?), Afflictions' added ticks. Blood Rush additive or multiplicative: the wiki's formula
   and its example disagree, and the example is used.
+- [ ] **Heavy slam crit chance.** 18 of 24 hits crit at 12x with Galvanized Steel, against the model's 54%. A longer
+  clip at a fixed counter would show whether heavy slams get more crit chance than the model gives.
 - [ ] **Heavy attacks.** The recovery after one (none counted), its follow through, and its forced procs by weapon
   type (none modelled).
 
