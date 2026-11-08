@@ -70,7 +70,7 @@ Builds on the gun fight (15).
       Momentum; Empowered Blades needs status on heavy attacks only.
 - [ ] **Kill counts for the other battlegroups**: the end-of-mission kill list gives each faction's real mix (the
       Murmur's is from three runs). The rest of `src/data/battlegroups.js` is estimated.
-- [ ] **Eximus share**: the setting's default is 5 of 20 (25%); the Murmur runs had 3%. Check other missions' lists.
+- [ ] **Eximus share**: the setting's default is 5 of 20 (25%); the Murmur runs had 3%, the Zabala (Infested) runs 3%.
 - [ ] **The four Murmur missions' gaps**: Corrupt Charge 5 under the recordings, Melee Duplicate 4 over.
 - [ ] Melee Assimilation's +150% Melee Damage on Heavy Attack (on shield break) isn't read.
 
