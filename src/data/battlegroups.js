@@ -10,9 +10,12 @@
 export const BATTLEGROUPS = {
   grineer: { name: 'Grineer', members: [['Heavy Gunner', 2], ['Bombard', 2], ['Lancer', 6], ['Butcher', 6], ['Scorpion', 4]] },
   corpus: { name: 'Corpus', members: [['Elite Crewman', 4], ['Crewman', 6], ['MOA', 6], ['Mine Osprey', 4]] },
-  // Kill counts from three Zabala (Eris) runs (2,623 unit kills; eximus/specter tags, turret and camera left out):
-  // Charger 44%, Runner 24%, Leaper 6%, Volatile 5%, Mutalist MOAs 5%, crawlers of all kinds 4%, Osprey 4%, Maggot 4%.
-  infested: { name: 'Infested', members: [['Charger', 8.75], ['Runner', 4.75], ['Leaper', 1.25], ['Volatile Runner', 1], ['Mutalist Tar MOA', 0.5], ['Mutalist Swarm MOA', 0.5], ['Mutalist Osprey', 0.75], ['Maggot', 0.75], ['Crawler', 0.75], ['Boiler', 0.25], ['Brood Mother', 0.25], ['Ancient Healer', 0.5]] },
+  // Kill counts from four Zabala (Eris) survival runs (49,014 unit kills, 46,391 from one 3h50m run;
+  // eximus/specter tags, turrets and cameras left out): Ancients 31% (Toxic 11%, Disruptor 11%, Protector 4%,
+  // Healer 4%), Charger 18%, Runner 10%, Maggot 9%, Mutalist MOAs 6%, Osprey 5%, crawlers of all kinds 5%,
+  // Leaper 4%, Volatile 4%, Boiler 4%, Brood Mother 3%. The short runs alone were Charger 44%, Ancients 2%:
+  // long runs bring far more Ancients.
+  infested: { name: 'Infested', members: [['Charger', 3.75], ['Runner', 2], ['Toxic Ancient', 2.25], ['Ancient Disruptor', 2.25], ['Ancient Protector', 0.75], ['Ancient Healer', 1], ['Maggot', 1.75], ['Mutalist Tar MOA', 0.5], ['Mutalist Swarm MOA', 0.5], ['Mutalist Osprey', 1], ['Crawler', 1], ['Leaper', 1], ['Volatile Runner', 0.75], ['Boiler', 0.75], ['Brood Mother', 0.75]] },
   orokin: { name: 'Orokin', members: [['Corrupted Heavy Gunner', 2], ['Corrupted Bombard', 4], ['Corrupted Lancer', 6], ['Corrupted Butcher', 8]] },
   sentient: { name: 'Sentient', members: [['Conculyst', 6], ['Battalyst', 6], ['Brachiolyst', 5], ['Summulyst', 2], ['Ortholyst', 1]] },
   narmer: { name: 'Narmer', members: [['Narmer Heavy Gunner', 2], ['Narmer Bombard', 2], ['Narmer Lancer', 6], ['Shield Lancer', 6, 'grineer'], ['Scorpion', 4, 'grineer']] },
