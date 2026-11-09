@@ -1357,7 +1357,8 @@ stayed put and was dropped.
 **Engineering from the review** (2026-11-09): the worker keeps only the latest study waiting, telling the page which
 it dropped (the page forgets those, so they start afresh if asked again); the one running finishes. Precomputed studies
 aren't fetched until `SHIPPED` in `src/studies.js` is set (each weapon was a 404 on the live site). The Incarnon
-fight reuses its first `engage` for the form instead of running it twice.
+fight reuses its first `engage` for the form instead of running it twice. `.githooks/pre-push` runs `npm test` before
+every push (a clone enables it with `git config core.hooksPath .githooks`).
 
 ## Verified in game (2026-10-23)
 

@@ -109,7 +109,6 @@ Needs nothing above.
 - [ ] **Go over the community picks by hand** (the user), towards the site's own picks in place of the sheet's.
 - [ ] **Multi-stat goals** (11): several goal rows at once, the chance of all of them per shape, optionally with
       the pool odds for chance per cycle and expected Kuva; reject impossible combos.
-- [ ] **Run the tests on every push**: a pre-push hook with `npm test`, or a GitHub Action that mails on failure.
 - [ ] **Type checking**: a `jsconfig.json` and `npm run check` (`tsc`), then clear what it finds (`heavySlam` missing
       from the melee options, `heavyDouble` from `Effect`, strings compared to numbers in `src/ui/model.js`).
 - [ ] **Tests for `src/model-input.js`** (37% covered), and a check that the page loads without errors.
