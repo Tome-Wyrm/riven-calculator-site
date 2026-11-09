@@ -36,7 +36,8 @@ Doesn't need section 2, and can run alongside it. The checks come first: the res
       `chargedPellets`, `blastPay`, Heat's averaged strip.
 - [ ] **A saved baseline of studies**: the top stats and DPS of ~10 guns in two settings, kept in a file, and a tool
       that prints what a model change moved.
-- [ ] **Checks by hand**: ~10 guns against Underframe; Arsenal numbers for a few builds.
+- [ ] **Checks against the game**: ~10 guns' builds recorded and read with `tools/read-clip.py`, and Arsenal numbers
+      for a few builds. (The Sampotes heavy slam runs against the Murmur showed the room's mix was wrong this way.)
 - [ ] **Conditional Incarnon perks** (13g): on headshot, per Electricity proc, Overwhelming Attrition's stacks, and
       perks changing other modes' numbers.
 - [ ] **Condition Overload not modelled** (13b): Secondary Shiver, Tenet Detron's 65% on multishot projectiles,
@@ -101,10 +102,11 @@ Needs sections 2 and 3 far enough along to trust the results.
 
 Needs nothing above.
 
-- [ ] **Ask Underframe's author**, before Recommended rolls opens: whether shipping what's built from their data is
-      fine (`src/data/incarnons.js`, `src/data/enemies.js`, the weapons' `co`), whether reading their links is, and
-      whether short links could be opened from other sites.
-- [ ] **Open the community picks now**: ungate the sheet's picks, leaving only the model behind the gate.
+- [ ] **Underframe's data from the wiki or the game instead**, before Recommended rolls opens: what's built from
+      it (`src/data/incarnons.js`, `src/data/enemies.js`, the weapons' `co`), each rebuilt from the wiki or
+      checked in game, so nothing shipped is theirs. (Reading their links stays: that's interoperability. Short
+      links aren't planned.)
+- [ ] **Go over the community picks by hand** (the user), towards the site's own picks in place of the sheet's.
 - [ ] **Multi-stat goals** (11): several goal rows at once, the chance of all of them per shape, optionally with
       the pool odds for chance per cycle and expected Kuva; reject impossible combos.
 - [ ] **Run the tests on every push**: a pre-push hook with `npm test`, or a GitHub Action that mails on failure.
