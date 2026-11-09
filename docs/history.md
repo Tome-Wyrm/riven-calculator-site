@@ -1360,6 +1360,13 @@ aren't fetched until `SHIPPED` in `src/studies.js` is set (each weapon was a 404
 fight reuses its first `engage` for the form instead of running it twice. `.githooks/pre-push` runs `npm test` before
 every push (a clone enables it with `git config core.hooksPath .githooks`).
 
+**Baseline of studies** (2026-11-09): `npm run baseline` (tools/baseline.mjs) runs 11 guns' studies (crit, status, AoE,
+beams, pellets, chaining, Incarnons) as the page builds them: Fodder clear at the defaults, Single target against full
+armor, and Fodder clear in Incarnon form for the four Incarnon guns (the page fires them normally by default, so the
+form's cycle needs its own). It prints what moved against tools/data/baseline.json: DPS without a riven, the build,
+the top 6 stats, the best 3 rivens, the kindest curses. `--save` makes the current model the baseline. 26 studies,
+about a minute; reruns are identical. Tried by making the Incarnon swap 4x longer: only the four in-form studies moved.
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

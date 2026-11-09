@@ -34,8 +34,6 @@ Doesn't need section 2, and can run alongside it. The checks come first: the res
 
 - [ ] **A random (Monte Carlo) fight** against the averages in `src/fight.js`, all of them together: smoothed kills,
       `chargedPellets`, `blastPay`, Heat's averaged strip.
-- [ ] **A saved baseline of studies**: the top stats and DPS of ~10 guns in two settings, kept in a file, and a tool
-      that prints what a model change moved.
 - [ ] **Checks against the game**: ~10 guns' builds recorded and read with `tools/read-clip.py`, and Arsenal numbers
       for a few builds. (The Sampotes heavy slam runs against the Murmur showed the room's mix was wrong this way.)
 - [ ] **Conditional Incarnon perks** (13g): on headshot, per Electricity proc, Overwhelming Attrition's stacks, and

@@ -5,6 +5,7 @@
   "description": "Warframe riven stat ranges and goal calculator. Static site, no dependencies.",
   "scripts": {
     "test": "node --test",
+    "baseline": "node tools/baseline.mjs",
     "serve": "python -m http.server 8000"
   },
   "devDependencies": {
