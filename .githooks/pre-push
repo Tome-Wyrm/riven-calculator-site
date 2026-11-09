@@ -1,0 +1,8 @@
+#!/bin/sh
+# Runs the tests before a push: main is the live site (GitHub Pages).
+# Enabled with: git config core.hooksPath .githooks
+# Skip once (only when you mean to): git push --no-verify
+npm test --silent > /dev/null 2>&1 || {
+  echo "Tests failed: push stopped. Run npm test to see why." >&2
+  exit 1
+}
