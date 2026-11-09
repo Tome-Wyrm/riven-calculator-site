@@ -95,7 +95,7 @@ Needs sections 2 and 3 far enough along to trust the results.
 - [ ] **Pick marks in the grader and importer** (12e), and how good a riven is for its weapon.
 - [ ] **Melee in the advisor** (12e): the sheet's melee rows lean on builds a DPS model may not capture.
 - [ ] **Open up Recommended rolls**, gated as under construction.
-- [ ] **Precomputed results**: ship the default studies as data. Paused until the simulation is decent.
+- [ ] **Precomputed results**: ship the default studies as data (then set `SHIPPED` in `src/studies.js`). Paused until the simulation is decent.
 - [ ] **GPU**: not now. Only if the above isn't fast enough.
 
 ## 8. Any time
@@ -112,9 +112,6 @@ Needs nothing above.
 - [ ] **Run the tests on every push**: a pre-push hook with `npm test`, or a GitHub Action that mails on failure.
 - [ ] **Type checking**: a `jsconfig.json` and `npm run check` (`tsc`), then clear what it finds (`heavySlam` missing
       from the melee options, `heavyDouble` from `Effect`, strings compared to numbers in `src/ui/model.js`).
-- [ ] **Drop studies nobody is waiting for**: `src/worker.js` runs every queued study to the end.
-- [ ] **The Incarnon fight runs twice**: `fightNow` calls `engage` again with the same arguments; reuse the first.
-- [ ] **No fetch for precomputed studies until they ship**: each weapon is a 404 on the live site.
 - [ ] **Tests for `src/model-input.js`** (37% covered), and a check that the page loads without errors.
 - [ ] **One command to refresh the data**: every builder in order, with a summary of what changed.
 - [ ] Put `build-weapons` and `build-picks` on the local cache.

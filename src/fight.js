@@ -169,9 +169,9 @@ export function fight(w, t, opts) {
 function fightNow(w, t, opts) {
   if (opts.room) return clear(w, t, opts.room, opts);
   const c = opts.incarnon;
-  const { interval: _i, reload: _r, hits: _h, spread: _s, aimed: _a, ...once } = engage(w, t, opts);
-  if (!c || opts.burst) return once;
   const form = engage(w, t, opts);
+  const { interval: _i, reload: _r, hits: _h, spread: _s, aimed: _a, ...once } = form;
+  if (!c || opts.burst) return once;
   const plain = engage(w, t, { ...opts, mode: c.normal });
   const ehp = ehpOf(opts.target);
   const landed = chargedPellets(plain.hits, plain.aimed, ehp, plain.spread);

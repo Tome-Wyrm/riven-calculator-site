@@ -7,6 +7,9 @@ import { md5 } from './md5.js';
 /** A weapon's studies file name: "Soma Prime" → "soma-prime". @param {string} name */
 export const studySlug = name => name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+/** Whether studies ship with the site (PLAN.md, "Precomputed results"): until then, nothing is fetched. */
+const SHIPPED = false;
+
 /** @type {Map<string, Promise<Record<string, unknown>>>} */
 const files = new Map();
 
@@ -17,7 +20,7 @@ const files = new Map();
 export function studiesOf(weapon) {
   let f = files.get(weapon);
   if (!f) {
-    f = fetch(new URL(`./data/studies/${studySlug(weapon)}.json`, import.meta.url))
+    f = !SHIPPED ? Promise.resolve({}) : fetch(new URL(`./data/studies/${studySlug(weapon)}.json`, import.meta.url))
       .then(r => (r.ok ? r.json() : {})).catch(() => ({}));
     files.set(weapon, f);
   }

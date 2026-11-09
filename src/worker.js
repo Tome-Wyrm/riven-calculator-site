@@ -62,16 +62,27 @@ function run(batch) {
   });
 }
 
-/** @type {Promise<unknown>} */
-let queue = Promise.resolve();
+/** The study waiting its turn: only the latest asked for, as the page shows one at a time. @type {{key: string, input: any} | null} */
+let waiting = null;
+let busy = false;
+
+async function next() {
+  if (busy || !waiting) return;
+  const { key, input } = waiting;
+  waiting = null;
+  busy = true;
+  try {
+    self.postMessage({ key, result: HELPERS ? await studyWith(input, run) : study(input) });
+  } catch (err) {
+    self.postMessage({ key, error: err instanceof Error ? err.message : String(err) });
+  }
+  busy = false;
+  next();
+}
 
 self.onmessage = (/** @type {MessageEvent} */ e) => {
-  const { key, input } = e.data;
-  queue = queue.then(async () => {
-    try {
-      self.postMessage({ key, result: HELPERS ? await studyWith(input, run) : study(input) });
-    } catch (err) {
-      self.postMessage({ key, error: err instanceof Error ? err.message : String(err) });
-    }
-  });
+  // One asked for while another waits: nobody is waiting for that one any more.
+  if (waiting) self.postMessage({ key: waiting.key, dropped: true });
+  waiting = e.data;
+  next();
 };

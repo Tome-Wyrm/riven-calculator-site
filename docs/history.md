@@ -1354,6 +1354,11 @@ Duplicate): in game 100 / 96 / 88 / 87, the model 100 / 96 / 83 / 91.
 **Clip reader** (2026-11-07): a number is HUD only if it also stays put over 3 s. On a clip of a second, every hit
 stayed put and was dropped.
 
+**Engineering from the review** (2026-11-09): the worker keeps only the latest study waiting, telling the page which
+it dropped (the page forgets those, so they start afresh if asked again); the one running finishes. Precomputed studies
+aren't fetched until `SHIPPED` in `src/studies.js` is set (each weapon was a 404 on the live site). The Incarnon
+fight reuses its first `engage` for the form instead of running it twice.
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

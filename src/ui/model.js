@@ -133,7 +133,11 @@ function studyOf(input, rerender) {
     if (hit && !(/** @type {any} */ (hit)).error) { done(/** @type {Study} */ (hit)); return; }
     try {
       worker ??= new Worker(new URL('../worker.js', import.meta.url), { type: 'module' });
-      worker.onmessage = e => { studies.set(e.data.key, e.data.error ? { error: e.data.error } : e.data.result); onDone(); };
+      worker.onmessage = e => {
+        // A study dropped unstarted is forgotten, so it starts afresh if it's asked for again.
+        if (e.data.dropped) { studies.delete(e.data.key); return; }
+        studies.set(e.data.key, e.data.error ? { error: e.data.error } : e.data.result); onDone();
+      };
       worker.postMessage({ key, input });
     } catch {
       setTimeout(() => import('../study.js').then(m => done(m.study(input))).catch(e => done({ error: String(e) })), 30);
