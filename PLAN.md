@@ -24,14 +24,19 @@ Needs the reference builds.
 - [ ] **Buffs still missing**: Demonium's Vythelas rune; Resupply's other elements; the second list of frames (14f).
 - [ ] **The hard ones** (14e), each needing research first: Hall of Mirrors, Tornado, Crystallize, Prismatic Gem's
       beams, Molecular Prime's chaining explosions, Divine Retribution, The Lost's Gaze, Null Star, Antimatter Drop.
-- [ ] **Ask Underframe's author** whether reading their links is fine, and whether short links could be opened from
-      other sites.
 - [ ] **Enter your own build without a link**: typing one in, with the reference builds as starting points.
+- [ ] **Auras as buffs**: Corrosive Projection, Rifle / Pistol / Shotgun Amp, Dead Eye, Worthy Comradery, Swift
+      Momentum; Empowered Blades needs status on heavy attacks only.
 
 ## 3. Gun model gaps
 
-Doesn't need section 2, and can run alongside it.
+Doesn't need section 2, and can run alongside it. The checks come first: the rest is judged by them.
 
+- [ ] **A random (Monte Carlo) fight** against the averages in `src/fight.js`, all of them together: smoothed kills,
+      `chargedPellets`, `blastPay`, Heat's averaged strip.
+- [ ] **A saved baseline of studies**: the top stats and DPS of ~10 guns in two settings, kept in a file, and a tool
+      that prints what a model change moved.
+- [ ] **Checks by hand**: ~10 guns against Underframe; Arsenal numbers for a few builds.
 - [ ] **Conditional Incarnon perks** (13g): on headshot, per Electricity proc, Overwhelming Attrition's stacks, and
       perks changing other modes' numbers.
 - [ ] **Condition Overload not modelled** (13b): Secondary Shiver, Tenet Detron's 65% on multishot projectiles,
@@ -40,8 +45,6 @@ Doesn't need section 2, and can run alongside it.
 - [ ] **Beams**: zones once measured (see the in-game list); Boar's form with the room's mix of units.
 - [ ] **Crowds**: the other enemies' armor and statuses, and kill stacks building faster.
 - [ ] **Valence** (13f): score per faction and with Overguard; Impact, Magnetic and Radiation often tie.
-- [ ] **Checks**: a random (Monte Carlo) run against the averages; ~10 guns against Underframe by hand; Arsenal
-      numbers for a few builds.
 - [ ] **Look at what the community doesn't list**: Ammo Efficiency and spliced Blast in the model's top 3.
 - [ ] **Multishot against full armor**: the most missed pick there (131), while Viral, Corrosive and Blast crowd the top 3.
 - [ ] **Show shots per kill** on the page.
@@ -49,14 +52,19 @@ Doesn't need section 2, and can run alongside it.
 - [ ] **Ammo**: Ammo Max, running dry and damage per ammo, so Ammo Efficiency and the like count for more than the
       reload they save. Time with nothing to shoot isn't a weapon's doing: an uptime setting, as Galvanized uptime is.
 
-## 4. Melee
+## 4. Enemies and rooms
+
+Guns and melee both fight these. Doesn't need sections 2 or 3.
+
+- [ ] **Eximus share**: decide the default. It's 5 of 20 (25%); the Murmur runs had 3%, the Zabala (Infested) runs 3%.
+- [ ] **Kill counts for the other battlegroups**: the end-of-mission kill list gives each faction's real mix (the
+      Murmur's is from three runs). The rest of `src/data/battlegroups.js` is estimated.
+- [ ] **The four Murmur missions' gaps**: Corrupt Charge 5 under the recordings, Melee Duplicate 4 over.
+
+## 5. Melee
 
 Builds on the gun fight (15).
 
-- [x] Slams: each class's shared Slam and a unique stance's own (Sampotes, Tenet Exec: Slam, Heavy
-      Slam) in the stance list, after the combos and never the default; slam hits (the wiki's Types
-      "Slam", in combos too) take Slam Attack Damage on their base damage. Stances are labelled as the
-      wiki does (stance, key, combo); a weapon's unique stance only on that weapon.
 - [ ] Slams' timing and radial damage (a slam counts as one swing on the target), heavy slams for
       every class (only unique ones are in the wiki's data), forced Bleed procs on hits, Impact
       multipliers on hits.
@@ -66,15 +74,9 @@ Builds on the gun fight (15).
 - [ ] Speed: pre-screen the mechanic arcanes' searches and the riven candidates; parallel workers.
 - [ ] **Mods the builder leaves out**: it takes class mods only. Thrown Melee (glaives, 11), the weapon-only ones by
       compat (some 100: Amalgam, augments, the Polearms / Whips / Daggers set mods), Pistol and Rifle (No Aoe).
-- [ ] **Auras as buffs**: Corrosive Projection, Rifle / Pistol / Shotgun Amp, Dead Eye, Worthy Comradery, Swift
-      Momentum; Empowered Blades needs status on heavy attacks only.
-- [ ] **Kill counts for the other battlegroups**: the end-of-mission kill list gives each faction's real mix (the
-      Murmur's is from three runs). The rest of `src/data/battlegroups.js` is estimated.
-- [ ] **Eximus share**: the setting's default is 5 of 20 (25%); the Murmur runs had 3%, the Zabala (Infested) runs 3%.
-- [ ] **The four Murmur missions' gaps**: Corrupt Charge 5 under the recordings, Melee Duplicate 4 over.
 - [ ] Melee Assimilation's +150% Melee Damage on Heavy Attack (on shield break) isn't read.
 
-## 5. Kitguns and zaws
+## 6. Kitguns and zaws
 
 Built from parts, so a weapon's stats are a choice of parts and not one row of data.
 
@@ -82,10 +84,12 @@ Built from parts, so a weapon's stats are a choice of parts and not one row of d
       and the other two parts change its stats too. Pax and Residual arcanes.
 - [ ] **Zaws**: melee weapons with odd stats: the melee model as it stands, once the parts give their stats. Exodia arcanes.
 
-## 6. Using the model
+## 7. Using the model
 
 Needs sections 2 and 3 far enough along to trust the results.
 
+- [ ] **Say what "far enough" is**: which checks must pass and what score against the community, so opening
+      Recommended rolls and the precomputed results have a bar to meet.
 - [ ] **QoL rules** (12d): ammo economy, beams, charge weapons and harmless curses, each with its reason shown.
 - [ ] **Pick marks in the grader and importer** (12e), and how good a riven is for its weapon.
 - [ ] **Melee in the advisor** (12e): the sheet's melee rows lean on builds a DPS model may not capture.
@@ -93,13 +97,27 @@ Needs sections 2 and 3 far enough along to trust the results.
 - [ ] **Precomputed results**: ship the default studies as data. Paused until the simulation is decent.
 - [ ] **GPU**: not now. Only if the above isn't fast enough.
 
-## 7. Any time
+## 8. Any time
 
 Needs nothing above.
 
+- [ ] **Ask Underframe's author**, before Recommended rolls opens: whether shipping what's built from their data is
+      fine (`src/data/incarnons.js`, `src/data/enemies.js`, the weapons' `co`), whether reading their links is, and
+      whether short links could be opened from other sites.
+- [ ] **Open the community picks now**: ungate the sheet's picks, leaving only the model behind the gate.
 - [ ] **Multi-stat goals** (11): several goal rows at once, the chance of all of them per shape, optionally with
       the pool odds for chance per cycle and expected Kuva; reject impossible combos.
+- [ ] **Run the tests on every push**: a pre-push hook with `npm test`, or a GitHub Action that mails on failure.
+- [ ] **Type checking**: a `jsconfig.json` and `npm run check` (`tsc`), then clear what it finds (`heavySlam` missing
+      from the melee options, `heavyDouble` from `Effect`, strings compared to numbers in `src/ui/model.js`).
+- [ ] **Drop studies nobody is waiting for**: `src/worker.js` runs every queued study to the end.
+- [ ] **The Incarnon fight runs twice**: `fightNow` calls `engage` again with the same arguments; reuse the first.
+- [ ] **No fetch for precomputed studies until they ship**: each weapon is a 404 on the live site.
+- [ ] **Tests for `src/model-input.js`** (37% covered), and a check that the page loads without errors.
+- [ ] **One command to refresh the data**: every builder in order, with a summary of what changed.
 - [ ] Put `build-weapons` and `build-picks` on the local cache.
+- [ ] Bring the README up to date; retire the closed-form reference model (`dps`, `statEffects`, `bestSets`,
+      `tools/score-sim.mjs`) or mark it as kept for tools.
 - [ ] Webhook relay, if the spam comes back: keeps the webhook out of the page altogether.
 - [ ] Consider telling megrims (Discord) the sheet is used here.
 - [ ] OCR upgrade (YOLO + PaddleOCR), only if Tesseract struggles on real uploads.

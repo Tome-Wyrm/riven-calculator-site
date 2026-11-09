@@ -1211,6 +1211,10 @@ Decisions (the user's, 2026-11-03):
       forced procs by weapon type (none modelled; Afflictions doesn't trigger on it).
 - [ ] Slams, glaive throws, gunblade shots; Gladiator set bonus; melee incarnons;
       zaws (parts) and Dark Split-Sword.
+- [x] Slams: each class's shared Slam and a unique stance's own (Sampotes, Tenet Exec: Slam, Heavy
+      Slam) in the stance list, after the combos and never the default; slam hits (the wiki's Types
+      "Slam", in combos too) take Slam Attack Damage on their base damage. Stances are labelled as the
+      wiki does (stance, key, combo); a weapon's unique stance only on that weapon.
 
 ### Speed and pruning (the user's ideas, 2026-11-04; not started)
 
