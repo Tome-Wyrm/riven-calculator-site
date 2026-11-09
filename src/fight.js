@@ -79,8 +79,8 @@
 // Blast (src/sim.js `blastPay`): each proc lands what it pays on average, at once, its Extra Hit too.
 // In a crowd its detonations reach everyone within 5 m: those at 10 stacks, and the one a dying target
 // sets off with the stacks it has, which is all on the others.
-// Not modelled yet: extra hits, abilities (Phase 14), random rolls (a Monte Carlo run
-// could check the averages).
+// Not modelled yet: abilities (Phase 14). Random rolls: src/fight-mc.js makes every one, to check
+// these averages (tools/fight-check.mjs; what it found is in docs/history.md).
 
 import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, beamCount, blastDetonates, blastPay, BLAST_DETONATED, critFlatOf, extraWeak, factionOf, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
 import { reachOf, sparkReach, within } from './crowd.js';
@@ -95,7 +95,7 @@ const ELEMENTAL = new Set(['cold', 'electricity', 'heat', 'toxin', 'blast', 'cor
 /** @typedef {import('./data/weapon-stats.js').WeaponStats} WeaponStats */
 
 /** Heat's armor strip after each step of 0.5 s x (1 + Status Duration). */
-const HEAT_STRIP = [0, 0.15, 0.3, 0.4, 0.5];
+export const HEAT_STRIP = [0, 0.15, 0.3, 0.4, 0.5];
 /**
  * Heat's strip `steps` of its time in: each step reached halfway to the next on average, running
  * between them (a shot's timing against the steps is luck). @param {number} steps
@@ -106,9 +106,9 @@ const heatStrip = steps => {
   return HEAT_STRIP[i] + (HEAT_STRIP[i + 1] - HEAT_STRIP[i]) * (x - i);
 };
 /** Seconds of hitting a target for a beam to reach its full damage. */
-const BEAM_RAMP = 0.6;
+export const BEAM_RAMP = 0.6;
 /** Seconds simulated on one target before the rest is extrapolated. */
-const TARGET_SECONDS = 20;
+export const TARGET_SECONDS = 20;
 
 /**
  * @typedef {object} FightResult
@@ -121,11 +121,11 @@ const TARGET_SECONDS = 20;
  */
 
 /** Seconds from the form back to normal fire (in game on Boar: firing again in under a second). */
-const SWAP_OUT = 0.75;
+export const SWAP_OUT = 0.75;
 /** Seconds Void's bubble lasts. */
 const BUBBLE_SECONDS = 3;
 /** A target's whole: health, shields and Overguard. @param {Target} t */
-const ehpOf = t => t.health + t.shields + (t.overguard ?? 0);
+export const ehpOf = t => t.health + t.shields + (t.overguard ?? 0);
 
 /**
  * The pellets a shot charges with, on average, while killing a stream of targets. Pellets land one by
@@ -216,7 +216,7 @@ function clear(w, t, room, opts) {
 const heavySwingless = melee => (melee?.heavySlam ? [] : melee?.heavyCycle ?? []);
 
 /** Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more. @param {number} n */
-const amplify = n => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
+export const amplify = n => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
 
 /**
  * One fight in one fire mode, with what the Incarnon cycle needs: a shot's interval, the reload, the

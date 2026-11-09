@@ -281,7 +281,7 @@ const fitsWith = (p, others) => others.every(o => o.name !== p.name && !o.excl.i
  */
 
 /** A build's totals: its mods, its arcane, and any buffs. @param {Pick<Build, 'slots' | 'arcane'>} b @param {SimOptions} opts */
-const buildTotals = (b, opts) => totalsOf([...b.slots, ...(b.arcane ? [b.arcane] : []), ...(opts.buffs ? [opts.buffs] : [])]);
+export const buildTotals = (b, opts) => totalsOf([...b.slots, ...(b.arcane ? [b.arcane] : []), ...(opts.buffs ? [opts.buffs] : [])]);
 
 /**
  * A build's fight against the target (src/fight.js), or null without one.

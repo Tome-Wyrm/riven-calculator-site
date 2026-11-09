@@ -1367,6 +1367,23 @@ form's cycle needs its own). It prints what moved against tools/data/baseline.js
 the top 6 stats, the best 3 rivens, the kindest curses. `--save` makes the current model the baseline. 26 studies,
 about a minute; reruns are identical. Tried by making the Incarnon swap 4x longer: only the four in-form studies moved.
 
+**Random fight** (2026-11-09): src/fight-mc.js fights a gun with every roll made (each pellet's crit tier, weak point and
+procs; DoT ticks at their seconds; Heat's strip in steps; Blast stacks detonating at 10 or paying 0.3x alone; reloads where
+they fall; the next target on the shot after a kill; the Incarnon gauge pellet by pellet). `node tools/fight-check.mjs`
+fights the baseline's best builds (no riven) both ways, crowds left out, and prints time per kill. On made-up guns it
+matches src/fight.js exactly where nothing is random, and within 2% for crits, each DoT, Heat, Corrosive, Magnetic,
+weak points and Multishot. On the 26 studies the averages say kills come sooner, by 0 to 53% (mean 21%). Three causes:
+- Whole shots: about half a shot more a kill (renewal theory: x + (1 + cv^2) / 2). Most of the gap where kills take 1-3
+  shots: Kuva Hek and Kuva Bramma on one target, Laetum, Felarx; nothing on 1-shot room kills.
+- Viral on average stacks: `amplify` is concave, so of the mean count it's above the mean multiplier. Soma Prime on one
+  target, armor 0: -17% from Viral alone; physical only -2%, Heat only -3%.
+- Blast paid at once: real stacks build to 10 first and die with the target. Ignis Wraith in a room: -75% on a 6,600
+  health unit, -16% with the Cold mod (so the Blast) taken out; Phage and Kuva Nukor alike.
+Small: DoT ticks at their seconds against spread over them (1-2%), Heat's steps (+2%: the averages a little slow). The
+Incarnon gauge (`chargedPellets`) holds: time in form 0.82/0.82, 0.59/0.59, 0.76/0.77, 0.79/0.80. A gun whose procs come
+exactly on time (status chance 100%, no spread) meets Blast's cliff: 3 procs every 0.5 s never has 10 up, so none
+detonate (`blastPay` assumes procs at random).
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

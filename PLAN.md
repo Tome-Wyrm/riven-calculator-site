@@ -32,8 +32,14 @@ Needs the reference builds.
 
 Doesn't need section 2, and can run alongside it. The checks come first: the rest is judged by them.
 
-- [ ] **A random (Monte Carlo) fight** against the averages in `src/fight.js`, all of them together: smoothed kills,
-      `chargedPellets`, `blastPay`, Heat's averaged strip.
+- [ ] **Viral and Magnetic on average stacks**: `amplify` of the expected count overstates them while it's low (one
+      expected: 2x, against 1.72x with real counts). Take its expectation over the count instead (Poisson, below the
+      cap: 1.75 - 0.75 e^-m + 0.25 m). Soma Prime on one target: -17% time per kill from this alone.
+- [ ] **Blast in short kills**: `blastPay` pays each proc at once; real stacks wait for 10, and those still up die with
+      the target. Half the time per kill for beams in rooms (Ignis Wraith, Phage, Kuva Nukor); Kuva Bramma -42%.
+- [ ] **Whole shots** (decide): a kill takes whole shots, about half a shot more than the averaged count, so time per
+      kill reads short where kills take a few (Kuva Hek on one target: 1.53 shots, really 2.38). The DPS counts
+      overkill on purpose; decide whether it should count this.
 - [ ] **Checks against the game**: ~10 guns' builds recorded and read with `tools/read-clip.py`, and Arsenal numbers
       for a few builds. (The Sampotes heavy slam runs against the Murmur showed the room's mix was wrong this way.)
 - [ ] **Conditional Incarnon perks** (13g): on headshot, per Electricity proc, Overwhelming Attrition's stacks, and
