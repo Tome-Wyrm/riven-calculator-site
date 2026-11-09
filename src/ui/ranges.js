@@ -4,7 +4,7 @@
 //   compare — one stat across all four shapes
 
 import { CLASSES, MAX_RANK, ORDINARY, SPLICED, STAT_BY_ID } from '../data/stats.js';
-import { SHAPE_ORDER, canRoll, range, format, quirks, weaponCanRoll } from '../engine.js';
+import { SHAPE_ORDER, canRoll, range, format, quirks, weaponCanRoll, gradeRoll, displayValue, rollScore, letterGrade } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker, copyLinkButton, ipsOf, isBow, recipeText } from './dom.js';
 import { loadState, saveState, pick, oneOf, num } from './state.js';
@@ -15,12 +15,14 @@ import { loadState, saveState, pick, oneOf, num } from './state.js';
 /** @typedef {import('../engine.js').Sign} Sign */
 
 const state = {
-  view: /** @type {'table' | 'compare'} */ ('table'),
+  view: /** @type {'table' | 'compare' | 'splice'} */ ('table'),
   weapon: '',
   cls: /** @type {WeaponClass} */ ('rifle'),
   shape: /** @type {Shape} */ ('++-'),
   rank: MAX_RANK,
   statId: 'critChance',
+  spStat: 'ammoMax',
+  spValue: '',
 };
 
 /**
@@ -52,13 +54,21 @@ function controls() {
   const set = (/** @type {Partial<typeof state>} */ patch) => { Object.assign(state, patch); render(); };
   const ranks = Array.from({ length: MAX_RANK + 1 }, (_, r) => /** @type {[string, string]} */ ([String(r), String(r)]));
   const items = [
-    segmented('View', ['table', 'compare'], state.view, v => set({ view: /** @type {any} */ (v) }),
-      v => (v === 'table' ? 'All stats' : 'Compare shapes')),
+    segmented('View', ['table', 'compare', 'splice'], state.view, v => set({ view: /** @type {any} */ (v) }),
+      v => ({ table: 'All stats', compare: 'Compare shapes', splice: 'Splice lookup' }[v] ?? v)),
     weaponPicker(WEAPONS, state.weapon, (weapon, cls) => set({ weapon, cls })),
     segmented('Weapon class', CLASSES, state.cls, v => set({ cls: /** @type {WeaponClass} */ (v), weapon: '' }),
       v => CLASS_LABEL[/** @type {WeaponClass} */ (v)]),
   ];
-  if (state.view === 'table') {
+  if (state.view === 'splice') {
+    const opts = statOptions(ORDINARY, state.cls, ipsOf(state.weapon));
+    if (!opts.some(([id]) => id === state.spStat)) state.spStat = opts[0][0];
+    items.push(segmented('Shape', SHAPE_ORDER, state.shape, v => set({ shape: /** @type {Shape} */ (v) })));
+    items.push(select('Stat', opts, state.spStat, v => set({ spStat: v })));
+    const input = /** @type {HTMLInputElement} */ (el('input', { type: 'text', value: state.spValue, placeholder: 'e.g. -58.5', inputmode: 'decimal', 'aria-label': 'Value shown' }));
+    input.addEventListener('change', () => set({ spValue: input.value }));
+    items.push(el('label', { class: 'field' }, [el('span', {}, ['Value shown']), input]));
+  } else if (state.view === 'table') {
     items.push(segmented('Shape', SHAPE_ORDER, state.shape, v => set({ shape: /** @type {Shape} */ (v) })));
   } else {
     const opts = statOptions([...ORDINARY, ...SPLICED], state.cls, ipsOf(state.weapon));
@@ -164,22 +174,62 @@ function compareView() {
   return el('div', {}, [...recipe, el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges compact' }, [head, el('tbody', {}, rows)])])]);
 }
 
+/**
+ * Splice lookup: given a stat's shown value (its sign is the value's), what it splices into. The
+ * spliced stat takes the better of its two parents' rolls, so with the other parent unknown it
+ * is at least this roll's value, up to the best roll.
+ */
+function spliceView() {
+  const stat = STAT_BY_ID[state.spStat];
+  const { cls, shape, rank } = state;
+  const m = state.spValue.replace(/,/g, '.').match(/[+-]?\d+(?:\.\d+)?/);
+  if (!m) return el('p', { class: 'note' }, ['Enter the value the game shows (a curse with its minus sign, e.g. -58.5) to see what it splices into.']);
+  const shown = Number(m[0]);
+  const sign = /** @type {Sign} */ (shown < 0 ? '-' : '+');
+  if (!canRoll(stat, cls, shape, sign)) return el('p', { class: 'note warn' }, [`${statName(stat, cls)} can't be ${sign === '+' ? 'positive' : 'negative'} on a ${shape} riven.`]);
+  const g = gradeRoll(stat, cls, shape, sign, shown, rank);
+  if (!g.possible) {
+    const r = range(stat, cls, shape, sign, rank);
+    return el('p', { class: 'note warn' }, [`${format(stat, shown)} is outside ${format(stat, r.at0)} to ${format(stat, r.at1)} (${shape}, rank ${rank}).`]);
+  }
+  const rows = SPLICED.filter(s => s.b[cls] !== undefined && (s.from ?? []).some(p => p.includes(stat.id))).map(s => {
+    const partners = (s.from ?? []).filter(p => p.includes(stat.id)).map(p => statName(STAT_BY_ID[/** @type {string} */ (p.find(id => id !== stat.id))], cls));
+    const [lo, hi] = [displayValue(s, cls, shape, '+', g.lo, rank), displayValue(s, cls, shape, '+', g.hi, rank)];
+    const min = Math.abs(hi - lo) < (s.unit === 'mult' ? 0.01 : 0.1) ? format(s, (lo + hi) / 2) : `${format(s, lo)} to ${format(s, hi)}`;
+    return el('tr', {}, [
+      el('th', { scope: 'row' }, [statName(s, cls), el('span', { class: 'sub' }, [`${statName(stat, cls)} + ${partners.join(' or ')}`])]),
+      el('td', { class: 'pos' }, [`At least ${min}`]),
+      el('td', { class: 'pos' }, [format(s, displayValue(s, cls, shape, '+', 1, rank))]),
+      el('td', { class: 'grade' }, [letterGrade(rollScore((g.lo + g.hi) / 2))]),
+    ]);
+  });
+  if (!rows.length) return el('p', { class: 'note' }, [`${statName(stat, cls)} doesn't splice into anything.`]);
+  const head = el('thead', {}, [el('tr', {}, ['Splices into', 'If nothing better is on the riven', 'Best case', 'Grade of this roll'].map(h => el('th', { scope: 'col' }, [h])))]);
+  return el('div', {}, [
+    el('p', { class: 'note' }, [`${format(stat, shown)} ${statName(stat, cls)} on a ${shape} riven is a ${letterGrade(rollScore((g.lo + g.hi) / 2))} roll. A curse counts by its size: a big curse splices into a big stat. The other parent could roll higher, so these are minimums.`]),
+    el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges compact' }, [head, el('tbody', {}, rows)])]),
+  ]);
+}
+
 /** @type {HTMLElement} */
 let root;
 
 function render() {
-  const body = state.view === 'table' ? tableView() : compareView();
+  const body = state.view === 'table' ? tableView() : state.view === 'splice' ? spliceView() : compareView();
   root.replaceChildren(controls(), body, copyLinkButton('r'));
   saveState('r', {
     view: state.view, weapon: state.weapon, cls: state.cls, rank: state.rank,
-    ...(state.view === 'table' ? { shape: state.shape } : { stat: state.statId }),
+    ...(state.view === 'table' ? { shape: state.shape }
+      : state.view === 'splice' ? { shape: state.shape, sstat: state.spStat, sval: state.spValue } : { stat: state.statId }),
   });
 }
 
 /** Applies state from the URL hash; a known weapon overrides the class. */
 function restore() {
   const saved = pick(loadState('r'), {
-    view: oneOf(/** @type {const} */ (['table', 'compare'])),
+    view: oneOf(/** @type {const} */ (['table', 'compare', 'splice'])),
+    sstat: v => (STAT_BY_ID[v] ? v : undefined),
+    sval: v => String(v).slice(0, 12),
     weapon: v => WEAPONS.find(w => w[0] === v)?.[0],
     cls: oneOf(CLASSES),
     shape: oneOf(SHAPE_ORDER),
@@ -195,6 +245,8 @@ function restore() {
   }
   if (saved.shape) state.shape = saved.shape;
   if (saved.stat) state.statId = saved.stat;
+  if (saved.sstat) state.spStat = saved.sstat;
+  if (saved.sval !== undefined) state.spValue = saved.sval;
   if (saved.rank !== undefined) state.rank = Math.round(saved.rank);
 }
 

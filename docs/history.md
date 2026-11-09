@@ -1465,3 +1465,5 @@ Buffs:
 - [x] In the Stat Ranges section, collapse the Heat/Cold/Electric/Toxin and Impact/Slash/Puncture and Faction Damage and Other Stats (which also share the same values, like the previous). Rows whose ranges show exactly the same share one row; Puncture keeps its own, since its coefficient shows ~0.04 lower.
 - [x] In the Stat Ranges section, there does not need to be so much whitespace between Stat and Positive. In narrower browser windows, it overflows the side of the display port.
 - [x] In the Build Planner section, Spliced should have the same selectors as the positive stats, as should the negative. It should go LessThanOrEqualTo, EqualTo, GreaterThanOrEqualTo. They should also have hover tips that say "at most", "exactly", and "at least" respectively.
+- [x] Ranges: a "Splice lookup" view. Give a stat and the value shown (a curse with its minus) and it lists what it
+      splices into, as a minimum and a best case (-58.5% Ammo Max on ++- gives Ammo Efficiency +73.1% to +73.5%).
