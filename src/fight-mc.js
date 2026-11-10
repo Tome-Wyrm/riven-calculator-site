@@ -20,7 +20,7 @@
 // Not covered (returns {unsupported}): melee, crowds (call it without opts.crowd, and src/fight.js too),
 // Void's bubble.
 
-import { BLAST_ALONE, BLAST_DETONATED, DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, critFlatOf, factionOf, hitByType, ticksOf, weakPointMult, critChanceOf } from './sim.js';
+import { BLAST_ALONE, BLAST_DETONATED, BLAST_SECONDS, DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, critFlatOf, factionOf, hitByType, ticksOf, weakPointMult, critChanceOf } from './sim.js';
 import { HEAT_STRIP, BEAM_RAMP, TARGET_SECONDS, SWAP_OUT, ehpOf, amplify } from './fight.js';
 
 /** @typedef {import('./sim.js').SimOptions} SimOptions */
@@ -28,8 +28,6 @@ import { HEAT_STRIP, BEAM_RAMP, TARGET_SECONDS, SWAP_OUT, ehpOf, amplify } from 
 /** @typedef {import('./sim.js').Target} Target */
 /** @typedef {import('./data/weapon-stats.js').WeaponStats} WeaponStats */
 
-/** Seconds a Blast stack waits for nine more before it pays alone. */
-const BLAST_SECONDS = 1.5;
 
 /**
  * A seeded random number generator (mulberry32): the same seed, the same fight.

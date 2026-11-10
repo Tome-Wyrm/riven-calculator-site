@@ -1384,6 +1384,21 @@ Incarnon gauge (`chargedPellets`) holds: time in form 0.82/0.82, 0.59/0.59, 0.76
 exactly on time (status chance 100%, no spread) meets Blast's cliff: 3 procs every 0.5 s never has 10 up, so none
 detonate (`blastPay` assumes procs at random).
 
+**Viral and Blast in the fight** (2026-11-09), from the random fight's findings:
+- Viral and Magnetic: `overStacks` takes `amplify` over the stack count, a primer's stacks sure and the procs' own
+  Poisson (one expected: 1.72x, not 2x), in src/fight.js and src/sim.js alike. 1-3% on the studies' time per kill.
+- Blast (src/fight.js): the share `blastDetonates` gives waits for ten. `blastGroups` is E[floor(N / 10)] of the
+  stacks so far, N a sure part and a Poisson part of the count's variance (`procVariance`: each pellet's procs and the
+  pellets a whole number either side of their mean). The rest pays 0.3x when its stack runs out, 1.5 s on. Stacks up
+  when the target dies pay nothing on it. Groups are counted over the stacks that would detonate: counted over all of
+  them, 3 procs a second read 14-16% fast against 0-3%.
+- fight-check: mean gap -21.5% to -16.9%; Ignis Wraith room -49% to -23%, Phage -48% to -31%, Kuva Nukor -53% to
+  -29% (what's left is about their gap without Blast: whole shots). On made-up guns at 12 procs a second, within 3%
+  past the first ten hits (a ten-hit kill: -10%, the last shot's share).
+- Baseline: the rooms whose kills take a shot or less fell most, since Blast paid its detonation on that one shot:
+  Laetum -48%, Felarx in form -47%, Torid in form -39%, Ignis Wraith -29%, Phage -21%, Kuva Nukor -20%. Their builds
+  move off Blast and Status Damage. Single targets -1 to -5%. Saved as the new baseline.
+
 ## Verified in game (2026-10-23)
 
 The player-data fingerprint `Value` is a 30-bit roll: **u = Value / 2³⁰**, and W = 0.9 + 0.2u.

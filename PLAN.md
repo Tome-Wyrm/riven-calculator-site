@@ -32,11 +32,11 @@ Needs the reference builds.
 
 Doesn't need section 2, and can run alongside it. The checks come first: the rest is judged by them.
 
-- [ ] **Viral and Magnetic on average stacks**: `amplify` of the expected count overstates them while it's low (one
-      expected: 2x, against 1.72x with real counts). Take its expectation over the count instead (Poisson, below the
-      cap: 1.75 - 0.75 e^-m + 0.25 m). Soma Prime on one target: -17% time per kill from this alone.
-- [ ] **Blast in short kills**: `blastPay` pays each proc at once; real stacks wait for 10, and those still up die with
-      the target. Half the time per kill for beams in rooms (Ignis Wraith, Phage, Kuva Nukor); Kuva Bramma -42%.
+- [ ] **Blast at a low rate**: `blastDetonates` takes procs as coming at random times, but they come in shots: at
+      1.5 procs a shot, 2 shots a second, it pays 10% too much on a long fight (`node tools/fight-check.mjs`'s way, on a
+      made-up gun). The same for procs every shot near sure (a beam at 100% status).
+- [ ] **Phage without Blast**: on a long fight (100x a room unit's health) the averages are 28% slow against the
+      random fight. Not looked at; Heat's timer is the first suspect.
 - [ ] **Whole shots** (decide): a kill takes whole shots, about half a shot more than the averaged count, so time per
       kill reads short where kills take a few (Kuva Hek on one target: 1.53 shots, really 2.38). The DPS counts
       overkill on purpose; decide whether it should count this.

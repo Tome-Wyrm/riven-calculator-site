@@ -1,15 +1,15 @@
 {
- "made": "2026-11-09",
+ "made": "2026-11-10",
  "studies": {
   "Soma Prime | room": {
-   "dps": 886379.8449427049,
+   "dps": 870102.5746455621,
    "build": [
     "Bladed Rounds",
     "Critical Delay",
     "Galvanized Chamber",
+    "High Voltage",
     "Primed Cryo Rounds",
     "Primed Shred",
-    "Stormbringer",
     "Vile Acceleration",
     "Vital Sense"
    ],
@@ -17,48 +17,30 @@
    "singles": [
     {
      "id": "critDamage",
-     "change": 0.47741987693254084
+     "change": 0.45552503428936575
     },
     {
      "id": "electricity",
-     "change": 0.4238231339570071
+     "change": 0.4456119465441253
     },
     {
      "id": "critChance",
-     "change": 0.4071108236191703
+     "change": 0.4014435295633221
     },
     {
      "id": "fireRate",
-     "change": 0.3536680592553709
+     "change": 0.3323668007898386
     },
     {
      "id": "damage",
-     "change": 0.33306428703759394
+     "change": 0.3159800171636158
     },
     {
      "id": "multishot",
-     "change": 0.3038430896831872
+     "change": 0.2941843125156509
     }
    ],
    "sets": [
-    {
-     "ids": [
-      "critDamage",
-      "critChance",
-      "damage"
-     ],
-     "curse": "corpus",
-     "change": 0.9712329031184326
-    },
-    {
-     "ids": [
-      "critDamage",
-      "critChance",
-      "multishot"
-     ],
-     "curse": "corpus",
-     "change": 0.935822339776126
-    },
     {
      "ids": [
       "critDamage",
@@ -66,7 +48,25 @@
       "critChance"
      ],
      "curse": "corpus",
-     "change": 0.8948813833272466
+     "change": 0.8641843917235492
+    },
+    {
+     "ids": [
+      "critDamage",
+      "critChance",
+      "damage"
+     ],
+     "curse": "corpus",
+     "change": 0.8601245248938101
+    },
+    {
+     "ids": [
+      "electricity",
+      "critChance",
+      "damage"
+     ],
+     "curse": "corpus",
+     "change": 0.8492940874910779
     }
    ],
    "curses": [
@@ -90,7 +90,7 @@
    ]
   },
   "Soma Prime | single, armored": {
-   "dps": 31596.03027640444,
+   "dps": 31252.053925816766,
    "build": [
     "Critical Delay",
     "Malignant Force",
@@ -105,27 +105,27 @@
    "singles": [
     {
      "id": "corrosive",
-     "change": 0.6064691561236857
-    },
-    {
-     "id": "viral",
-     "change": 0.5173650844451443
+     "change": 0.5778615510683647
     },
     {
      "id": "damage",
-     "change": 0.49540118305200376
+     "change": 0.4956792483739061
     },
     {
      "id": "multishot",
-     "change": 0.49333701349518
+     "change": 0.4950422736306834
     },
     {
      "id": "critDamage",
-     "change": 0.48444909765229727
+     "change": 0.48533920145075626
+    },
+    {
+     "id": "viral",
+     "change": 0.4789290006611959
     },
     {
      "id": "critChance",
-     "change": 0.45810165974914074
+     "change": 0.4610968579333725
     }
    ],
    "sets": [
@@ -136,7 +136,7 @@
       "multishot"
      ],
      "curse": "statusDuration",
-     "change": 2.1791468582905686
+     "change": 2.0702100748767407
     },
     {
      "ids": [
@@ -145,22 +145,22 @@
       "critDamage"
      ],
      "curse": "statusDuration",
-     "change": 2.156238135202578
+     "change": 2.0454975687813914
     },
     {
      "ids": [
-      "viral",
       "multishot",
-      "critDamage"
+      "critDamage",
+      "viral"
      ],
      "curse": "statusDuration",
-     "change": 2.138219069093417
+     "change": 2.0223442355136
     }
    ],
    "curses": [
     {
      "id": "statusDuration",
-     "change": 0.3138031897861788
+     "change": 0.3139554567079761
     },
     {
      "id": "corpus",
@@ -178,7 +178,7 @@
    ]
   },
   "Soma Prime | room, in form": {
-   "dps": 1487885.0921738255,
+   "dps": 1399144.73695856,
    "build": [
     "Bladed Rounds",
     "Critical Delay",
@@ -193,38 +193,38 @@
    "singles": [
     {
      "id": "critDamage",
-     "change": 0.36088346113674596
+     "change": 0.35795390342638345
     },
     {
      "id": "electricity",
-     "change": 0.3538605110321107
-    },
-    {
-     "id": "damage",
-     "change": 0.3250897867215976
+     "change": 0.3497274737857021
     },
     {
      "id": "critChance",
-     "change": 0.3180668801837636
+     "change": 0.27142755352702275
+    },
+    {
+     "id": "damage",
+     "change": 0.2624495830132878
+    },
+    {
+     "id": "fireRate",
+     "change": 0.24008784040446218
     },
     {
      "id": "multishot",
-     "change": 0.30166660655891686
-    },
-    {
-     "id": "magnetic",
-     "change": 0.28115235291928564
+     "change": 0.22792612359222253
     }
    ],
    "sets": [
     {
      "ids": [
       "critDamage",
-      "damage",
-      "critChance"
+      "critChance",
+      "damage"
      ],
      "curse": "corpus",
-     "change": 0.7486342976155218
+     "change": 0.8326878656212318
     },
     {
      "ids": [
@@ -233,16 +233,16 @@
       "critChance"
      ],
      "curse": "corpus",
-     "change": 0.7422038801115114
+     "change": 0.8253528846693534
     },
     {
      "ids": [
       "electricity",
-      "damage",
-      "critChance"
+      "critChance",
+      "damage"
      ],
      "curse": "corpus",
-     "change": 0.7353184921422498
+     "change": 0.817859557489272
     }
    ],
    "curses": [
@@ -266,7 +266,7 @@
    ]
   },
   "Kuva Bramma | room": {
-   "dps": 1674375.256715957,
+   "dps": 1649446.982889678,
    "build": [
     "Bladed Rounds",
     "Critical Delay",
@@ -281,27 +281,27 @@
    "singles": [
     {
      "id": "critChance",
-     "change": 0.48741265538287704
+     "change": 0.4874162405211615
     },
     {
      "id": "critDamage",
-     "change": 0.39969829445961125
+     "change": 0.3996981678927771
     },
     {
      "id": "blast",
-     "change": 0.35569208419183296
+     "change": 0.36401666886692485
     },
     {
      "id": "damage",
-     "change": 0.3518565662579207
+     "change": 0.3618667291766642
     },
     {
      "id": "gas",
-     "change": 0.3429545234014866
+     "change": 0.3579292689677793
     },
     {
      "id": "cold",
-     "change": 0.3347946525563168
+     "change": 0.34263374219175846
     }
    ],
    "sets": [
@@ -312,7 +312,7 @@
       "blast"
      ],
      "curse": "corpus",
-     "change": 1.1895312333418842
+     "change": 1.1867851933562195
     },
     {
      "ids": [
@@ -321,7 +321,7 @@
       "damage"
      ],
      "curse": "corpus",
-     "change": 1.183331337044359
+     "change": 1.1833336916214914
     },
     {
      "ids": [
@@ -330,7 +330,7 @@
       "gas"
      ],
      "curse": "corpus",
-     "change": 1.1689498817510775
+     "change": 1.1770164780802417
     }
    ],
    "curses": [
@@ -350,10 +350,10 @@
    "valence": "heat"
   },
   "Kuva Bramma | single, armored": {
-   "dps": 29935.66034609626,
+   "dps": 29381.6019532711,
    "build": [
     "Heavy Caliber",
-    "Malignant Force",
+    "Infected Clip",
     "Point Strike",
     "Primed Cryo Rounds",
     "Serration",
@@ -365,27 +365,27 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.3035136959754652
+     "change": 0.33465999299953064
     },
     {
      "id": "critDamage",
-     "change": 0.30092638711826014
+     "change": 0.33432513061593916
     },
     {
      "id": "critChance",
-     "change": 0.29598170145070846
+     "change": 0.3289702600817599
     },
     {
      "id": "damage",
-     "change": 0.2918289141605477
+     "change": 0.32447425661983775
     },
     {
      "id": "toxin",
-     "change": 0.2795583652576088
+     "change": 0.31097020648602625
     },
     {
-     "id": "ammoEfficiency",
-     "change": 0.20680335359550073
+     "id": "fireRate",
+     "change": 0.21348547755183556
     }
    ],
    "sets": [
@@ -396,7 +396,7 @@
       "critChance"
      ],
      "curse": "corpus",
-     "change": 0.9572225181429372
+     "change": 0.950018462636016
     },
     {
      "ids": [
@@ -405,7 +405,7 @@
       "damage"
      ],
      "curse": "corpus",
-     "change": 0.8999239319437722
+     "change": 0.8929264252621667
     },
     {
      "ids": [
@@ -414,7 +414,7 @@
       "damage"
      ],
      "curse": "corpus",
-     "change": 0.8479102736432689
+     "change": 0.8411172771077298
     }
    ],
    "curses": [
@@ -434,13 +434,13 @@
    "valence": "heat"
   },
   "Ignis Wraith | room": {
-   "dps": 782061.2065101012,
+   "dps": 554921.9699592651,
    "build": [
-    "Bladed Rounds",
-    "Critical Delay",
+    "Galvanized Aptitude",
     "Galvanized Chamber",
     "Hammer Shot",
     "Magnetic Capacity",
+    "Point Strike",
     "Rifle Elementalist",
     "Rime Rounds",
     "Vile Acceleration"
@@ -449,56 +449,56 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.44372169174694176
-    },
-    {
-     "id": "statusDamage",
-     "change": 0.3983238950793351
+     "change": 0.36026754685989437
     },
     {
      "id": "critDamage",
-     "change": 0.3675696654303793
+     "change": 0.2843131762155082
+    },
+    {
+     "id": "statusChance",
+     "change": 0.2714936885169883
+    },
+    {
+     "id": "statusDamage",
+     "change": 0.25941298590133033
     },
     {
      "id": "critChance",
-     "change": 0.3480812091722334
+     "change": 0.2455578753141272
     },
     {
-     "id": "damage",
-     "change": 0.31299375601620016
-    },
-    {
-     "id": "magnetic",
-     "change": 0.2686471869910023
+     "id": "fireRate",
+     "change": 0.23531059072245997
     }
    ],
    "sets": [
     {
      "ids": [
       "multishot",
-      "statusDamage",
-      "critDamage"
+      "statusChance",
+      "statusDamage"
      ],
      "curse": "corpus",
-     "change": 0.9347211978633265
+     "change": 0.8133459391123299
     },
     {
      "ids": [
       "multishot",
-      "statusDamage",
+      "statusChance",
       "critChance"
      ],
      "curse": "corpus",
-     "change": 0.9292759718533798
+     "change": 0.7878540847298194
     },
     {
      "ids": [
       "multishot",
-      "statusDamage",
-      "damage"
+      "critDamage",
+      "statusChance"
      ],
      "curse": "corpus",
-     "change": 0.9149598376844357
+     "change": 0.779097417705291
     }
    ],
    "curses": [
@@ -517,7 +517,7 @@
    ]
   },
   "Ignis Wraith | single, armored": {
-   "dps": 24677.629810205184,
+   "dps": 24272.20709229527,
    "build": [
     "Heavy Caliber",
     "Malignant Force",
@@ -532,27 +532,27 @@
    "singles": [
     {
      "id": "corrosive",
-     "change": 0.5355896916512439
+     "change": 0.5278354558084508
     },
     {
      "id": "viral",
-     "change": 0.5085641208967442
+     "change": 0.5071971125761086
     },
     {
      "id": "multishot",
-     "change": 0.3357267717452983
+     "change": 0.329974106484207
     },
     {
      "id": "critDamage",
-     "change": 0.3234606693950344
+     "change": 0.3170929686141293
     },
     {
      "id": "critChance",
-     "change": 0.32054587620261654
+     "change": 0.31427929231876006
     },
     {
      "id": "damage",
-     "change": 0.3199533789980553
+     "change": 0.3137073037958342
     }
    ],
    "sets": [
@@ -563,7 +563,7 @@
       "damage"
      ],
      "curse": "corpus",
-     "change": 1.3760642648933707
+     "change": 1.2822683463331241
     },
     {
      "ids": [
@@ -572,7 +572,7 @@
       "critChance"
      ],
      "curse": "corpus",
-     "change": 1.2192996379139287
+     "change": 1.1752491142745636
     },
     {
      "ids": [
@@ -581,7 +581,7 @@
       "critDamage"
      ],
      "curse": "corpus",
-     "change": 1.1468320513890369
+     "change": 1.1024595394590753
     }
    ],
    "curses": [
@@ -600,13 +600,13 @@
    ]
   },
   "Acceltra | room": {
-   "dps": 1072470.5117482636,
+   "dps": 1051313.9080354879,
    "build": [
     "Bladed Rounds",
     "Critical Delay",
     "Galvanized Chamber",
-    "Heavy Caliber",
     "Primed Cryo Rounds",
+    "Serration",
     "Stormbringer",
     "Vile Acceleration",
     "Vital Sense"
@@ -614,57 +614,57 @@
    "arcane": "Primary Merciless",
    "singles": [
     {
-     "id": "critDamage",
-     "change": 0.3588848166638603
+     "id": "critChance",
+     "change": 0.3608371207490475
     },
     {
-     "id": "critChance",
-     "change": 0.3529553304016453
+     "id": "critDamage",
+     "change": 0.31940306449398737
     },
     {
      "id": "damage",
-     "change": 0.3009762917118617
+     "change": 0.3115990838746501
     },
     {
      "id": "electricity",
-     "change": 0.2967700091179757
+     "change": 0.30704670736159256
     },
     {
      "id": "multishot",
-     "change": 0.2766670161807836
+     "change": 0.2829094984576377
     },
     {
      "id": "ammoEfficiency",
-     "change": 0.2633211742177397
+     "change": 0.2633211742177395
     }
    ],
    "sets": [
     {
      "ids": [
-      "critDamage",
       "critChance",
+      "critDamage",
       "damage"
      ],
      "curse": "corpus",
-     "change": 0.8572019568747249
+     "change": 0.8767625712281935
     },
     {
      "ids": [
-      "critDamage",
       "critChance",
+      "critDamage",
       "electricity"
      ],
      "curse": "corpus",
-     "change": 0.845693669738063
+     "change": 0.8649745163453957
     },
     {
      "ids": [
-      "critDamage",
       "critChance",
-      "ammoEfficiency"
+      "damage",
+      "electricity"
      ],
      "curse": "corpus",
-     "change": 0.8192826558734372
+     "change": 0.8281038283070896
     }
    ],
    "curses": [
@@ -683,10 +683,10 @@
    ]
   },
   "Acceltra | single, armored": {
-   "dps": 35033.53660820003,
+   "dps": 34210.04280207419,
    "build": [
     "Critical Delay",
-    "Infected Clip",
+    "Malignant Force",
     "Primed Cryo Rounds",
     "Serration",
     "Split Chamber",
@@ -698,62 +698,62 @@
    "singles": [
     {
      "id": "corrosive",
-     "change": 0.4814368065569954
+     "change": 0.4568961262254321
     },
     {
      "id": "damage",
-     "change": 0.39638052158694626
-    },
-    {
-     "id": "viral",
-     "change": 0.392803150625467
+     "change": 0.396074499887231
     },
     {
      "id": "multishot",
-     "change": 0.3908425898393495
+     "change": 0.3940056519970163
     },
     {
      "id": "critDamage",
-     "change": 0.38628953604472316
+     "change": 0.3862594323754227
+    },
+    {
+     "id": "viral",
+     "change": 0.35895542780405343
     },
     {
      "id": "toxin",
-     "change": 0.35704140197649914
+     "change": 0.35322825871509345
     }
    ],
    "sets": [
     {
      "ids": [
-      "viral",
       "multishot",
-      "critDamage"
+      "critDamage",
+      "viral"
      ],
      "curse": "statusDuration",
-     "change": 2.197077258152322
+     "change": 2.1152103916951215
     },
     {
      "ids": [
       "damage",
-      "viral",
-      "multishot"
+      "multishot",
+      "viral"
      ],
      "curse": "statusDuration",
-     "change": 2.1677836703662043
+     "change": 2.0839716445771135
     },
     {
      "ids": [
       "corrosive",
-      "damage",
-      "multishot"
+      "multishot",
+      "critDamage"
      ],
      "curse": "statusDuration",
-     "change": 2.132922829684957
+     "change": 2.0505474178921643
     }
    ],
    "curses": [
     {
      "id": "statusDuration",
-     "change": 0.33682488622528584
+     "change": 0.3322841211513652
     },
     {
      "id": "corpus",
@@ -781,27 +781,27 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.47445273558371515
+     "change": 0.40806820898345086
     },
     {
      "id": "critDamage",
-     "change": 0.4212982372786096
-    },
-    {
-     "id": "statusChance",
-     "change": 0.41578987049450955
+     "change": 0.3435069753115527
     },
     {
      "id": "ammoEfficiency",
-     "change": 0.3124044766352634
+     "change": 0.3040485650556066
     },
     {
      "id": "heat",
-     "change": 0.29406118634034106
+     "change": 0.28646479438785755
     },
     {
      "id": "critChance",
      "change": 0.27061166806710824
+    },
+    {
+     "id": "damage",
+     "change": 0.2646964107240948
     }
    ],
    "sets": [
@@ -809,35 +809,31 @@
      "ids": [
       "multishot",
       "critDamage",
-      "statusChance"
-     ],
-     "curse": "puncture",
-     "change": 1.0702363544024789
-    },
-    {
-     "ids": [
-      "multishot",
-      "statusChance",
       "critChance"
      ],
-     "curse": "puncture",
-     "change": 1.0117698409364526
+     "curse": "corpus",
+     "change": 0.8019786894932399
     },
     {
      "ids": [
       "multishot",
       "critDamage",
-      "critChance"
+      "ammoEfficiency"
      ],
-     "curse": "puncture",
-     "change": 1.0101153665758162
+     "curse": "corpus",
+     "change": 0.7992436148896689
+    },
+    {
+     "ids": [
+      "multishot",
+      "critDamage",
+      "damage"
+     ],
+     "curse": "corpus",
+     "change": 0.7929490128967256
     }
    ],
    "curses": [
-    {
-     "id": "puncture",
-     "change": 0.016362716606568517
-    },
     {
      "id": "corpus",
      "change": 0
@@ -845,12 +841,16 @@
     {
      "id": "grineer",
      "change": 0
+    },
+    {
+     "id": "infested",
+     "change": 0
     }
    ],
    "valence": "heat"
   },
   "Kuva Hek | single, armored": {
-   "dps": 39327.14461091959,
+   "dps": 38162.655450653925,
    "build": [
     "Contagious Spread",
     "Critical Deceleration",
@@ -865,27 +865,27 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.31293615631696614
+     "change": 0.3381352121408616
     },
     {
      "id": "corrosive",
-     "change": 0.298153301332994
+     "change": 0.30730572709399673
     },
     {
      "id": "viral",
-     "change": 0.29083799161727897
+     "change": 0.2799628144233779
     },
     {
      "id": "damage",
-     "change": 0.24462300032491768
+     "change": 0.2422492552338631
     },
     {
      "id": "toxin",
-     "change": 0.23640118304681756
+     "change": 0.23420726314009976
     },
     {
      "id": "ammoEfficiency",
-     "change": 0.23356368619001833
+     "change": 0.2295042312912463
     }
    ],
    "sets": [
@@ -893,19 +893,19 @@
      "ids": [
       "multishot",
       "damage",
-      "ammoEfficiency"
+      "fireRate"
      ],
      "curse": "statusDuration",
-     "change": 1.5953635352757307
+     "change": 1.5956401831017941
     },
     {
      "ids": [
       "multishot",
-      "damage",
-      "toxin"
+      "corrosive",
+      "fireRate"
      ],
      "curse": "statusDuration",
-     "change": 1.4462512273707318
+     "change": 1.4554621956738
     },
     {
      "ids": [
@@ -914,13 +914,13 @@
       "damage"
      ],
      "curse": "statusDuration",
-     "change": 1.3623349227361077
+     "change": 1.4172339312612365
     }
    ],
    "curses": [
     {
      "id": "statusDuration",
-     "change": 0.24251679582059404
+     "change": 0.29054247422538215
     },
     {
      "id": "corpus",
@@ -934,7 +934,7 @@
    "valence": "heat"
   },
   "Felarx | room": {
-   "dps": 3091414.1468105353,
+   "dps": 3078893.482125768,
    "build": [
     "Blaze",
     "Galvanized Hell",
@@ -949,27 +949,27 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.4510104232599368
+     "change": 0.4080682089834504
     },
     {
      "id": "ammoEfficiency",
-     "change": 0.39661771442112603
+     "change": 0.3904040387464083
     },
     {
      "id": "fireRate",
-     "change": 0.3456718923098192
+     "change": 0.3399835012589043
     },
     {
      "id": "damage",
-     "change": 0.3080012561725318
-    },
-    {
-     "id": "statusChance",
-     "change": 0.29278453402149207
+     "change": 0.3342032559319681
     },
     {
      "id": "heat",
-     "change": 0.28526114220351406
+     "change": 0.27935441707375164
+    },
+    {
+     "id": "blast",
+     "change": 0.2602296801494086
     }
    ],
    "sets": [
@@ -977,34 +977,34 @@
      "ids": [
       "multishot",
       "ammoEfficiency",
-      "damage"
-     ],
-     "curse": "critChance",
-     "change": 1.2458725578747325
-    },
-    {
-     "ids": [
-      "multishot",
-      "ammoEfficiency",
       "fireRate"
      ],
      "curse": "critChance",
-     "change": 1.2253854816004015
+     "change": 1.1412626073181023
     },
     {
      "ids": [
       "multishot",
       "ammoEfficiency",
-      "statusChance"
+      "damage"
      ],
      "curse": "critChance",
-     "change": 1.0864999710026892
+     "change": 1.1230688861851696
+    },
+    {
+     "ids": [
+      "multishot",
+      "ammoEfficiency",
+      "heat"
+     ],
+     "curse": "critChance",
+     "change": 1.037037832708283
     }
    ],
    "curses": [
     {
      "id": "critChance",
-     "change": 0.07117155356387217
+     "change": 0.07117150425721697
     },
     {
      "id": "corpus",
@@ -1038,7 +1038,7 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.5141990147154849
+     "change": 0.509119804778402
     },
     {
      "id": "damage",
@@ -1058,7 +1058,7 @@
     },
     {
      "id": "viral",
-     "change": 0.25156100596979303
+     "change": 0.24085177301318916
     }
    ],
    "sets": [
@@ -1069,7 +1069,7 @@
       "ammoEfficiency"
      ],
      "curse": "critChance",
-     "change": 1.8998746390362276
+     "change": 1.8854394311983498
     },
     {
      "ids": [
@@ -1078,7 +1078,7 @@
       "fireRate"
      ],
      "curse": "critChance",
-     "change": 1.7945468146041406
+     "change": 1.7814342816280435
     },
     {
      "ids": [
@@ -1093,7 +1093,7 @@
    "curses": [
     {
      "id": "critChance",
-     "change": 0.07117148770506954
+     "change": 0.07117148737559242
     },
     {
      "id": "corpus",
@@ -1112,42 +1112,42 @@
    ]
   },
   "Felarx | room, in form": {
-   "dps": 5296547.30316524,
+   "dps": 2832715.4125177534,
    "build": [
+    "Blaze",
     "Frail Momentum",
     "Galvanized Hell",
+    "Primed Charged Shell",
     "Primed Chilling Grasp",
     "Primed Point Blank",
-    "Scattering Inferno",
-    "Shotgun Barrage",
-    "Shotgun Elementalist",
-    "Shotgun Savvy"
+    "Seeking Fury",
+    "Shotgun Barrage"
    ],
    "arcane": "Primary Merciless",
    "singles": [
     {
      "id": "multishot",
-     "change": 0.46819153838211625
+     "change": 0.4266819767289882
     },
     {
      "id": "fireRate",
-     "change": 0.4094627928365353
-    },
-    {
-     "id": "statusDamage",
-     "change": 0.4018043785090921
-    },
-    {
-     "id": "statusChance",
-     "change": 0.3873570596734992
+     "change": 0.3473623753412931
     },
     {
      "id": "damage",
-     "change": 0.38147997554770563
+     "change": 0.318563311327124
     },
     {
      "id": "blast",
-     "change": 0.21007151223302523
+     "change": 0.2604316112508751
+    },
+    {
+     "id": "cold",
+     "change": 0.24580494160483446
+    },
+    {
+     "id": "heat",
+     "change": 0.24580494160483446
     }
    ],
    "sets": [
@@ -1155,42 +1155,42 @@
      "ids": [
       "multishot",
       "fireRate",
-      "statusDamage"
-     ],
-     "curse": "critChance",
-     "change": 1.1990979157435855
-    },
-    {
-     "ids": [
-      "multishot",
-      "statusDamage",
-      "statusChance"
-     ],
-     "curse": "critChance",
-     "change": 1.1709360288948374
-    },
-    {
-     "ids": [
-      "multishot",
-      "statusDamage",
       "damage"
      ],
      "curse": "critChance",
-     "change": 1.1597124934453542
+     "change": 1.1886120512879677
+    },
+    {
+     "ids": [
+      "multishot",
+      "fireRate",
+      "statusChance"
+     ],
+     "curse": "critChance",
+     "change": 1.0621499966906152
+    },
+    {
+     "ids": [
+      "multishot",
+      "damage",
+      "statusChance"
+     ],
+     "curse": "critChance",
+     "change": 1.0254430199952678
     }
    ],
    "curses": [
     {
      "id": "critChance",
-     "change": 0.05645634286337797
+     "change": 0.060114430889186776
     },
     {
-     "id": "slash",
-     "change": 0.008444317633769849
+     "id": "corpus",
+     "change": 0
     },
     {
-     "id": "puncture",
-     "change": 0.007138203875258542
+     "id": "grineer",
+     "change": 0
     }
    ],
    "perks": [
@@ -1201,45 +1201,63 @@
    ]
   },
   "Phage | room": {
-   "dps": 3192322.165139297,
+   "dps": 2520740.291968853,
    "build": [
-    "Critical Deceleration",
+    "Frail Momentum",
     "Frigid Blast",
     "Galvanized Hell",
     "Magnetic Strafe",
-    "Primed Ravage",
     "Scattering Inferno",
     "Shotgun Barrage",
-    "Shotgun Elementalist"
+    "Shotgun Elementalist",
+    "Shotgun Savvy"
    ],
    "arcane": "Primary Merciless",
    "singles": [
     {
      "id": "multishot",
-     "change": 0.8969243512226588
-    },
-    {
-     "id": "statusDamage",
-     "change": 0.5089599321458083
-    },
-    {
-     "id": "fireRate",
-     "change": 0.4752427662224048
-    },
-    {
-     "id": "critDamage",
-     "change": 0.440888994313791
+     "change": 0.676662814799353
     },
     {
      "id": "statusChance",
-     "change": 0.4396593574855401
+     "change": 0.38079862239718887
+    },
+    {
+     "id": "statusDamage",
+     "change": 0.37394938044405945
+    },
+    {
+     "id": "fireRate",
+     "change": 0.36037706322106233
     },
     {
      "id": "damage",
-     "change": 0.43683981774151537
+     "change": 0.18698152534172197
+    },
+    {
+     "id": "critDamage",
+     "change": 0.1762596894274111
     }
    ],
    "sets": [
+    {
+     "ids": [
+      "multishot",
+      "statusChance",
+      "statusDamage"
+     ],
+     "curse": "corpus",
+     "change": 1.292145333401657
+    },
+    {
+     "ids": [
+      "multishot",
+      "statusChance",
+      "fireRate"
+     ],
+     "curse": "corpus",
+     "change": 1.248047431107146
+    },
     {
      "ids": [
       "multishot",
@@ -1247,25 +1265,7 @@
       "fireRate"
      ],
      "curse": "corpus",
-     "change": 1.539979822306102
-    },
-    {
-     "ids": [
-      "multishot",
-      "fireRate",
-      "critDamage"
-     ],
-     "curse": "corpus",
-     "change": 1.5021240786097607
-    },
-    {
-     "ids": [
-      "multishot",
-      "statusDamage",
-      "statusChance"
-     ],
-     "curse": "corpus",
-     "change": 1.4710190879355283
+     "change": 1.2427893668835965
     }
    ],
    "curses": [
@@ -1284,7 +1284,7 @@
    ]
   },
   "Phage | single, armored": {
-   "dps": 124260.76245688669,
+   "dps": 118620.73869530762,
    "build": [
     "Frigid Blast",
     "Hell's Chamber",
@@ -1299,27 +1299,27 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.8625907352902273
+     "change": 0.8790569272613158
     },
     {
      "id": "fireRate",
-     "change": 0.5007931417647393
+     "change": 0.47862591309518443
     },
     {
      "id": "damage",
-     "change": 0.48999844759740796
+     "change": 0.46217134287792017
     },
     {
      "id": "corrosive",
-     "change": 0.41246961440903407
+     "change": 0.37367154837268
     },
     {
      "id": "statusDamage",
-     "change": 0.39790115032722384
+     "change": 0.37088960983253827
     },
     {
      "id": "blast",
-     "change": 0.3794312507942186
+     "change": 0.3614316728346958
     }
    ],
    "sets": [
@@ -1330,7 +1330,7 @@
       "damage"
      ],
      "curse": "corpus",
-     "change": 1.7332313079557506
+     "change": 1.8283398709779553
     },
     {
      "ids": [
@@ -1339,16 +1339,16 @@
       "statusDamage"
      ],
      "curse": "corpus",
-     "change": 1.4975091237929279
+     "change": 1.5831877050603618
     },
     {
      "ids": [
       "multishot",
-      "fireRate",
-      "corrosive"
+      "damage",
+      "statusDamage"
      ],
      "curse": "corpus",
-     "change": 1.469296830695236
+     "change": 1.5340689063704986
     }
    ],
    "curses": [
@@ -1367,85 +1367,85 @@
    ]
   },
   "Laetum | room": {
-   "dps": 2817116.780998662,
+   "dps": 1451265.4057029958,
    "build": [
+    "Anemic Agility",
     "Frostbite",
     "Galvanized Diffusion",
     "Hornet Strike",
     "Lethal Torrent",
     "Pistol Elementalist",
-    "Primed Heated Charge",
-    "Scorch",
-    "Sure Shot"
+    "Primed Convulsion",
+    "Primed Heated Charge"
    ],
    "arcane": "Secondary Merciless",
    "singles": [
     {
-     "id": "statusDamage",
-     "change": 0.43645475042838244
+     "id": "multishot",
+     "change": 0.380014616071374
     },
     {
      "id": "damage",
-     "change": 0.36330882240744233
-    },
-    {
-     "id": "multishot",
-     "change": 0.35625944218710837
-    },
-    {
-     "id": "statusChance",
-     "change": 0.3438561791713066
+     "change": 0.367885103229614
     },
     {
      "id": "fireRate",
-     "change": 0.3059388330971371
+     "change": 0.3236282580896219
+    },
+    {
+     "id": "statusChance",
+     "change": 0.2660237643253469
     },
     {
      "id": "blast",
-     "change": 0.19805386830245642
+     "change": 0.26534158662029705
+    },
+    {
+     "id": "cold",
+     "change": 0.25027565489250914
     }
    ],
    "sets": [
     {
      "ids": [
-      "statusDamage",
-      "damage",
-      "multishot"
-     ],
-     "curse": "slash",
-     "change": 1.4649452219895798
-    },
-    {
-     "ids": [
-      "statusDamage",
-      "damage",
-      "statusChance"
-     ],
-     "curse": "slash",
-     "change": 1.4495834468994326
-    },
-    {
-     "ids": [
-      "statusDamage",
       "multishot",
+      "damage",
+      "fireRate"
+     ],
+     "curse": "critChance",
+     "change": 1.0922971525321765
+    },
+    {
+     "ids": [
+      "multishot",
+      "damage",
       "statusChance"
      ],
-     "curse": "slash",
-     "change": 1.4027707382487322
+     "curse": "critChance",
+     "change": 0.9702934343626355
+    },
+    {
+     "ids": [
+      "multishot",
+      "damage",
+      "blast"
+     ],
+     "curse": "critChance",
+     "change": 0.962684478039938
     }
    ],
    "curses": [
     {
-     "id": "slash",
-     "change": 0.17932518733169966
-    },
-    {
-     "id": "impact",
-     "change": 0.113761674483009
-    },
-    {
      "id": "critChance",
-     "change": 0.1045029736618519
+     "change": 0.10450226443176369
+    },
+    {
+     "id": "corpus",
+     "change": 0
+    },
+    {
+     "id": "grineer",
+     "change": 0
     }
    ],
    "perks": [
@@ -1470,24 +1470,24 @@
    "arcane": "Secondary Merciless",
    "singles": [
     {
-     "id": "viral",
-     "change": 0.3645975181963024
-    },
-    {
      "id": "multishot",
      "change": 0.35143852591440283
+    },
+    {
+     "id": "viral",
+     "change": 0.33222608997743497
     },
     {
      "id": "damage",
      "change": 0.3298310560669251
     },
     {
-     "id": "corrosive",
-     "change": 0.29109436515928033
-    },
-    {
      "id": "ammoEfficiency",
      "change": 0.2792939553880742
+    },
+    {
+     "id": "corrosive",
+     "change": 0.2417512936355033
     },
     {
      "id": "fireRate",
@@ -1502,7 +1502,7 @@
       "ammoEfficiency"
      ],
      "curse": "statusDuration",
-     "change": 1.4077166676113966
+     "change": 1.3683206722938
     },
     {
      "ids": [
@@ -1511,26 +1511,26 @@
       "toxin"
      ],
      "curse": "statusDuration",
-     "change": 1.3250873486352006
+     "change": 1.2871715571777536
     },
     {
      "ids": [
-      "viral",
       "multishot",
-      "damage"
+      "damage",
+      "fireRate"
      ],
      "curse": "statusDuration",
-     "change": 1.2455493701414988
+     "change": 1.252947887573976
     }
    ],
    "curses": [
     {
      "id": "statusDuration",
-     "change": 0.11975253779173656
+     "change": 0.19849638876747178
     },
     {
      "id": "critChance",
-     "change": 0.043086264105110184
+     "change": 0.06339660025176141
     },
     {
      "id": "corpus",
@@ -1545,81 +1545,81 @@
    ]
   },
   "Laetum | room, in form": {
-   "dps": 16842515.990055576,
+   "dps": 11478617.58895716,
    "build": [
     "Anemic Agility",
     "Frostbite",
     "Galvanized Diffusion",
     "Hornet Strike",
     "Lethal Torrent",
-    "Pistol Elementalist",
-    "Primed Heated Charge",
-    "Scorch"
+    "Magnum Force",
+    "Primed Convulsion",
+    "Primed Heated Charge"
    ],
    "arcane": "Secondary Merciless",
    "singles": [
     {
-     "id": "damage",
-     "change": 0.38014403663518115
-    },
-    {
-     "id": "statusChance",
-     "change": 0.35107553056191976
-    },
-    {
      "id": "multishot",
-     "change": 0.3443997677083881
+     "change": 0.34594220987766944
+    },
+    {
+     "id": "damage",
+     "change": 0.3454040008414119
     },
     {
      "id": "fireRate",
-     "change": 0.3324095365257296
+     "change": 0.23619336767656995
     },
     {
-     "id": "statusDamage",
-     "change": 0.3250420667332352
+     "id": "cold",
+     "change": 0.2345752311671594
     },
     {
      "id": "blast",
-     "change": 0.20888122413377852
+     "change": 0.18878669389276936
+    },
+    {
+     "id": "heat",
+     "change": 0.17800046005679682
     }
    ],
    "sets": [
     {
      "ids": [
-      "damage",
       "multishot",
-      "statusDamage"
+      "damage",
+      "fireRate"
      ],
-     "curse": "impact",
-     "change": 1.1350922094800393
+     "curse": "critChance",
+     "change": 0.9910766826047153
     },
     {
      "ids": [
-      "statusChance",
       "multishot",
-      "statusDamage"
+      "damage",
+      "cold"
      ],
-     "curse": "impact",
-     "change": 1.1189840122024948
+     "curse": "critChance",
+     "change": 0.9445415882056711
     },
     {
      "ids": [
+      "multishot",
       "damage",
-      "statusChance",
-      "statusDamage"
+      "blast"
      ],
-     "curse": "impact",
-     "change": 1.103216292357613
+     "curse": "critChance",
+     "change": 0.9116091727652482
     }
    ],
    "curses": [
     {
-     "id": "impact",
-     "change": 0.1412037863211153
+     "id": "critChance",
+     "change": 0.09771241004288833
     },
     {
-     "id": "critChance",
-     "change": 0.09725593176484004
+     "id": "slash",
+     "change": 0.0072140637955449005
     },
     {
      "id": "corpus",
@@ -1634,71 +1634,71 @@
    ]
   },
   "Kuva Nukor | room": {
-   "dps": 1048123.0807788805,
+   "dps": 838959.2173556102,
    "build": [
-    "Creeping Bullseye",
+    "Anemic Agility",
     "Frostbite",
     "Galvanized Diffusion",
+    "Galvanized Shot",
     "Hornet Strike",
     "Lethal Torrent",
     "Pistol Elementalist",
-    "Primed Target Cracker",
     "Scorch"
    ],
    "arcane": "Secondary Merciless",
    "singles": [
     {
      "id": "multishot",
-     "change": 0.4479939407524116
-    },
-    {
-     "id": "statusDamage",
-     "change": 0.3103469003364412
-    },
-    {
-     "id": "critChance",
-     "change": 0.30155319469900865
-    },
-    {
-     "id": "critDamage",
-     "change": 0.2762784048696796
+     "change": 0.40973490920974376
     },
     {
      "id": "damage",
-     "change": 0.25786397308932996
+     "change": 0.24756052780859394
     },
     {
      "id": "statusChance",
-     "change": 0.24497804427092795
+     "change": 0.24197057017252988
+    },
+    {
+     "id": "statusDamage",
+     "change": 0.23622908978022839
+    },
+    {
+     "id": "fireRate",
+     "change": 0.22175870083964555
+    },
+    {
+     "id": "critChance",
+     "change": 0.1720761471657435
     }
    ],
    "sets": [
     {
      "ids": [
       "multishot",
-      "critChance",
-      "damage"
+      "statusChance",
+      "statusDamage"
      ],
      "curse": "corpus",
-     "change": 1.0215116435338438
+     "change": 0.7488976723665175
     },
     {
      "ids": [
       "multishot",
-      "statusDamage",
+      "statusChance",
       "critChance"
      ],
      "curse": "corpus",
-     "change": 0.9853152995163748
+     "change": 0.7392362317592784
     },
     {
      "ids": [
       "multishot",
-      "critChance",
-      "fireRate"
+      "damage",
+      "statusDamage"
      ],
      "curse": "corpus",
-     "change": 0.9725449549592247
+     "change": 0.7330062692319752
     }
    ],
    "curses": [
@@ -1718,7 +1718,7 @@
    "valence": "magnetic"
   },
   "Kuva Nukor | single, armored": {
-   "dps": 37623.285396003645,
+   "dps": 36080.123412667446,
    "build": [
     "Anemic Agility",
     "Barrel Diffusion",
@@ -1733,27 +1733,27 @@
    "singles": [
     {
      "id": "viral",
-     "change": 0.8345082007685332
+     "change": 0.8181517189024778
     },
     {
      "id": "multishot",
-     "change": 0.6546862109873626
+     "change": 0.6349395970178324
     },
     {
      "id": "corrosive",
-     "change": 0.5645109224929363
+     "change": 0.6231928858991509
     },
     {
      "id": "damage",
-     "change": 0.4576864250192334
+     "change": 0.4280621665987454
     },
     {
      "id": "fireRate",
-     "change": 0.3245137882287332
+     "change": 0.33874210094583357
     },
     {
      "id": "statusChance",
-     "change": 0.2909806383789324
+     "change": 0.301620213706683
     }
    ],
    "sets": [
@@ -1764,7 +1764,7 @@
       "damage"
      ],
      "curse": "corpus",
-     "change": 1.6210394244893447
+     "change": 1.5817526979772834
     },
     {
      "ids": [
@@ -1773,7 +1773,7 @@
       "fireRate"
      ],
      "curse": "corpus",
-     "change": 1.5517765129347372
+     "change": 1.508881757231797
     },
     {
      "ids": [
@@ -1782,7 +1782,7 @@
       "statusChance"
      ],
      "curse": "corpus",
-     "change": 1.388310327947261
+     "change": 1.3274849386079444
     }
    ],
    "curses": [
@@ -1802,7 +1802,7 @@
    "valence": "electricity"
   },
   "Rubico Prime | room": {
-   "dps": 607747.9138497928,
+   "dps": 603584.8133154383,
    "build": [
     "Bladed Rounds",
     "Critical Delay",
@@ -1817,27 +1817,27 @@
    "singles": [
     {
      "id": "critChance",
-     "change": 0.5069326646951504
+     "change": 0.49267664751183515
     },
     {
      "id": "critDamage",
-     "change": 0.39259739725690834
+     "change": 0.383715687761206
     },
     {
      "id": "ammoEfficiency",
-     "change": 0.37199528203792953
+     "change": 0.3596520148025384
     },
     {
      "id": "heat",
-     "change": 0.36294926903115643
+     "change": 0.3543379972116363
     },
     {
      "id": "blast",
-     "change": 0.3346108061110773
+     "change": 0.3316750371768342
     },
     {
      "id": "toxin",
-     "change": 0.3340351357611926
+     "change": 0.33016146613059383
     }
    ],
    "sets": [
@@ -1848,7 +1848,7 @@
       "ammoEfficiency"
      ],
      "curse": "corpus",
-     "change": 1.2038194702707847
+     "change": 1.1979913099404507
     },
     {
      "ids": [
@@ -1857,7 +1857,7 @@
       "heat"
      ],
      "curse": "corpus",
-     "change": 1.1833576133598358
+     "change": 1.1832188135857695
     },
     {
      "ids": [
@@ -1866,7 +1866,7 @@
       "blast"
      ],
      "curse": "corpus",
-     "change": 1.1385622241903786
+     "change": 1.1475078609024547
     }
    ],
    "curses": [
@@ -1900,27 +1900,27 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.2948040420500546
+     "change": 0.2894017510931344
     },
     {
      "id": "critDamage",
-     "change": 0.24488232559237044
-    },
-    {
-     "id": "ammoEfficiency",
-     "change": 0.24193889456659834
+     "change": 0.2716471989186442
     },
     {
      "id": "damage",
-     "change": 0.22053641489968245
+     "change": 0.24331307344565611
     },
     {
-     "id": "critChance",
-     "change": 0.20247506367351065
+     "id": "ammoEfficiency",
+     "change": 0.23833526196030075
     },
     {
      "id": "toxin",
-     "change": 0.20237824596017795
+     "change": 0.23396241850384647
+    },
+    {
+     "id": "critChance",
+     "change": 0.2230454930193524
     }
    ],
    "sets": [
@@ -1931,16 +1931,7 @@
       "ammoEfficiency"
      ],
      "curse": "statusDuration",
-     "change": 2.209180351720971
-    },
-    {
-     "ids": [
-      "multishot",
-      "ammoEfficiency",
-      "damage"
-     ],
-     "curse": "statusDuration",
-     "change": 2.1307897711844412
+     "change": 2.1773558886106503
     },
     {
      "ids": [
@@ -1949,13 +1940,22 @@
       "damage"
      ],
      "curse": "statusDuration",
-     "change": 1.9000401988475373
+     "change": 1.891388132408978
+    },
+    {
+     "ids": [
+      "multishot",
+      "critDamage",
+      "toxin"
+     ],
+     "curse": "statusDuration",
+     "change": 1.8818979234782378
     }
    ],
    "curses": [
     {
      "id": "statusDuration",
-     "change": 0.5181466044712357
+     "change": 0.39061847675601347
     },
     {
      "id": "corpus",
@@ -1968,71 +1968,71 @@
    ]
   },
   "Torid | room": {
-   "dps": 507958.7447493268,
+   "dps": 428944.9480155856,
    "build": [
     "Bladed Rounds",
     "Critical Delay",
     "Galvanized Aptitude",
     "Galvanized Chamber",
-    "Hammer Shot",
     "Primed Cryo Rounds",
     "Thermite Rounds",
-    "Vile Acceleration"
+    "Vile Acceleration",
+    "Vital Sense"
    ],
    "arcane": "Primary Merciless",
    "singles": [
     {
      "id": "critChance",
-     "change": 0.5592767946277617
+     "change": 0.45236913795292044
     },
     {
      "id": "critDamage",
-     "change": 0.5516377197471976
-    },
-    {
-     "id": "statusDamage",
-     "change": 0.40729204785123896
-    },
-    {
-     "id": "fireRate",
-     "change": 0.39831394749660687
+     "change": 0.44452891044895537
     },
     {
      "id": "heat",
-     "change": 0.3884370845223042
+     "change": 0.3485898762866535
     },
     {
-     "id": "multishot",
-     "change": 0.3513294774984337
+     "id": "fireRate",
+     "change": 0.3458666101088437
+    },
+    {
+     "id": "magnetic",
+     "change": 0.32345903254952657
+    },
+    {
+     "id": "damage",
+     "change": 0.31665822564638724
     }
    ],
    "sets": [
     {
      "ids": [
+      "critChance",
       "critDamage",
-      "statusDamage",
       "fireRate"
      ],
      "curse": "corpus",
-     "change": 1.1102468557187533
+     "change": 0.8561166714667015
+    },
+    {
+     "ids": [
+      "critDamage",
+      "fireRate",
+      "damage"
+     ],
+     "curse": "corpus",
+     "change": 0.8125795613787596
     },
     {
      "ids": [
       "critChance",
       "critDamage",
-      "statusDamage"
+      "damage"
      ],
      "curse": "corpus",
-     "change": 1.0893522504716717
-    },
-    {
-     "ids": [
-      "critChance",
-      "statusDamage",
-      "fireRate"
-     ],
-     "curse": "corpus",
-     "change": 1.033117928576079
+     "change": 0.782682649870925
     }
    ],
    "curses": [
@@ -2056,7 +2056,7 @@
    ]
   },
   "Torid | single, armored": {
-   "dps": 21427.64036988862,
+   "dps": 21226.04146966306,
    "build": [
     "Heavy Caliber",
     "Malignant Force",
@@ -2071,47 +2071,47 @@
    "singles": [
     {
      "id": "multishot",
-     "change": 0.2929855155442964
+     "change": 0.29139357197323834
     },
     {
      "id": "damage",
-     "change": 0.2776954505243472
+     "change": 0.2721174092200558
     },
     {
      "id": "critDamage",
-     "change": 0.24096623287128338
+     "change": 0.2410686633696506
     },
     {
      "id": "corrosive",
-     "change": 0.23695444428483925
-    },
-    {
-     "id": "viral",
-     "change": 0.23198080094534546
+     "change": 0.23289372843653
     },
     {
      "id": "toxin",
-     "change": 0.2182127863746428
+     "change": 0.21710998839609696
+    },
+    {
+     "id": "viral",
+     "change": 0.21329377311390973
     }
    ],
    "sets": [
     {
      "ids": [
       "multishot",
-      "damage",
-      "corrosive"
+      "corrosive",
+      "critChance"
      ],
-     "curse": "statusDuration",
-     "change": 1.2888151466406232
+     "curse": "corpus",
+     "change": 1.0849260517351893
     },
     {
      "ids": [
       "multishot",
-      "corrosive",
-      "critChance"
+      "damage",
+      "corrosive"
      ],
-     "curse": "statusDuration",
-     "change": 1.2597987290762056
+     "curse": "corpus",
+     "change": 1.0746029368929073
     },
     {
      "ids": [
@@ -2119,21 +2119,21 @@
       "damage",
       "viral"
      ],
-     "curse": "statusDuration",
-     "change": 1.1617408893330676
+     "curse": "corpus",
+     "change": 0.9958130531523668
     }
    ],
    "curses": [
-    {
-     "id": "statusDuration",
-     "change": 0.08650955400771143
-    },
     {
      "id": "corpus",
      "change": 0
     },
     {
      "id": "grineer",
+     "change": 0
+    },
+    {
+     "id": "infested",
      "change": 0
     }
    ],
@@ -2144,71 +2144,71 @@
    ]
   },
   "Torid | room, in form": {
-   "dps": 2751427.922959135,
+   "dps": 1675800.397151869,
    "build": [
     "Bladed Rounds",
     "Critical Delay",
     "Galvanized Chamber",
-    "Hammer Shot",
     "Primed Cryo Rounds",
-    "Rifle Elementalist",
-    "Thermite Rounds",
-    "Vile Acceleration"
+    "Speed Trigger",
+    "Stormbringer",
+    "Vile Acceleration",
+    "Vital Sense"
    ],
    "arcane": "Primary Merciless",
    "singles": [
     {
-     "id": "statusDamage",
-     "change": 0.5016333738128553
-    },
-    {
-     "id": "critDamage",
-     "change": 0.4903842948592121
-    },
-    {
      "id": "critChance",
-     "change": 0.43549634049593755
-    },
-    {
-     "id": "multishot",
-     "change": 0.41257975522219903
+     "change": 0.3373377096499539
     },
     {
      "id": "fireRate",
-     "change": 0.3321003186021776
+     "change": 0.27280327947467375
     },
     {
-     "id": "cold",
-     "change": 0.30539844789176573
+     "id": "critDamage",
+     "change": 0.27161092027302547
+    },
+    {
+     "id": "electricity",
+     "change": 0.26112950327967477
+    },
+    {
+     "id": "damage",
+     "change": 0.24829338818493563
+    },
+    {
+     "id": "gas",
+     "change": 0.23778621261909771
     }
    ],
    "sets": [
     {
      "ids": [
-      "statusDamage",
       "critChance",
-      "multishot"
+      "critDamage",
+      "damage"
      ],
      "curse": "corpus",
-     "change": 1.1258150656766985
+     "change": 0.673888953310031
     },
     {
      "ids": [
-      "statusDamage",
+      "critChance",
       "critDamage",
       "multishot"
      ],
      "curse": "corpus",
-     "change": 1.1040353486448486
+     "change": 0.6317973158793291
     },
     {
      "ids": [
-      "critDamage",
       "critChance",
-      "multishot"
+      "fireRate",
+      "critDamage"
      ],
      "curse": "corpus",
-     "change": 1.1019879976364613
+     "change": 0.6184700696312806
     }
    ],
    "curses": [

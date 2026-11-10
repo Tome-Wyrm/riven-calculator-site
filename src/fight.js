@@ -76,13 +76,17 @@
 // 0.6 s on the target (the wiki's Continuous Weapon). Its procs start as weak as its hits: the wiki says
 // only "damage", and the game draws them from the hit. A reload's decay isn't followed (under a quarter
 // of a second's damage a magazine, and most of it on a long fight).
-// Blast (src/sim.js `blastPay`): each proc lands what it pays on average, at once, its Extra Hit too.
+// Blast (src/sim.js): the share of procs that detonates at their rate (`blastDetonates`) waits for ten:
+// `blastGroups` of the stacks so far, from their count and how it spreads (procs every shot are near
+// sure). The rest pay alone 1.5 s on. Stacks still up when the target dies are lost on it; their Extra
+// Hits go with them.
+// Viral and Magnetic: over the counts their procs make (src/sim.js `overStacks`), not of the mean.
 // In a crowd its detonations reach everyone within 5 m: those at 10 stacks, and the one a dying target
 // sets off with the stacks it has, which is all on the others.
 // Not modelled yet: abilities (Phase 14). Random rolls: src/fight-mc.js makes every one, to check
 // these averages (tools/fight-check.mjs; what it found is in docs/history.md).
 
-import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, ammoCost, beamCount, blastDetonates, blastPay, BLAST_DETONATED, critFlatOf, extraWeak, factionOf, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
+import { DOT, STATUS_SECONDS, STATUS_TYPES, TICKS_AT_ONCE, HEADS, amplify, ammoCost, beamCount, blastDetonates, blastGroups, blastPay, overStacks, BLAST_ALONE, BLAST_DETONATED, BLAST_SECONDS, procVariance, critFlatOf, extraWeak, factionOf, hitByType, procsOf, ticksOf, weakPointMult, critScale, critChanceOf } from './sim.js';
 import { reachOf, sparkReach, within } from './crowd.js';
 import { comboTier, swingOf, heavyMult, HEAVY_SLAM_CYCLE, ANIMOSITY_HITS, COMBO_REGEN, MAX_COMBO, MAX_EFFICIENCY, MAX_TIER, TIER_POINTS } from './melee.js';
 
@@ -215,8 +219,8 @@ function clear(w, t, room, opts) {
 /** A melee setting's heavy attacks in turn, unless it's heavy slamming. @param {import('./sim.js').MeleeOptions | null} melee */
 const heavySwingless = melee => (melee?.heavySlam ? [] : melee?.heavyCycle ?? []);
 
-/** Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more. @param {number} n */
-export const amplify = n => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
+/** Viral on health, Magnetic on shields at a count of stacks (src/sim.js). */
+export { amplify };
 
 /**
  * One fight in one fire mode, with what the Incarnon cycle needs: a shot's interval, the reload, the
@@ -303,8 +307,11 @@ function fought(w, t, opts) {
     const multishot = raw('multishotLocked') ? 1 : Math.max(0, 1 + raw('multishot'));
     const pellets = p.ms * multishot * (1 + (dupExtra ? 0 : duplicate));
     const procsOfType = procsOf(p, byType, hit, cc, raw, pellets, mode.held != null ? beamCount(p, multishot) : null);
-    /** @type {[string, number, number][]} per type: expected procs a shot, and a tick of its DoT per proc */
+    /** @type {[string, number, number, number][]} per type: expected procs a shot, a tick of its DoT per proc, and the count's variance */
     const procs = [];
+    const chance = Math.max(0, p.sc * (1 + raw('statusChance')));
+    const beam = mode.held != null ? beamCount(p, multishot) : null;
+    const wholeSpread = pellets - Math.floor(pellets);
     for (const type of new Set([...Object.keys(byType), ...(p.forced ?? []), 'slash'])) {
       const { n, strength } = procsOfType(type);
       if (!(n > 0) || !STATUS_TYPES.includes(type)) continue;
@@ -312,8 +319,12 @@ function fought(w, t, opts) {
       // x what a proc carries.
       const share = type === 'blast' ? 1 : DOT[/** @type {keyof typeof DOT} */ (type)] ?? 0;
       const own = type === 'blast' ? 1 : (1 + (matching[type] ?? 0));
+      // (Forced procs are sure: only the rolled ones spread.)
+      const q = (byType[type] ?? 0) / hit;
+      const variance = beam ? procVariance(chance * beam.mean, q, 1, 0) + (q * chance) ** 2 * (beam.square - beam.mean ** 2)
+        : procVariance(chance, q, pellets, wholeSpread * (1 - wholeSpread));
       // (A seed starts from 1: not Blast's.)
-      procs.push([type, n, (base * D * faction * dotCrit * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own * more]);
+      procs.push([type, n, (base * D * faction * dotCrit * strength / n + (type === 'blast' ? 0 : 1)) * faction * share * statusDamage * own * more, variance]);
     }
     const [coShare, coMult] = p.co ?? [1, 0];
     const hits = Object.entries(byType).map(([type, v]) => /** @type {[string, number]} */ ([type, v * faction * scale * pellets * more]));
@@ -329,7 +340,7 @@ function fought(w, t, opts) {
       hits.push([type, whole * value]);
       const n = (mode.held != null ? 1 : pellets) * copies;
       const share = DOT[/** @type {keyof typeof DOT} */ (type)];
-      if (share) procs.push([type, n, (whole * value * D / n + 1) * faction * share * statusDamage * (1 + (matching[type] ?? 0))]);
+      if (share) procs.push([type, n, (whole * value * D / n + 1) * faction * share * statusDamage * (1 + (matching[type] ?? 0)), 0]);
     }
     // A Blast proc's Extra Hit: the pellet's, at what the proc pays, Status Damage and faction again.
     const blastVoid = extra * procsOfType('blast').strength / Math.max(1e-9, pellets) * statusDamage * faction;
@@ -453,19 +464,29 @@ function fought(w, t, opts) {
     /** @type {Record<string, number>} the DoTs' running damage per second by type */
     const dotRate = {};
     let heat = { rate: 0, until: -1, start: -1, owed: 0 };
+    // Blast: the stacks that will detonate (how many, what they carry, what they've paid), and those
+    // paying alone, when they run out.
+    const blast = { n: 0, variance: 0, hit: 0, void: 0, paidHit: 0, paidVoid: 0 };
+    /** @type {{at: number, hit: number, void: number}[]} */
+    const blastDue = [];
+    let blastHead = 0;
     let elecSeen = 0, buffUp = 0;
     let last = ehp;                             // what the last shot left of the target
     let swing = 0, sinceHeavy = 0;              // normal swings so far, and since the last heavy attack
 
     // Stacks still up at `at` (expired ones leave their queue for good: time only moves forward).
-    const count = (/** @type {string} */ type, /** @type {number} */ at) => {
-      if (opts.primed) return 10;
-      const kept = raw(`prime:${type}`);                   // a primer's stacks
+    /** Stacks up: [a primer's, the procs' own on average]. @param {string} type @param {number} at @returns {[number, number]} */
+    const stacksUp = (type, at) => {
+      if (opts.primed) return [10, 0];
+      const kept = raw(`prime:${type}`);
       const q = stacks.get(type);
-      if (!q) return Math.min(10, kept);
+      if (!q) return [kept, 0];
       while (q.head < q.list.length && q.list[q.head].until <= at) q.sum -= q.list[q.head++].n;
-      return Math.min(10, kept + q.sum);
+      return [kept, q.sum];
     };
+    const count = (/** @type {string} */ type, /** @type {number} */ at) => Math.min(10, stacksUp(type, at).reduce((a, b) => a + b));
+    // Viral and Magnetic over the counts the procs make (src/sim.js `overStacks`), not of the mean.
+    const amplified = (/** @type {string} */ type, /** @type {number} */ at) => overStacks(amplify, ...stacksUp(type, at));
     // The target's state at a moment: what armor keeps, Viral and Magnetic.
     const snap = (/** @type {number} */ at) => {
       const c = count('corrosive', at);
@@ -474,7 +495,8 @@ function fought(w, t, opts) {
       const burning = held || heat.until > at;
       const strip = !burning ? 0 : held ? HEAT_STRIP[HEAT_STRIP.length - 1] : heatStrip((at - heat.start) / stripStep);
       const armor = target.armor * (1 - stripped) * (1 - strip);
-      return { kept: 1 - 0.9 * Math.sqrt(Math.min(armor, 2700) / 2700), viral: amplify(count('viral', at)), magnetic: count('magnetic', at) };
+      return { kept: 1 - 0.9 * Math.sqrt(Math.min(armor, 2700) / 2700), viral: amplified('viral', at),
+        magnetic: count('magnetic', at), shieldAmp: amplified('magnetic', at) };
     };
     // Damage of one type landing: shields first (not Toxin), spilling to health. Bleeds (True
     // damage) skip armor and weaknesses.
@@ -484,14 +506,14 @@ function fought(w, t, opts) {
       const kind = bleed ? 'slash' : type;
       let left = amount;
       if (overguard > 0) {
-        const toGuard = left * (kind === 'void' ? 1.5 : 1) * amplify(s.magnetic);
+        const toGuard = left * (kind === 'void' ? 1.5 : 1) * s.shieldAmp;
         if (toGuard < overguard) { overguard -= toGuard; return; }
         left *= 1 - overguard / toGuard;
         overguard = 0;
         health -= 0.03 * s.magnetic * (target.overguard ?? 0) * Math.max(0, 1 + (target.weak.electricity ?? 0)) * s.kept * s.viral;
       }
       if (shields > 0 && kind !== 'toxin') {
-        const toShields = left * (bleed ? 1 : Math.max(0, 1 + (target.shieldWeak[kind] ?? 0))) * amplify(s.magnetic);
+        const toShields = left * (bleed ? 1 : Math.max(0, 1 + (target.shieldWeak[kind] ?? 0))) * s.shieldAmp;
         if (toShields < shields) { shields -= toShields; return; }
         left *= 1 - shields / toShields;
         shields = 0;
@@ -515,11 +537,16 @@ function fought(w, t, opts) {
         const ends0 = runningHead[0] < running[0].length ? running[0][runningHead[0]].until : Infinity;
         const ends1 = runningHead[1] < running[1].length ? running[1][runningHead[1]].until : Infinity;
         const heatEnds = heat.until > a ? heat.until : Infinity;
-        const b = Math.min(starts, ends0, ends1, heatEnds);
+        const blastAt = blastHead < blastDue.length ? blastDue[blastHead].at : Infinity;
+        const b = Math.min(starts, ends0, ends1, heatEnds, blastAt);
         if (b >= to) break;
         span(a, b);
         a = b;
-        if (b === starts) {
+        if (b === blastAt) {
+          const due = blastDue[blastHead++], s = snap(b);
+          land('blast', due.hit, s);
+          land('void', due.void, s);
+        } else if (b === starts) {
           const d = pending[pendingHead++];
           if (d.type === 'heat') { if (heat.until > b) heat.rate += d.rate; continue; }
           const q = TICKS_AT_ONCE.has(d.type) ? 0 : 1;
@@ -573,7 +600,7 @@ function fought(w, t, opts) {
           q.sum += turn.bleeds;
           pending.push({ at: now + 0.5, rate: v.bleed * mult * turn.bleed, type: 'slash-dot', ticks: ticksOf('slash', duration) });
         }
-        for (const [type, n0, perProc0] of v.procs) {
+        for (const [type, n0, perProc0, spread0] of v.procs) {
           // Each hit of a swing rolls status; a proc's ticks follow its hit's multiplier (on average).
           const n = n0 * hitsPer;
           const perProc = perProc0 * mult * ramp / hitsPer;
@@ -584,8 +611,17 @@ function fought(w, t, opts) {
           const perTick = perProc * n;
           if (!perTick) continue;
           if (type === 'blast') {
-            land('blast', perTick * blastPay(n / step), s);
-            land('void', v.blastVoid * Dshot * mult * ramp * blastPay(n / step), s);
+            // The share that detonates at this rate waits for ten (`blastGroups`); the rest pay alone
+            // 1.5 s on. Either way, stacks still up when the target dies are lost on it.
+            const hit = perTick, extra = v.blastVoid * Dshot * mult * ramp;
+            const d = blastDetonates(n / step);
+            blast.n += d * n; blast.variance += d * spread0 * hitsPer; blast.hit += d * hit; blast.void += d * extra;
+            const paid = blast.n > 0 ? BLAST_DETONATED * 10 * blastGroups(blast.n, blast.variance) / blast.n : 0;
+            land('blast', paid * blast.hit - blast.paidHit, s);
+            land('void', paid * blast.void - blast.paidVoid, s);
+            blast.paidHit = Math.max(blast.paidHit, paid * blast.hit);
+            blast.paidVoid = Math.max(blast.paidVoid, paid * blast.void);
+            if (d < 1) blastDue.push({ at: now + BLAST_SECONDS, hit: (1 - d) * BLAST_ALONE * hit, void: (1 - d) * BLAST_ALONE * extra });
             continue;
           }
           const dotType = type === 'slash' ? 'slash-dot' : type;

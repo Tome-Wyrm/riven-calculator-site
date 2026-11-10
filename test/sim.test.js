@@ -42,7 +42,8 @@ test('an element adds a share of the base; physical stats only their own part', 
 test('status: Toxin adds DoT, Viral (no DoT) doesn’t; Status Chance does nothing without DoT types', () => {
   const w = gun({ sc: 0.3, dmg: { puncture: 100 } });
   assert.ok(gain(w, { toxin: 1 }) > gain(w, { viral: 1 }) + 0.01);
-  near(gain(w, { statusChance: 1 }), 0);
+  // (All but nothing: the build's Viral is near sure at 10 stacks, a little surer with it.)
+  near(gain(w, { statusChance: 1 }), 0, 1e-5);
   const slashy = gun({ sc: 0.3, dmg: { slash: 100 } });
   assert.ok(gain(slashy, { statusChance: 1 }) > 0.05);
   assert.ok(gain(slashy, { statusDuration: 1 }) > 0 && gain(slashy, { statusDamage: 1 }) > 0);

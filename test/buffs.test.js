@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUFFS, BUFF_GROUPS } from '../src/data/buffs.js';
 import { buffPiece, buildOf, buildPower, buildSlug, buildsFor, defaultBuild, ownFromText, ownText } from '../src/buffs.js';
-import { BLAST_ALONE, blastPay, dpsOf, hitByType, critChanceOf } from '../src/sim.js';
+import { BLAST_ALONE, BLAST_SECONDS, blastPay, dpsOf, hitByType, critChanceOf } from '../src/sim.js';
 import { fight } from '../src/fight.js';
 import { sparkReach } from '../src/crowd.js';
 import { worth } from '../src/build.js';
@@ -178,8 +178,26 @@ test('Blast and Xata\'s Whisper: the numbers worked in the video', () => {
   const hit = 187 * 2.65 * 1.3;
   const expected = hit + hit * 0.51 * 1.3 + base * 1.3 * pay * 1.9 * 1.3 + hit * 0.51 * 1.3 * pay * 1.9 * 1.3;
   near(dpsOf(gunOf, { stats, elements: [] }, { enemy: 'grineer' }), expected, 1);
+  // A fight pays a stack alone when it runs out, 1.5 s on: of its first 20 s, the last 1.5 s's are
+  // still waiting (a share of the Blast and its Xata hit; a whole proc or two, at one a second).
   const target = { health: 1e7, shields: 0, armor: 0, weak: {}, shieldWeak: {} };
-  near(fight(gunOf, { stats, elements: [] }, { enemy: 'grineer', target }).dps, expected, 1);
+  const waiting = (base * 1.3 * pay * 1.9 * 1.3 + hit * 0.51 * 1.3 * pay * 1.9 * 1.3) * BLAST_SECONDS / 20;
+  const fought = fight(gunOf, { stats, elements: [] }, { enemy: 'grineer', target }).dps;
+  assert.ok(fought < expected && fought > expected - 2 * waiting, `${fought} vs ${expected}`);
+});
+
+test('Blast in a short fight: stacks wait for ten, and those still up when the target dies are lost', () => {
+  // Ten procs a second, one a hit: the tenth detonates them all (3x each), not before.
+  const gunOf = /** @type {any} */ ({ kind: 'Rifle', mag: 0, reload: 0, ammo: null, trigger: 'Auto', tags: [], main: 0,
+    modes: [{ name: 'x', rate: 10, cost: 1, parts: [{ name: 'x', dmg: { blast: 100 }, cc: 0, cd: 1, sc: 1, ms: 1 }] }] });
+  const totals = { stats: {}, elements: [] };
+  const shotsFor = (/** @type {number} */ health) => fight(gunOf, totals, { target: { health, shields: 0, armor: 0, weak: {}, shieldWeak: {} } }).shotsPerKill;
+  // Nine hits and no detonation: 900 of hits only; the tenth's 100 and its detonation, 3000 more
+  // (of which src/sim.js's share that detonates at ten a second, 0.99, comes with the tenth).
+  near(shotsFor(900), 9, 1e-9);
+  assert.ok(shotsFor(3600) <= 10 && shotsFor(3900) > 9);
+  // Paid at once (src/sim.js), 3000 would fall in under 8 hits; it takes the tenth.
+  assert.ok(3000 / (100 * (1 + blastPay(10))) < 8 && shotsFor(3000) > 9);
 });
 
 test('the Xata hit from Blast takes no third head bonus', () => {

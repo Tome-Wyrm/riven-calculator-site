@@ -99,6 +99,8 @@ export function ticksOf(type, seconds) {
 }
 /** What a Blast proc pays, as a share of the hit: when its stack runs out, and in a detonation. */
 export const BLAST_ALONE = 0.3, BLAST_DETONATED = 3;
+/** Seconds a Blast stack waits for nine more before it pays alone. */
+export const BLAST_SECONDS = 1.5;
 /**
  * What a Blast proc pays on average, as a share of the hit, at `perSecond` procs. A stack detonates if
  * 10 are up at once inside its 1.5 s, which at a fixed rate would be a cliff; at the rates procs really
@@ -110,10 +112,63 @@ export const blastPay = perSecond => BLAST_ALONE + (BLAST_DETONATED - BLAST_ALON
 
 /** The share of Blast stacks that detonate at `perSecond` procs. @param {number} perSecond */
 export function blastDetonates(perSecond) {
-  const mu = 1.5 * Math.max(0, perSecond);
+  const mu = BLAST_SECONDS * Math.max(0, perSecond);
   let term = Math.exp(-mu), below = term;
   for (let k = 1; k < 7; k++) { term *= mu / k; below += term; }
   return 1 - below;
+}
+
+/**
+ * Detonations on average from `stacks` Blast stacks on a target that would detonate (at their rate,
+ * `blastDetonates`), ten at a time: E[floor(N / 10)]. Those short of ten when the target dies pay
+ * nothing on it. N's `variance` (at most its mean) says how random the count is: procs every shot
+ * come near sure, so N is taken as a sure part and a Poisson part of that variance (the sure part's
+ * fraction a share of the next whole one). With a wide spread, or a long fight, the count's last digit
+ * is near even: 4.5 on average.
+ * @param {number} stacks @param {number} [variance]
+ */
+export function blastGroups(stacks, variance = stacks) {
+  if (!(stacks > 0)) return 0;
+  const v = Math.min(stacks, Math.max(0, variance));
+  if (v > 16 || stacks > 100) return Math.max(0, stacks - 4.5) / 10;
+  const sure = stacks - v, i = Math.floor(sure), frac = sure - i;
+  // E[floor((i + K) / 10)] and E[floor((i + 1 + K) / 10)] for K Poisson(v), together.
+  let p = Math.exp(-v), at = 0, next = 0;
+  const top = Math.ceil(v + 10 * Math.sqrt(v) + 20);
+  for (let k = 0; k <= top; k++) {
+    if (k > 0) p *= v / k;
+    at += p * Math.floor((i + k) / 10);
+    next += p * Math.floor((i + 1 + k) / 10);
+  }
+  return (1 - frac) * at + frac * next;
+}
+
+/**
+ * The variance of how many procs of a type a shot makes, at `chance` procs a pellet (or a beam), of
+ * which the type is a share `q`: each pellet's count is a whole number either side of its chance, and
+ * so is the count of pellets (or beams) a shot has, `units` on average, `unitsVariance` its variance.
+ * @param {number} chance @param {number} q @param {number} units @param {number} unitsVariance
+ */
+export function procVariance(chance, q, units, unitsVariance) {
+  const spread = (/** @type {number} */ x) => (x - Math.floor(x)) * (1 - x + Math.floor(x));
+  const mean = chance * units;
+  const variance = units * spread(chance) + chance * chance * unitsVariance;
+  return q * (1 - q) * mean + q * q * variance;
+}
+
+/** Viral on health, Magnetic on shields, at `n` stacks: +100% for the first, +25% for each more. @param {number} n */
+export const amplify = n => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
+/**
+ * `f` of the stacks up on average, with `held` sure (a primer's) and the procs' own `mean` on average.
+ * Those come at random, so their count is Poisson; at most 10 count. Of the mean count a concave `f`
+ * reads high: Viral at one stack expected is 2x, but 1.72x over the counts.
+ * @param {(n: number) => number} f @param {number} held @param {number} mean
+ */
+export function overStacks(f, held, mean) {
+  if (!(mean > 0) || held >= 10) return f(Math.min(10, held));
+  let p = Math.exp(-mean), left = 1, sum = 0;
+  for (let k = 0; held + k < 10; k++) { sum += p * f(held + k); left -= p; p *= mean / (k + 1); }
+  return sum + Math.max(0, left) * f(10);
 }
 
 /** The build's two elementals combine into this. */
@@ -362,12 +417,11 @@ export function dpsOf(w, t, opts = {}) {
   if (blastHits > 0) dealt.blast = (dealt.blast ?? 0) + blastHits * blastPay(procs.blast * uptime);
   if (blastVoid > 0) dealt.void = (dealt.void ?? 0) + blastVoid * blastPay(procs.blast * uptime);
   // Average stacks up: procs per second over the time each lasts, capped (all of them on a primed target).
-  const stacks = (/** @type {string} */ type, cap = 10) => (opts.primed ? cap
-    : Math.min(cap, m(`prime:${type}`) + procs[type] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'))));
-  // Below one stack on average, an effect ramps up with the share of time it's there.
-  // Viral on health, Magnetic on shields: +100% for the first stack, +25% for each more.
-  const amplify = (/** @type {number} */ n) => (n < 1 ? 1 + n : 1.75 + 0.25 * n);
-  const viral = amplify(stacks('viral'));
+  const own = (/** @type {string} */ type) => procs[type] * uptime * STATUS_SECONDS * Math.max(0, 1 + m('statusDuration'));
+  const stacks = (/** @type {string} */ type, cap = 10) => (opts.primed ? cap : Math.min(cap, m(`prime:${type}`) + own(type)));
+  // Viral on health, Magnetic on shields, over the counts the procs make (`overStacks`).
+  const amplified = (/** @type {string} */ type) => (opts.primed ? amplify(10) : overStacks(amplify, m(`prime:${type}`), own(type)));
+  const viral = amplified('viral');
   // Armor: Corrosive takes 26% for the first stack, 6% for each more (80% at 10); a Heat proc
   // halves what's left while it burns. Damage reduction 0.9 × √(armor / 2700).
   const c = stacks('corrosive');
@@ -382,12 +436,13 @@ export function dpsOf(w, t, opts = {}) {
   const magnetic = target.shields > 0 ? stacks('magnetic') : 0;
   let toHealth = bleed * viral;
   let toxin = 0;
-  let toShields = bleed * amplify(magnetic);
+  const shieldAmp = target.shields > 0 ? amplified('magnetic') : 1;
+  let toShields = bleed * shieldAmp;
   for (const [type, v] of Object.entries(dealt)) {
     const h = toHealthOf(type, v);
     toHealth += h;
     if (type === 'toxin') toxin += h;
-    else toShields += v * Math.max(0, 1 + (target.shieldWeak[type] ?? 0)) * amplify(magnetic);
+    else toShields += v * Math.max(0, 1 + (target.shieldWeak[type] ?? 0)) * shieldAmp;
   }
   if (target.shields <= 0) return toHealth * uptime;
   // Shields first; Toxin takes health meanwhile, and finishes it alone if it's faster. The break
