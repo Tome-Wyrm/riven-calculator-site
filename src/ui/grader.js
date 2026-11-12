@@ -9,7 +9,7 @@ import { CLASS_LABEL, el, statName, segmented, select, statOptions, weaponPicker
 import { loadState, saveState, pick, oneOf, num } from './state.js';
 import { loadIntoPlanner } from './planner.js';
 import { picksLink } from './picks.js';
-import { picksFor, communityFit, noteText } from '../picks.js';
+import { picksFor, brozimePick, communityFit, noteText } from '../picks.js';
 
 /** @typedef {import('../data/stats.js').Stat} Stat */
 /** @typedef {import('../data/stats.js').WeaponClass} WeaponClass */
@@ -169,7 +169,7 @@ function results() {
   }).flat();
 
   const head = el('thead', {}, [el('tr', {}, ['Stat', 'Shown', `Range (${shape}, rank ${rank})`, 'Roll', 'Grade',
-    ...(picksFor(state.weapon, cls).length ? ['Community'] : [])]
+    ...(picksFor(state.weapon, cls).length ? ['Community'] : []), ...(brozimePick(state.weapon) ? ['Brozime'] : [])]
     .map(h => el('th', { scope: 'col' }, [h])))]);
   const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
   return el('div', {}, [
@@ -188,11 +188,36 @@ function results() {
 }
 
 /**
- * How the community rates a stat on this weapon (the recommended rolls): a cell, or none when the
- * weapon has no recommendations.
+ * How the community rates a stat on this weapon (the recommended rolls), then whether it's on
+ * Brozime's roll: a cell each, or none where the weapon has no recommendations of that kind.
  * @param {Stat} stat @param {boolean} negative
  */
 function communityCell(stat, negative) {
+  return [...sheetCell(stat, negative), ...brozimeCell(stat, negative)];
+}
+
+/**
+ * Whether a stat is on Brozime's roll for this weapon. He gives one roll, so a stat is his pick or
+ * it isn't (or splices into his pick); where he takes any harmless negative, a curse isn't judged.
+ * @param {Stat} stat @param {boolean} negative
+ */
+function brozimeCell(stat, negative) {
+  const b = brozimePick(state.weapon);
+  if (!b) return [];
+  const open = negative && b.harmless;
+  const fit = open ? null : communityFit([b.row], stat.id, negative, state.weapon);
+  const text = open ? 'Any harmless' : !fit ? (negative ? 'Not his curse' : 'Not his pick')
+    : fit.fit === 'parent' ? `Splices into ${statName(STAT_BY_ID[/** @type {string} */ (fit.pick.stat)], state.cls)}`
+      : negative ? 'His curse' : 'His pick';
+  return [el('td', {
+    class: `community ${fit ? (fit.fit === 'parent' ? 'parent' : 'top') : 'none'}`,
+    title: open ? 'Brozime takes any harmless negative here: his rules are linked from Recommended rolls'
+      : `Whether this ${negative ? 'curse' : 'stat'} is on Brozime's roll for ${b.weapon} (see Recommended rolls)`,
+  }, [text])];
+}
+
+/** The sheet's cell of communityCell. @param {Stat} stat @param {boolean} negative */
+function sheetCell(stat, negative) {
   const rows = picksFor(state.weapon, state.cls);
   if (!rows.length) return [];
   const fit = communityFit(rows, stat.id, negative, state.weapon);

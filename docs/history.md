@@ -402,7 +402,9 @@ and what a damage model says each stat is worth on that weapon. The grader then 
       positives in priority order, a negative ("Harmless" = any by his Harmless Riven Negatives rules).
       `tools/build-brozime-picks.mjs` → `src/data/brozime-picks.js`; `brozimePick` gives it as a row,
       for his weapon and the others on its riven. Shown as its own card under the numbered rolls. It
-      doesn't replace the sheet (419 families), and the grader's Community column is still the sheet's.
+      doesn't replace the sheet (419 families). The grader has a "Brozime" column beside Community:
+      His pick / Splices into X / Not his pick, His curse / Not his curse, or "Any harmless" where he
+      names no negative (a curse isn't judged against his rules). The model's table still shows the sheet only.
 
 **12b — Weapon stats** (the model's input) — done
 - [x] `tools/build-weapon-stats.mjs` reads the wiki's `Module:Weapons/data/{primary,secondary,archwing,companion}`
