@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSlot, parseRow, picksFor, pickFamily, forWeapon, topRoll, toTarget, communityFit } from '../src/picks.js';
+import { parseSlot, parseRow, picksFor, pickFamily, forWeapon, topRoll, toTarget, communityFit, brozimePick } from '../src/picks.js';
+import { BROZIME_PICKS } from '../src/data/brozime-picks.js';
+import { STAT_BY_ID } from '../src/data/stats.js';
 import { PICKS } from '../src/data/picks.js';
 import { WEAPONS } from '../src/data/weapons.js';
 import { pools } from '../src/cycle.js';
@@ -97,4 +99,25 @@ test("the grader's community view: top pick, listed, splice parent, not listed",
 test("a negative the weapon can't roll is skipped", () => {
   const row = parseRow(['MS', 'CD', 'CC', 'PUNC > Z', ''], 'rifle');
   assert.equal(topRoll(row, pools('rifle', 'ynn'), 'rifle', 'X').negative, 'zoom');
+});
+
+test("Brozime's roll: his weapon or one sharing its riven, the splice first, harmless negatives left open", () => {
+  const acc = brozimePick('Acceltra');
+  assert.equal(acc?.weapon, 'Acceltra Prime');
+  assert.deepEqual([acc?.splice, acc?.harmless, acc?.page], [true, true, 'Rifle']);
+  assert.deepEqual(acc?.row.positives.map(ids), [[['ammoEfficiency']], [['multishot']]]);
+  assert.deepEqual(acc?.row.negatives, []);
+  // "Critical Damage/Chance" is either; Phenmor names its negative.
+  assert.deepEqual(ids(brozimePick('Kuva Grattler')?.row.positives[1] ?? []), [['critDamage', 'critChance']]);
+  assert.deepEqual(ids(brozimePick('Phenmor')?.row.negatives ?? []), [['critChance']]);
+  assert.equal(brozimePick('Tenet Glaxion')?.row.notes.length, 2);
+  assert.equal(brozimePick('Braton'), null);
+});
+
+test("Brozime's picks: known weapons and stats, a spliced stat first exactly where he splices", () => {
+  for (const [weapon, b] of Object.entries(BROZIME_PICKS)) {
+    assert.ok(WEAPONS.some(w => w[0] === weapon), weapon);
+    for (const id of [...b.positives.flat(), ...(b.negative ? [b.negative] : [])]) assert.ok(STAT_BY_ID[id], `${weapon}: ${id}`);
+    assert.equal(!!STAT_BY_ID[b.positives[0][0]].spliced, b.splice, weapon);
+  }
 });

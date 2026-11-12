@@ -1,13 +1,15 @@
 // @ts-check
 // Recommended rolls: pick a weapon and see what the community recommends on its riven (the Rolls &
-// Resources sheet), slot by slot, then plan any of them in the build planner. Below, for guns, what
+// Resources sheet) and what Brozime does (his Top Rivens notes, for the weapons he covers), slot by
+// slot, then plan any of them in the build planner. Below, for guns, what
 // the damage model makes of each stat (src/ui/model.js).
 
 import { STAT_BY_ID } from '../data/stats.js';
 import { WEAPONS } from '../data/weapons.js';
 import { PICKS_SOURCE, PICKS_UPDATED } from '../data/picks.js';
+import { BROZIME_PICKS_SOURCE, BROZIME_PICKS_UPDATED } from '../data/brozime-picks.js';
 import { pools } from '../cycle.js';
-import { picksFor, pickFamily, plannable, forWeapon, topRoll, toTarget, noteText } from '../picks.js';
+import { picksFor, pickFamily, brozimePick, plannable, forWeapon, topRoll, toTarget, noteText } from '../picks.js';
 import { el, statName, weaponPicker, copyLinkButton, ipsOf, recipeText } from './dom.js';
 import { loadState, saveState } from './state.js';
 import { loadTargetIntoPlanner } from './planner.js';
@@ -30,11 +32,12 @@ let root;
 /** @param {string} weapon */
 const classOf = weapon => /** @type {WeaponClass} */ (WEAPONS.find(w => w[0] === weapon)?.[1]);
 
-/** The weapon's rows and stat pool. */
+/** The weapon's rows (the sheet's, then Brozime's roll if he gives one) and stat pool. */
 function current() {
-  const rows = picksFor(state.weapon, state.cls);
+  const sheet = picksFor(state.weapon, state.cls);
+  const brozime = state.weapon ? brozimePick(state.weapon) : null;
   const { positive, negative } = pools(state.cls, ipsOf(state.weapon));
-  return { rows, pool: { positive, negative } };
+  return { rows: brozime ? [...sheet, brozime.row] : sheet, sheet, brozime, pool: { positive, negative } };
 }
 
 /** Sets the weapon and starts each row on its top roll. @param {string} weapon */
@@ -109,8 +112,9 @@ function slotCell(tiers, r, slot, pool) {
 /**
  * One recommended row: its slots, its note, and a button to plan the chosen roll.
  * @param {PickRow} row @param {number} r @param {{positive: string[], negative: string[]}} pool
+ * @param {string} title @param {(string | HTMLElement)[][]} [more]  further lines under the notes
  */
-function rowCard(row, r, pool) {
+function rowCard(row, r, pool, title, more = []) {
   const chosen = state.chosen[r];
   const target = toTarget(chosen.slice(0, 3), chosen[3]);
   const plan = el('button', { type: 'button', class: 'copy-link plan-roll', ...(target.positives.length || target.spliced ? {} : { disabled: '' }) }, ['Plan this roll']);
@@ -120,26 +124,41 @@ function rowCard(row, r, pool) {
     /** @type {const} */ (['Negative', row.negatives, 3]),
   ].filter(([, slot], i) => slot.length || i < 2);
   return el('div', { class: 'pick-row' }, [
-    el('div', { class: 'pick-head' }, [el('h3', {}, [r === 0 ? 'Roll 1 (best)' : `Roll ${r + 1}`]), plan]),
+    el('div', { class: 'pick-head' }, [el('h3', {}, [title]), plan]),
     el('table', { class: 'picks' }, [el('tbody', {}, lines.map(([label, slot, i]) =>
       el('tr', {}, [el('th', { scope: 'row' }, [label]), slotCell(slot, r, i, pool)])))]),
     ...row.notes.map(n => el('p', { class: 'note' }, [n])),
+    ...more.map(line => el('p', { class: 'note' }, line)),
   ]);
 }
 
+/** Brozime's roll, with what his table says around it. @param {NonNullable<ReturnType<typeof brozimePick>>} b @param {number} r @param {{positive: string[], negative: string[]}} pool */
+function brozimeCard(b, r, pool) {
+  const link = (/** @type {string} */ path, /** @type {string} */ text) => el('a', { href: `${BROZIME_PICKS_SOURCE}/${path}`, target: '_blank', rel: 'noopener' }, [text]);
+  return rowCard(b.row, r, pool, "Brozime's roll", [[
+    `${b.weapon !== state.weapon ? `He gives it for ${b.weapon}. ` : ''}`
+    + (b.splice ? 'The first positive is spliced on, the rest in his order of priority. ' : 'Not spliced, so harder to roll; in his order of priority. ')
+    + (b.row.positives.length < 3 ? 'Two positives on purpose. ' : ''),
+    ...(b.harmless ? ['Negative: any ', link('Harmless+Riven+Negatives', 'harmless one'), '. '] : []),
+    'From his ', link(`Top+Rivens/${b.page}`, 'Top Rivens'), ` notes, copied ${BROZIME_PICKS_UPDATED}.`,
+  ]]);
+}
+
 function render() {
-  const { rows, pool } = current();
+  const { rows, sheet, brozime, pool } = current();
   const family = state.weapon ? pickFamily(state.weapon) : undefined;
-  const body = !state.weapon ? [el('p', { class: 'note' }, ['Pick a weapon to see the rolls the community recommends for its riven.'])]
-    : !rows.length ? [el('p', { class: 'note' }, [`No recommendations for ${state.weapon} in the sheet yet.`])]
+  const body = !state.weapon ? [el('p', { class: 'note' }, ['Pick a weapon to see the rolls the community and Brozime recommend for its riven.'])]
+    : !rows.length ? [el('p', { class: 'note' }, [`No recommendations for ${state.weapon} yet.`])]
       : [
         el('p', { class: 'note' }, [
           `${family && family !== state.weapon ? `${state.weapon} shares the ${family} riven. ` : ''}`
           + 'Each slot lists its picks best first (› = then); picks in the same group are about as good. '
           + 'Dashed picks are spliced stats (hover for what splices into them). Click a pick to choose it, then plan that roll.']),
-        ...rows.map((row, r) => rowCard(row, r, pool)),
+        ...(sheet.length ? [] : [el('p', { class: 'note' }, [`No recommendations for ${state.weapon} in the sheet yet.`])]),
+        ...sheet.map((row, r) => rowCard(row, r, pool, r === 0 ? 'Roll 1 (best)' : `Roll ${r + 1}`)),
+        ...(brozime ? [brozimeCard(brozime, sheet.length, pool)] : []),
       ];
-  const credit = el('p', { class: 'note' }, ['From the ',
+  const credit = el('p', { class: 'note' }, ['Numbered rolls from the ',
     el('a', { href: PICKS_SOURCE, target: '_blank', rel: 'noopener' }, ['Rolls & Resources sheet']),
     ` by Megrim, Valkyrial and Lia (based on the original by 44Bananas), copied ${PICKS_UPDATED}.`]);
   root.replaceChildren(

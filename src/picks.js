@@ -10,6 +10,7 @@
 
 import { STAT_BY_ID, SPLICED } from './data/stats.js';
 import { PICKS, PICK_FAMILY } from './data/picks.js';
+import { BROZIME_PICKS } from './data/brozime-picks.js';
 
 /** @typedef {import('./data/stats.js').WeaponClass} WeaponClass */
 
@@ -101,6 +102,28 @@ export function pickFamily(weapon) {
 export function picksFor(weapon, cls) {
   const family = pickFamily(weapon);
   return family ? PICKS[family].map(cells => parseRow(cells, cls)) : [];
+}
+
+/** Brozime's pick by sheet family, so a weapon's other variants find it. @type {Map<string, string>} */
+const BROZIME_BY_FAMILY = new Map(Object.keys(BROZIME_PICKS).map(w => [PICK_FAMILY[w] ?? w, w]));
+
+/**
+ * Brozime's roll for a weapon (src/data/brozime-picks.js), as a row like the sheet's: one roll, each
+ * slot a single tier, no negatives listed where any harmless one will do. `weapon` is the one he
+ * gives it for: this weapon, or else another on the same riven (Acceltra, for Acceltra Prime).
+ * @param {string} weapon
+ * @returns {{row: PickRow, weapon: string, splice: boolean, harmless: boolean, page: string} | null}
+ */
+export function brozimePick(weapon) {
+  const his = BROZIME_PICKS[weapon] ? weapon : BROZIME_BY_FAMILY.get(PICK_FAMILY[weapon] ?? weapon);
+  if (!his) return null;
+  const b = BROZIME_PICKS[his];
+  /** @param {string} stat @returns {Pick} */
+  const pick = stat => ({ code: stat, stat, note: '', mark: '' });
+  return {
+    row: { positives: b.positives.map(slot => [slot.map(pick)]), negatives: b.negative ? [[pick(b.negative)]] : [], notes: b.notes },
+    weapon: his, splice: b.splice, harmless: !b.negative, page: b.page,
+  };
 }
 
 /**

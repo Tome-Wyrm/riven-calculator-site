@@ -397,6 +397,12 @@ and what a damage model says each stat is worth on that weapon. The grader then 
 - [x] Grader: a "Community" column (Top pick / Listed / Splices into Viral / Not listed; Top curse
       for the negative), also on the "Splices into" rows. Planner and grader link to the weapon's picks.
 - [ ] Consider telling megrims (Discord) the sheet is used here.
+- [x] Brozime's roll beside the sheet's (2026-11-12): his Top Rivens notes (six, one per category;
+      68 weapons here, the Contagion Zaw row skipped) give one roll each: spliced or not, three
+      positives in priority order, a negative ("Harmless" = any by his Harmless Riven Negatives rules).
+      `tools/build-brozime-picks.mjs` → `src/data/brozime-picks.js`; `brozimePick` gives it as a row,
+      for his weapon and the others on its riven. Shown as its own card under the numbered rolls. It
+      doesn't replace the sheet (419 families), and the grader's Community column is still the sheet's.
 
 **12b — Weapon stats** (the model's input) — done
 - [x] `tools/build-weapon-stats.mjs` reads the wiki's `Module:Weapons/data/{primary,secondary,archwing,companion}`
