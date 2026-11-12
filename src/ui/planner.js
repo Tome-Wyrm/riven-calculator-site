@@ -134,7 +134,7 @@ function lockToggle(id) {
  * @param {string} action @param {string[]} parents @param {boolean} spliced  after the splice
  */
 function nextMove(action, parents, spliced) {
-  if (action === 'splice' || action === '-?') return actionText(action, parents, current().have, spliced);
+  if (action === 'splice' || action === '-?' || action === '+?') return actionText(action, parents, current().have, spliced);
   // (A plan's "any of these curses" is your riven's own curse.)
   const want = action === 'cycle' ? null : action.startsWith('-') ? (action.includes('|') ? state.myNeg : action.slice(1)) : action;
   // (The spliced stat's lock is a slot of its own: it stays.)
@@ -349,6 +349,8 @@ function actionText(action, parents, have = [], spliced = false) {
   // Any curse (its lock holds the shape), or whichever of the wanted ones it has: worded apart, so
   // the table keeps "has a wanted curse" as a row of its own (far closer to done).
   if (action === '-?') return `Lock the curse${also} and cycle`;
+  // A positive the target has no use for: it holds the shape and leaves the curse rolling.
+  if (action === '+?') return `Lock a positive you don't need${also} and cycle`;
   if (action.includes('|')) return `Lock the wanted curse${also} and cycle`;
   return `Lock ${name(action)}${also} and cycle`;
 }

@@ -344,6 +344,14 @@ it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL 
       Attack Speed + Electricity + Range on melee, per locked cycle: curse lock 1 in 1,540;
       positive lock 1 in 3,465 / 1,732.5 / 1,155 with one / two / three wanted curses, so a
       positive lock wins from three.
+- [x] **Lock a positive you don't need** (2026-11-12, the user's question): a third way to hold
+      the shape, next to a wanted stat and the curse. It costs a positive slot and leaves the curse
+      rolling, so it wins when the target has fewer positives than the shape (the slot is free)
+      and is the only shape lock on rivens with no curse. Action `+?`, "Lock a positive you don't
+      need and cycle" on the panel. Melee Damage + −Impact on +++-: a riven with neither went from
+      24.4 cycles (lock the unwanted curse) to 19.5, a fresh riven from 25 to 21.4. Melee Damage
+      alone on +++: 11 cycles from any +++ riven (two slots, 22 stats). The unwanted positive
+      isn't followed: an ordinary stat stands for it, as for an unwanted curse.
 
 - [x] **Recommended rolls gated** (2026-11-03, still under construction): 🚧 in its title, closed on
       every load; opening it asks for a name, and only names whose MD5 is in `src/data/allowlist.js`

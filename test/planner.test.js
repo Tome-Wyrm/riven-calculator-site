@@ -156,6 +156,30 @@ test('the curse can be any one of several too', () => {
   assert.ok(any >= free && any < free * 1.01, `${any} vs ${free}`);
 });
 
+test('a positive the target has no use for can be locked to hold the shape', () => {
+  const melee = { cls: 'melee', spliced: null };
+  const none = (t, shape) => planBuild(t, { stage: 'post', have: [], shape });
+  const step = (p, have) => p.steps.find(s => s.have.join() === have)?.action;
+  // No curse to lock on +++: a spare positive holds the shape, and Melee Damage has the other two
+  // slots, out of the 22 stats left: 11 cycles.
+  const plain = none({ ...melee, positives: ['damage'], negative: null, shape: '+++' }, '+++');
+  assert.equal(step(plain, ''), '+?');
+  near(plain.expectedCycles, 11, 1e-6);
+  // Melee Damage and -Impact on +++-: the spare's lock leaves the curse rolling too, so either
+  // can land (or both). Locking the unwanted curse instead took 22/3 + 17.1 = 24.4 cycles.
+  const t = { ...melee, positives: ['damage'], negative: 'impact', shape: '+++-' };
+  const both = none(t, '+++-');
+  assert.equal(step(both, ''), '+?');
+  assert.ok(both.expectedCycles > 19 && both.expectedCycles < 20, String(both.expectedCycles));
+  // What it has is still what it locks.
+  assert.equal(step(both, 'damage'), 'damage');
+  assert.equal(step(both, '-impact'), '-impact');
+  // With every positive slot wanted there is no spare once the riven has all three.
+  const full = planBuild({ ...melee, positives: ['fireRate', 'electricity', 'range'], negative: 'slash', shape: '+++-' });
+  assert.notEqual(step(full, 'fireRate,electricity,range'), '+?');
+  assert.equal(step(full, 'fireRate,-slash'), '-slash');
+});
+
 test('a locked curse is out of the positive draw, with several wanted curses too', () => {
   // Melee: 23 positives, 17 negatives. With the curse locked, the three positives come from the
   // other 22: C(22,3) = 1,540, however many curses the target takes. With a positive locked, the

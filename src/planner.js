@@ -4,8 +4,10 @@
 //
 // Model. A state is: the stage (before / after the splice), which of the traits we care about the
 // riven currently has, whether it has the wanted negative, and its shape. In each state you either
-// cycle unlocked, or lock one stat (keeps it and the shape, costs double): a wanted trait, or the
-// curse even when it isn't the wanted one (that just holds a shape with more positive slots).
+// cycle unlocked, or lock one stat (keeps it and the shape, costs double): a wanted trait, the
+// curse even when it isn't the wanted one, or a positive the target doesn't want (those two just
+// hold the shape: the curse's lock leaves every positive slot rolling, the positive's leaves the
+// curse rolling and costs a slot, which is free when the target has fewer positives than the shape).
 // Reaching both splice parents on the target shape lets you splice (free): the parents are consumed,
 // the spliced trait stays and the shape is frozen. A parent can be the curse (Critical Chance +
 // -Zoom → Weak Point Critical Chance): then the spliced stat takes the positive parent's place and
@@ -228,6 +230,23 @@ function solveFor(t, parents) {
   };
 
   /**
+   * A positive the target doesn't want isn't followed either: an ordinary stat stands for it (one
+   * that can be a curse if there is one, as most can). Null if every positive is followed.
+   * @param {'pre' | 'post'} stage
+   */
+  const spare = stage => {
+    const tr = stage === 'pre' ? preTracked : postTracked;
+    const free = posPool.filter(id => !tr.includes(id) && !NEG.includes(id));
+    return free.find(id => negPool.includes(id)) ?? free[0] ?? null;
+  };
+  /** How many of the riven's positives the target has no use for. @param {State} s */
+  const spares = s => {
+    let wanted = s.stage === 'post' && S ? 1 : 0;
+    for (let m = s.mask; m; m &= m - 1) wanted++;
+    return SHAPES[s.shape].positives - wanted;
+  };
+
+  /**
    * Outcome distribution of one cycle.
    * @param {State} s @param {{lock: string | null}} action  lock = tracked id or 'NEG' or null
    * @returns {Map<string, number>}
@@ -235,9 +254,11 @@ function solveFor(t, parents) {
   function cycle(s, action) {
     const tr = tracked(s);
     const out = new Map();
-    const lockPos = action.lock && action.lock !== 'NEG' ? action.lock : null;
+    const lockPos = action.lock && action.lock !== 'NEG' && action.lock !== '+?' ? action.lock : null;
     const lockNeg = action.lock === 'NEG';
-    const fixedPos = [...(s.stage === 'post' && S ? [S] : []), ...(lockPos ? [lockPos] : [])];
+    // A locked positive the target doesn't want fills a slot and holds the shape (see spare).
+    const lockSpare = action.lock === '+?' ? spare(s.stage) : null;
+    const fixedPos = [...(s.stage === 'post' && S ? [S] : []), ...(lockPos ? [lockPos] : []), ...(lockSpare ? [lockSpare] : [])];
     const shapes = action.lock || (s.stage === 'post' && S) ? [s.shape] : SHAPE_ORDER;
     for (const shape of shapes) {
       const { positives: k, negatives: c } = SHAPES[shape];
@@ -364,6 +385,8 @@ function solveFor(t, parents) {
     tracked(s).forEach((id, i) => { if (s.mask & (1 << i)) acts.push({ lock: id, label: `lock ${id}` }); });
     // The curse: the wanted one or a parent, or any other (its lock still holds the shape).
     if (s.neg || SHAPES[s.shape].negatives) acts.push({ lock: 'NEG', label: `lock ${negStat(s.neg) ?? 'the curse'}` });
+    // A positive the target doesn't want: its lock holds the shape too, and leaves the curse rolling.
+    if (spares(s) > 0 && spare(s.stage)) acts.push({ lock: '+?', label: 'lock a spare positive' });
     return acts;
   }
 
@@ -444,7 +467,7 @@ function gauss(A) {
  * @property {string[]} high        splice parents whose roll is above it (too high for an at most / exactly goal)
  * @property {Shape} shape
  * @property {string} action        'cycle', 'splice', or the id to lock ('-x' for the negative, '-?' for
- *   a curse the target doesn't want)
+ *   a curse the target doesn't want, '+?' for a positive it doesn't want)
  * @property {number} kuva          expected Kuva from here to the finished riven
  * @property {number} cycles        expected cycles from here
  */
