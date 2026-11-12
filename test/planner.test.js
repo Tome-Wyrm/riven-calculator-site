@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planBuild, FLAT_COST } from '../src/planner.js';
+import { planBuild, lockOdds, FLAT_COST } from '../src/planner.js';
 import { pools } from '../src/cycle.js';
 
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) < tol, `${a} vs ${b}`);
@@ -178,6 +178,28 @@ test('a positive the target has no use for can be locked to hold the shape', () 
   const full = planBuild({ ...melee, positives: ['fireRate', 'electricity', 'range'], negative: 'slash', shape: '+++-' });
   assert.notEqual(step(full, 'fireRate,electricity,range'), '+?');
   assert.equal(step(full, 'fireRate,-slash'), '-slash');
+});
+
+test('lock odds: a positive or the curse, by how many curses would do', () => {
+  const t = { cls: 'melee', positives: ['fireRate', 'electricity', 'range'], spliced: null, negative: 'slash', shape: '+++-' };
+  const rows = lockOdds(t);
+  assert.equal(rows.length, 6);
+  assert.deepEqual(rows.map(r => r.own), [true, false, false, false, false, false]);
+  // The curse's lock: the three positives from the other 22, however many curses would do.
+  for (const r of rows) near(1 / r.negative, C(22, 3), 1e-6);
+  // A positive's lock: the other two from 22, and one of the curses from the 15 left.
+  rows.forEach((r, i) => near(1 / r.positive, (C(22, 2) * 15) / (i + 1), 1e-6));
+  assert.equal(rows.findIndex(r => r.positive > r.negative), 2);       // from three
+  // The target's own curses come first, and its count is marked.
+  assert.deepEqual(lockOdds({ ...t, negative: ['slash', 'impact'] }).map(r => r.own), [false, true, false, false, false, false]);
+  // With the spliced stat holding a slot, two curses are enough: 1 in 165 against 1 in 231.
+  const spliced = lockOdds({ cls: 'melee', positives: ['fireRate', 'range'], spliced: 'statusDamage', negative: 'slash', shape: '+++-' });
+  near(1 / spliced[1].positive, 165, 1e-6);
+  near(1 / spliced[1].negative, C(22, 2), 1e-6);
+  // No choice to make: no curse wanted, no curse on the shape, or only one positive to roll.
+  assert.equal(lockOdds({ ...t, negative: null }), null);
+  assert.equal(lockOdds({ ...t, shape: '+++' }), null);
+  assert.equal(lockOdds({ ...t, positives: ['range'] }), null);
 });
 
 test('a locked curse is out of the positive draw, with several wanted curses too', () => {

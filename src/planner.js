@@ -78,8 +78,10 @@ const negativesOf = t => (Array.isArray(t.negative) ? t.negative : t.negative ? 
 /**
  * Builds and solves the plan for one splice recipe (or none).
  * @param {Target} t @param {string[] | null} parents
+ * @param {boolean} [modelOnly]  just the model (states and what a cycle does), nothing solved
+ * @returns {any}
  */
-function solveFor(t, parents) {
+function solveFor(t, parents, modelOnly = false) {
   const { positive: posPool, negative: negPool } = pools(t.cls, t.ipsCode);
   const S = t.spliced;
   // The wanted curse: any one of these (those that can roll as curses here). targetNeg stands for
@@ -390,6 +392,8 @@ function solveFor(t, parents) {
     return acts;
   }
 
+  if (modelOnly) return { states, isDone, cycle, negCode, postTracked, groups };
+
   // Transition tables per state and action.
   const keys = [...states.keys()];
   const index = new Map(keys.map((k, i) => [k, i]));
@@ -471,6 +475,52 @@ function gauss(A) {
  * @property {number} kuva          expected Kuva from here to the finished riven
  * @property {number} cycles        expected cycles from here
  */
+
+/**
+ * Lock a positive or the curse? For a riven on the target shape that has one wanted positive and an
+ * acceptable curse (and the spliced stat, if the target has one), the chance one locked cycle
+ * finishes it, either way, by how many curses would do: the target's own first, then others this
+ * weapon can roll. Both locks cost the same, so the better chance is the better lock.
+ * Null when there is no such choice: no curse wanted, or fewer than two positives left to roll
+ * (a riven with the one positive and the curse is already done).
+ * @param {Target} t @param {number} [most]
+ * @returns {{count: number, own: boolean, positive: number, negative: number}[] | null}
+ */
+export function lockOdds(t, most = 6) {
+  if (!SHAPES[t.shape].negatives) return null;
+  const { positive: posPool, negative: negPool } = pools(t.cls, t.ipsCode);
+  const own = negativesOf(t).filter(id => negPool.includes(id));
+  if (!own.length) return null;
+  // Curses to add past the target's own: not wanted as positives, the usual kind first (stats
+  // that can be either sign).
+  const wanted = new Set(/** @type {string[]} */ (t.positives.flat()));
+  const more = negPool.filter(id => !own.includes(id) && !wanted.has(id) && id !== t.spliced);
+  const list = [...own, ...more.filter(id => posPool.includes(id)), ...more.filter(id => !posPool.includes(id))];
+  const rows = [];
+  for (let count = 1; count <= Math.min(most, list.length); count++) {
+    let m;
+    try { m = solveFor({ ...t, negative: list.slice(0, count) }, null, true); } catch { return null; }
+    if (m.groups.length < 2) return null;
+    const neg = m.negCode(list[0], 'post');
+    /** The chance one cycle with that lock ends on a finished riven. */
+    const finish = (/** @type {number} */ mask, /** @type {string} */ lock) => {
+      let p = 0;
+      for (const [k, q] of m.cycle({ stage: 'post', mask, neg, shape: t.shape, pg: 0 }, { lock })) {
+        const s = m.states.get(k);
+        if (s && m.isDone(s)) p += q;
+      }
+      return p;
+    };
+    rows.push({
+      count,
+      own: count === own.length,
+      // Whichever wanted positive is the best one to hold (one that can't be a curse, say).
+      positive: Math.max(...m.groups.map((/** @type {string[]} */ g) => finish(1 << m.postTracked.indexOf(g[0]), g[0]))),
+      negative: finish(0, 'NEG'),
+    });
+  }
+  return rows;
+}
 
 /**
  * The window of rolls (0–1) a splice parent's roll must land in for the spliced stat to meet its

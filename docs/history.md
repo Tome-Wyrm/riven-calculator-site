@@ -352,6 +352,13 @@ it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL 
       24.4 cycles (lock the unwanted curse) to 19.5, a fresh riven from 25 to 21.4. Melee Damage
       alone on +++: 11 cycles from any +++ riven (two slots, 22 stats). The unwanted positive
       isn't followed: an ordinary stat stands for it, as for an unwanted curse.
+- [x] **"Lock a positive or the curse?"** (2026-11-12): a collapse under the plan table. For a
+      riven with one wanted positive and a curse you'd take, the chance one locked cycle finishes
+      it either way, for one to six curses that would do (the target's own first, its count
+      marked, then others the weapon can roll), and from how many a positive's lock wins.
+      `lockOdds` in `src/planner.js` reads it off the plan's own cycle model, so pools, either-or
+      slots, value goals and a spliced stat in place all count. Hidden when there's no such
+      choice: no curse wanted, or one positive to roll (that riven is already done).
 
 - [x] **Recommended rolls gated** (2026-11-03, still under construction): 🚧 in its title, closed on
       every load; opening it asks for a name, and only names whose MD5 is in `src/data/allowlist.js`

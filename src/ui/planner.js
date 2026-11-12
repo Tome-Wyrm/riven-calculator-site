@@ -7,7 +7,7 @@ import { CLASSES, SHAPES, SPLICED, STAT_BY_ID } from '../data/stats.js';
 import { SHAPE_ORDER, displayValue, format, range, solveU, rollScore } from '../engine.js';
 import { WEAPONS } from '../data/weapons.js';
 import { pools } from '../cycle.js';
-import { planBuild, OP_TEXT, splicedRollWindow } from '../planner.js';
+import { planBuild, lockOdds, OP_TEXT, splicedRollWindow } from '../planner.js';
 import { CLASS_LABEL, el, statName, segmented, select, weaponPicker, copyLinkButton, ipsOf } from './dom.js';
 import { loadState, saveState, pick, oneOf } from './state.js';
 import { picksLink } from './picks.js';
@@ -377,6 +377,41 @@ function orButton(i, pool, set) {
 /** A slot's stats as text: "Cold or Toxin". @param {number} i */
 const slotText = i => slot(i).map(name).join(' or ');
 
+/** Whether the lock comparison is open (kept across re-renders). */
+let oddsOpen = false;
+
+/**
+ * "Lock a positive or the curse?": a collapsed table under the plan, the chance one locked cycle
+ * finishes the riven either way, by how many curses would do. Nothing when there's no such choice.
+ * @param {Parameters<typeof lockOdds>[0]} target
+ */
+function lockOddsBox(target) {
+  const rows = lockOdds(target);
+  if (!rows) return [];
+  const oneIn = (/** @type {number} */ p) => (p > 0 ? `1 in ${(1 / p).toLocaleString('en-US', { maximumFractionDigits: 1 })}` : 'never');
+  const first = rows.find(r => r.positive > r.negative);
+  const verdict = !first ? `For this target the curse's lock stays better, even with ${rows.length} curses that would do.`
+    : first.count === 1 ? 'For this target a positive\'s lock is better, even with one curse that would do.'
+      : `For this target a positive's lock is better from ${first.count} curses that would do; with fewer, the curse's.`;
+  const details = /** @type {HTMLDetailsElement} */ (el('details', { class: 'buffs', ...(oddsOpen ? { open: '' } : {}) }, [
+    el('summary', {}, ['Lock a positive or the curse?']),
+    el('p', { class: 'note' }, [
+      `A ${T} riven with one wanted positive and a curse you'd take${state.spliced ? ` (and ${name(state.spliced)} in place)` : ''}: `
+      + `the chance one locked cycle finishes it. Both locks cost the same. ${verdict}`
+      + (rows.some(r => !r.own && r.count > negSlot().length) ? ' Rows past yours add other curses this weapon can roll.' : '')]),
+    el('div', { class: 'table-wrap' }, [el('table', { class: 'ranges goals plan' }, [
+      el('thead', {}, [el('tr', {}, ['Curses that would do', 'Lock a positive', 'Lock the curse', 'Better lock'].map(h => el('th', { scope: 'col' }, [h])))]),
+      el('tbody', {}, rows.map(r => el('tr', r.own ? { class: 'best' } : {}, [
+        el('th', { scope: 'row' }, [r.own ? `${r.count} (yours)` : String(r.count)]),
+        el('td', {}, [oneIn(r.positive)]),
+        el('td', {}, [oneIn(r.negative)]),
+        el('td', {}, [r.positive > r.negative ? 'A positive' : r.positive < r.negative ? 'The curse' : 'Either']),
+      ])))])]),
+  ]));
+  details.addEventListener('toggle', () => { oddsOpen = details.open; });
+  return [details];
+}
+
 function results() {
   const want = state.want.filter(Boolean);
   // One entry per slot: a stat, or the list of stats that would do.
@@ -392,6 +427,11 @@ function results() {
   // Plan each candidate shape (just the chosen one, or with 'any' every shape that can hold the
   // target) and keep the cheapest.
   const candidates = state.shape === 'any' ? validShapes() : [state.shape];
+  const targetFor = (/** @type {Shape} */ shape) => ({
+    cls: state.cls, ipsCode: ipsOf(state.weapon), positives: slots, spliced: state.spliced || null,
+    parents: state.recipe ? state.recipe.split('+') : undefined, negative: negSlot().length > 1 ? negSlot() : state.negative || null, shape,
+    goals: valueGoals(), negGoal: negGoal(),
+  });
   /** @type {{shape: Shape, plan: ReturnType<typeof planBuild>, mineNow: ReturnType<typeof current> | null}[]} */
   const tried = [];
   const errors = [];
@@ -399,11 +439,7 @@ function results() {
     T = shape;
     const mineNow = state.from === 'mine' ? current() : null;
     try {
-      const plan = planBuild({
-        cls: state.cls, ipsCode: ipsOf(state.weapon), positives: slots, spliced: state.spliced || null,
-        parents: state.recipe ? state.recipe.split('+') : undefined, negative: negSlot().length > 1 ? negSlot() : state.negative || null, shape,
-        goals: valueGoals(), negGoal: negGoal(),
-      }, mineNow && mineNow.shape
+      const plan = planBuild(targetFor(shape), mineNow && mineNow.shape
         ? { stage: state.spliced ? mineNow.stage : 'post', have: mineNow.have, shape: mineNow.shape, goodParents: mineNow.goodParents, highParents: mineNow.highParents }
         : null);
       tried.push({ shape, plan, mineNow });
@@ -568,6 +604,7 @@ function results() {
   } else {
     out.push(...table('post', `Cycle for ${goalList} on a ${T} riven`));
   }
+  out.push(...lockOddsBox(targetFor(T)));
   out.push(el('p', { class: 'note' }, [
     `Rows are for a ${T} riven; on any other shape, cycle unlocked until it changes. `
     + 'Costs assume the riven is past its 10th cycle (3,500 Kuva, 7,000 with a lock). Odds use the community model: '
