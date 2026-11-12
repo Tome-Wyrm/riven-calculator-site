@@ -346,8 +346,10 @@ function actionText(action, parents, have = [], spliced = false) {
   const also = spliced ? ` (with ${name(state.spliced)})` : '';
   if (action === 'cycle') return spliced ? `Cycle with only ${name(state.spliced)} locked` : 'Cycle, nothing locked';
   if (action === 'splice') return `Splice ${parents.map(id => name(have.includes(`-${id}`) ? `-${id}` : id)).join(' + ')} → ${name(state.spliced)}`;
-  // Any curse (its lock holds the shape), or any of the wanted ones.
-  if (action === '-?' || action.includes('|')) return `Lock the curse${also} and cycle`;
+  // Any curse (its lock holds the shape), or whichever of the wanted ones it has: worded apart, so
+  // the table keeps "has a wanted curse" as a row of its own (far closer to done).
+  if (action === '-?') return `Lock the curse${also} and cycle`;
+  if (action.includes('|')) return `Lock the wanted curse${also} and cycle`;
   return `Lock ${name(action)}${also} and cycle`;
 }
 
