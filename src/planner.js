@@ -64,7 +64,8 @@ const binom = (/** @type {number} */ n, /** @type {number} */ k) => {
  *
  * @typedef {{stage: 'pre' | 'post', mask: number, neg: number, shape: Shape, pg: number}} State
  *   mask = bits over the stage's tracked positives; neg = what the negative is: 0 something else
- *   (or none), 1 the wanted negative, 2 / 3 the first / second splice parent (before the splice);
+ *   (or none), 2 / 3 the first / second splice parent (before the splice), 4 and up a wanted
+ *   negative (one code per group of wanted negatives that behave alike, see negGroups);
  *   pg = with a goal for the spliced stat, two bits per splice parent (parent i at bits 2i, 2i+1):
  *   0 below the goal's roll window (or not on the riven), 1 inside it, 2 above it
  */
@@ -130,6 +131,20 @@ function solveFor(t, parents) {
     throw new Error(`Too many alternatives: the planner follows at most ${MAX_TRACKED} stats at once (splice parents included).`);
   }
   const parentMask = parents ? 0b11 : 0;
+  // The wanted curses, grouped by what locking one does to the positive draw: a locked curse can't
+  // also be drawn as a positive. Those that are never positives here are one group (nothing
+  // changes), those that can be but aren't followed as positives another (one stat fewer to draw,
+  // whichever it is), and each one that is followed as a positive is a group of its own.
+  /** @type {string[][]} */
+  const negGroups = [];
+  {
+    const followed = new Set([...preTracked, ...postTracked]);
+    const never = NEG.filter(id => !followed.has(id) && !posPool.includes(id));
+    const either = NEG.filter(id => !followed.has(id) && posPool.includes(id));
+    for (const g of [never, either, ...NEG.filter(id => followed.has(id)).map(id => [id])]) if (g.length) negGroups.push(g);
+  }
+  const isParent = (/** @type {number} */ code) => code === 2 || code === 3;
+  const isWanted = (/** @type {number} */ code) => code >= 4;
 
   /** @type {Map<string, State>} */
   const states = new Map();
@@ -148,11 +163,17 @@ function solveFor(t, parents) {
   const cat = (/** @type {number} */ pg, /** @type {number} */ i) => (pg >> (2 * i)) & 3;
   const catBits = (/** @type {number} */ i) => 0b11 << (2 * i);
   /** Which parents are on the riven (as positives or the curse), as bits. @param {State} s */
-  const present = s => (s.mask & parentMask) | (s.neg >= 2 ? 1 << (s.neg - 2) : 0);
-  /** The stat a negative code stands for. @param {number} code @returns {string | null} */
-  const negStat = code => (code === 1 ? targetNeg : code >= 2 && parents ? parents[code - 2] : null);
+  const present = s => (s.mask & parentMask) | (isParent(s.neg) ? 1 << (s.neg - 2) : 0);
+  /** The stat a negative code stands for (a group's ids joined by '|'). @param {number} code @returns {string | null} */
+  const negStat = code => (isWanted(code) ? negGroups[code - 4].join('|') : isParent(code) && parents ? parents[code - 2] : null);
+  /** The code for a riven's curse. @param {string} id @param {'pre' | 'post'} stage */
+  const negCode = (id, stage) => {
+    const g = negGroups.findIndex(ids => ids.includes(id));
+    if (g >= 0) return 4 + g;
+    return stage === 'pre' && parents?.includes(id) && negPool.includes(id) ? 2 + parents.indexOf(id) : 0;
+  };
   /** Negative codes possible in a stage: parents only before the splice, and only if they can be curses. */
-  const negCodes = (/** @type {'pre' | 'post'} */ stage) => [0, ...(targetNeg ? [1] : []),
+  const negCodes = (/** @type {'pre' | 'post'} */ stage) => [0, ...negGroups.map((_, g) => 4 + g),
     ...(stage === 'pre' && parents ? [2, 3].filter(c => negPool.includes(/** @type {string} */ (negStat(c))) && !NEG.includes(/** @type {string} */ (negStat(c)))) : [])];
   const add = (/** @type {State} */ s) => { const k = key(s); if (!states.has(k)) states.set(k, s); return k; };
   const stages = /** @type {('pre' | 'post')[]} */ (parents ? ['pre', 'post'] : ['post']);
@@ -160,7 +181,7 @@ function solveFor(t, parents) {
     const n = (stage === 'pre' ? preTracked : postTracked).length;
     for (let mask = 0; mask < 1 << n; mask++) for (const neg of negCodes(stage)) for (const shape of SHAPE_ORDER) {
       if (neg && SHAPES[shape].negatives === 0) continue;
-      if (neg >= 2 && mask & (1 << (neg - 2))) continue;          // a parent can't be both
+      if (isParent(neg) && mask & (1 << (neg - 2))) continue;     // a parent can't be both
       if (stage === 'post' && S && shape !== t.shape) continue;   // splicing froze the shape
       const here = stage === 'pre' && win ? present({ stage, mask, neg, shape, pg: 0 }) : 0;
       for (let pg = 0; pg < (here ? 16 : 1); pg++) {
@@ -178,11 +199,11 @@ function solveFor(t, parents) {
     return assign(0, new Set());
   };
   const isDone = (/** @type {State} */ s) => s.stage === 'post' && s.shape === t.shape
-    && fills(s.mask) && (!targetNeg || s.neg === 1);
+    && fills(s.mask) && (!targetNeg || isWanted(s.neg));
   // Both parents as positives, or one as a positive and the other as the curse; with a goal for
   // the spliced stat, neither may be above its window and one must be inside it.
   const canSplice = (/** @type {State} */ s) => s.stage === 'pre' && s.shape === t.shape
-    && ((s.mask & parentMask) === parentMask || (s.neg >= 2 && (s.mask & (1 << (3 - s.neg))) !== 0))
+    && ((s.mask & parentMask) === parentMask || (isParent(s.neg) && (s.mask & (1 << (3 - s.neg))) !== 0))
     && (!win || (cat(s.pg, 0) !== 2 && cat(s.pg, 1) !== 2 && (cat(s.pg, 0) === 1 || cat(s.pg, 1) === 1)));
 
   /** The chance a fresh curse of a wanted stat meets the curse's goal. @param {Shape} shape @param {string} id */
@@ -222,8 +243,13 @@ function solveFor(t, parents) {
       const { positives: k, negatives: c } = SHAPES[shape];
       const d = k - fixedPos.length;
       if (d < 0) continue;
-      // A stat locked as the negative can't also be drawn as a positive.
-      const pool = posPool.filter(id => !fixedPos.includes(id) && !(lockNeg && id === negStat(s.neg)));
+      // A stat locked as the negative can't also be drawn as a positive. For a group of wanted
+      // curses that behave alike, any one of them stands for the locked one.
+      // A curse the target doesn't want isn't followed: an ordinary stat that can be a curse
+      // stands for it (nearly all of them are; one of the wanted positives' own stats is the exception).
+      const lockedNeg = !lockNeg ? null : isWanted(s.neg) ? negGroups[s.neg - 4][0] : negStat(s.neg)
+        ?? posPool.find(id => negPool.includes(id) && !NEG.includes(id) && !tr.includes(id) && !fixedPos.includes(id)) ?? null;
+      const pool = posPool.filter(id => !fixedPos.includes(id) && id !== lockedNeg);
       const T = tr.filter(id => pool.includes(id));
       // Wanted curses that could be drawn as positives instead (x of them are, any x alike).
       const Xs = NEG.filter(id => pool.includes(id) && !tr.includes(id));
@@ -246,10 +272,11 @@ function solveFor(t, parents) {
           // chance of each stat we track as a curse (the wanted one, or a parent not drawn as a positive).
           const taken = negFixedPos + A.filter(id => negPool.includes(id)).length + x + j;
           const negChances = negCodes(s.stage).filter(code => code > 0).map(code => {
-            if (code === 1) {
-              // Any wanted curse not already a positive: the rest of the set, and those of the x not drawn.
-              const rest = NEG.filter(id => !Xs.includes(id) && !A.includes(id) && !fixedPos.includes(id));
-              const good = rest.reduce((a, id) => a + meetsNeg(shape, id), 0) + (X - x) * xsMeet(shape);
+            if (isWanted(code)) {
+              // Any of the group's curses not already a positive: those of the x drawn are out
+              // (each of the X equally likely to be among them).
+              const good = negGroups[code - 4].reduce((a, id) => a + (A.includes(id) || fixedPos.includes(id) ? 0
+                : meetsNeg(shape, id) * (Xs.includes(id) ? (X - x) / X : 1)), 0);
               return /** @type {[number, number]} */ ([code, good / (negPool.length - taken)]);
             }
             const id = /** @type {string} */ (negStat(code));
@@ -264,7 +291,7 @@ function solveFor(t, parents) {
             // below / inside / above the window with the chances in qCat.
             const kept = !win || s.stage !== 'pre' ? 0
               : s.pg & ((lockPos && parents?.includes(lockPos) ? catBits(parents.indexOf(lockPos)) : 0)
-                | (lockNeg && s.neg >= 2 ? catBits(s.neg - 2) : 0));
+                | (lockNeg && isParent(s.neg) ? catBits(s.neg - 2) : 0));
             /** @param {number} neg @param {number} w */
             const put = (neg, w) => {
               const fresh = !win || s.stage !== 'pre' ? [] : [0, 1].filter(i => {
@@ -304,12 +331,13 @@ function solveFor(t, parents) {
     let mask = 0;
     const survivors = preTracked.filter((id, i) => i >= 2 && s.mask & (1 << i));
     for (const id of survivors) mask |= 1 << postTracked.indexOf(id);
-    if (s.neg >= 2) {
+    if (isParent(s.neg)) {
       // The new curse: from the negative pool minus the riven's positives (approximated by how
       // many positives the shape has; most stats can be either sign).
       const left = negPool.length - SHAPES[s.shape].positives;
-      const pTarget = NEG.filter(id => id !== S && !survivors.includes(id)).reduce((a, id) => a + meetsNeg(s.shape, id), 0) / left;
-      for (const [neg, w] of /** @type {[number, number][]} */ ([[1, pTarget], [0, 1 - pTarget]])) {
+      const wanted = negGroups.map((ids, g) => /** @type {[number, number]} */ ([4 + g,
+        ids.filter(id => id !== S && !survivors.includes(id)).reduce((a, id) => a + meetsNeg(s.shape, id), 0) / left]));
+      for (const [neg, w] of [...wanted, /** @type {[number, number]} */ ([0, 1 - wanted.reduce((a, [, w]) => a + w, 0)])]) {
         if (!w) continue;
         const kk = key({ stage: 'post', mask, neg, shape: s.shape, pg: 0 });
         out.set(kk, (out.get(kk) ?? 0) + w);
@@ -322,7 +350,7 @@ function solveFor(t, parents) {
       const q = i >= 0 ? meets(id, s.shape) : 0;
       for (const [m, w] of /** @type {[number, number][]} */ ([[mask | (i >= 0 ? 1 << i : 0), q], [mask, 1 - q]])) {
         if (!w) continue;
-        const kk = key({ stage: 'post', mask: m, neg: s.neg === 1 ? 1 : 0, shape: s.shape, pg: 0 });
+        const kk = key({ stage: 'post', mask: m, neg: isWanted(s.neg) ? s.neg : 0, shape: s.shape, pg: 0 });
         out.set(kk, (out.get(kk) ?? 0) + w / pool.length);
       }
     }
@@ -386,7 +414,7 @@ function solveFor(t, parents) {
     if (!changed) break;
   }
   const C = evaluate('cycles');
-  return { states, keys, index, table, policy, V, C, isDone, canSplice, cycle, negStat, preTracked, postTracked, stage0: stages[0], win };
+  return { states, keys, index, table, policy, V, C, isDone, canSplice, cycle, negStat, negCode, preTracked, postTracked, stage0: stages[0], win };
 }
 
 /** Solves A·x = b (augmented rows), partial pivoting. @param {Float64Array[]} A */
@@ -464,14 +492,10 @@ export function planBuild(t, current = null) {
       const stage = sol.parents ? current.stage : 'post';
       // The riven's negative: the wanted one (1), a splice parent (2 / 3, before the splice), or other.
       const curse = current.have.find(id => id.startsWith('-'))?.slice(1);
-      let neg = 0;
-      if (curse && SHAPES[current.shape].negatives > 0) {
-        if (negativesOf(t).includes(curse)) neg = 1;
-        else if (stage === 'pre' && sol.parents?.includes(curse)) neg = 2 + sol.parents.indexOf(curse);
-      }
+      const neg = curse && SHAPES[current.shape].negatives > 0 ? sol.negCode(curse, stage) : 0;
       let pg = 0;
       if (sol.win && stage === 'pre') {
-        const on = (/** @type {string} */ id) => current.have.includes(id) || (curse === id && neg >= 2);
+        const on = (/** @type {string} */ id) => current.have.includes(id) || (curse === id && (neg === 2 || neg === 3));
         sol.parents.forEach((/** @type {string} */ id, /** @type {number} */ i) => {
           if (!on(id)) return;
           if (current.highParents?.includes(id)) pg |= 2 << (2 * i);

@@ -419,7 +419,10 @@ function results() {
     const stage = state.spliced ? mineNow.stage : 'post';
     const steps = plan.steps.filter(s => s.stage === stage && s.shape === mineNow.shape);
     const tracked = new Set(steps.flatMap(s => s.have));
-    const key = mineNow.have.filter(id => tracked.has(id)).sort().join();
+    // (A plan row's curse can be a group, "-slash|impact": your riven's curse is one of them.)
+    const asRow = (/** @type {string} */ id) => (id.startsWith('-')
+      ? [...tracked].find(x => x.startsWith('-') && x.slice(1).split('|').includes(id.slice(1))) ?? id : id);
+    const key = mineNow.have.map(asRow).filter(id => tracked.has(id)).sort().join();
     // With a spliced goal, rows also differ by which parents rolled well enough.
     const onIt = (/** @type {string[] | undefined} */ ids) => (ids ?? []).filter(id => mineNow.have.some(h => h === id || h === `-${id}`)).sort().join();
     const rolled = plan.steps.some(x => x.good.length || x.high.length);

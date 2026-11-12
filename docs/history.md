@@ -333,6 +333,17 @@ it's likely to cost. `src/planner.js` (engine), `src/ui/planner.js` (panel, URL 
       Damage spliced, -Slash): Cold + Range ~1.74M Kuva, Cold/Toxin + Range/Attack Speed ~0.54M.
       The curse takes alternatives too ("-Zoom or -Recoil"; links: `neg=zoom|recoil`): any one of
       them counts, with the curse's value goal on whichever lands.
+- [x] **A locked curse is out of the positive draw, whichever curse it is** (2026-11-12, from a
+      Discord thread on locking a positive or the negative). With several wanted curses the engine
+      kept them as one joined id, so a locked one stayed in the positive pool: the curse lock was
+      priced at 1 in C(23,3) on melee, not C(22,3), and with two wanted curses the plan locked a
+      positive when the curse was the better lock. Wanted curses are now grouped by what locking
+      one does to the draw (never a positive / can be one / also followed as a positive, each of
+      those on its own); a curse the target doesn't want takes one ordinary stat out too. The
+      panel also matched "your riven" against the joined id, so its curse was ignored. Check:
+      Attack Speed + Electricity + Range on melee, per locked cycle: curse lock 1 in 1,540;
+      positive lock 1 in 3,465 / 1,732.5 / 1,155 with one / two / three wanted curses, so a
+      positive lock wins from three.
 
 - [x] **Recommended rolls gated** (2026-11-03, still under construction): 🚧 in its title, closed on
       every load; opening it asks for a name, and only names whose MD5 is in `src/data/allowlist.js`

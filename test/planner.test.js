@@ -155,3 +155,28 @@ test('the curse can be any one of several too', () => {
   const free = planBuild({ ...base, negative: null }).expectedKuva;
   assert.ok(any >= free && any < free * 1.01, `${any} vs ${free}`);
 });
+
+test('a locked curse is out of the positive draw, with several wanted curses too', () => {
+  // Melee: 23 positives, 17 negatives. With the curse locked, the three positives come from the
+  // other 22: C(22,3) = 1,540, however many curses the target takes. With a positive locked, the
+  // other two come from 22 and the curse from the 15 left (Attack Speed and Range are taken).
+  const base = { cls: 'melee', positives: ['fireRate', 'electricity', 'range'], spliced: null, shape: '+++-' };
+  const from = (negative, have) => planBuild({ ...base, negative }, { stage: 'post', have, shape: '+++-' });
+  const lockPos = k => (C(22, 2) * 15) / k;
+  for (const negative of [['slash'], ['slash', 'impact']]) {
+    // One or two wanted curses: locking the curse is the better lock.
+    const p = from(negative, ['fireRate', '-slash']);
+    near(p.expectedCycles, C(22, 3), 1e-6);
+    assert.ok(p.steps.find(s => s.have.length === 2 && s.have[0] === 'fireRate' && s.have[1].startsWith('-'))?.action.startsWith('-'));
+    assert.ok(lockPos(negative.length) > C(22, 3));
+  }
+  // Three: locking a positive wins, 1 in 1,155 a cycle.
+  const three = from(['slash', 'impact', 'puncture'], ['fireRate', '-slash']);
+  near(three.expectedCycles, lockPos(3), 1e-6);
+  assert.equal(three.steps.find(s => s.have.length === 2 && s.have[0] === 'fireRate' && s.have[1].startsWith('-'))?.action, 'fireRate');
+  // A curse that's also wanted as a positive keeps its own identity: locked as the curse, it
+  // leaves 22 to draw from; the other wanted curse (never a positive here) leaves all 23.
+  const mixed = { cls: 'melee', positives: [['slash', 'range']], spliced: null, shape: '++-', negative: ['slash', 'impact'] };
+  const lockIt = (/** @type {string} */ curse) => planBuild(mixed, { stage: 'post', have: [curse], shape: '++-' });
+  assert.ok(lockIt('-slash').expectedCycles > lockIt('-impact').expectedCycles);
+});
